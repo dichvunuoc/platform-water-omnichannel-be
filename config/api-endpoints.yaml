@@ -1,0 +1,424 @@
+# API Endpoint Configuration
+# Per-service mock/live switching, timeouts, cache tiers, and circuit breaker settings.
+# Hot-reloaded via chokidar when MOCK_MODE is not active.
+
+services:
+  # =============================================================================
+  # MVP Services (Epic 1-3) — Detailed Configuration
+  # =============================================================================
+
+  # --- Auth & Identity (Epic 1) ---
+  auth:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/auth
+    timeout: 3000
+    cacheTier: static
+    cacheTtl: 43200
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Authentication & token management"
+    methods: ["login", "register", "refresh", "logout", "verify"]
+
+  customer-profile:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/customers
+    timeout: 3000
+    cacheTier: static
+    cacheTtl: 43200
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Customer 360° profile data"
+    methods: ["get-profile", "update-profile", "search"]
+
+  contract:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/contracts
+    timeout: 3000
+    cacheTier: static
+    cacheTtl: 43200
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Contract lookup & management"
+    methods: ["get-list", "get-detail", "get-by-customer"]
+
+  meter:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/meters
+    timeout: 3000
+    cacheTier: static
+    cacheTtl: 43200
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Meter information & history"
+    methods: ["get-info", "get-history", "get-by-contract"]
+
+  meter-reading:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/meter-readings
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Meter reading submissions & history"
+    methods: ["submit", "get-history", "get-latest"]
+
+  # --- Consumption & Billing (Epic 3) ---
+  tariff:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/tariffs
+    timeout: 3000
+    cacheTier: static
+    cacheTtl: 43200
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Tariff & pricing display"
+    methods: ["get-by-contract", "calculate", "get-plans"]
+
+  invoice:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/invoices
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Invoice list, detail & download"
+    methods: ["get-list", "get-detail", "download"]
+
+  # --- Payments (Epic 4) ---
+  payment:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/payments
+    timeout: 5000
+    cacheTier: transaction
+    circuitBreaker:
+      errorThreshold: 30
+      resetTimeout: 30000
+      minRequests: 3
+    description: "Payment initiation & QR generation"
+    methods: ["initiate", "confirm", "get-status", "generate-qr"]
+
+  payment-webhook:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/payment-webhooks
+    timeout: 3000
+    cacheTier: transaction
+    circuitBreaker:
+      errorThreshold: 30
+      resetTimeout: 30000
+      minRequests: 3
+    description: "Payment webhook confirmation"
+    methods: ["confirm", "retry"]
+
+  payment-history:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/payment-history
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Payment history & multi-invoice payment"
+    methods: ["get-list", "get-detail", "pay-multi"]
+
+  auto-debit:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/auto-debit
+    timeout: 3000
+    cacheTier: static
+    cacheTtl: 43200
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Auto-debit registration & management"
+    methods: ["register", "cancel", "get-status", "update"]
+
+  debt:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/debts
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Debt overview & history"
+    methods: ["get-overview", "get-history", "get-detail"]
+
+  # --- Issue Reporting (Epic 5) ---
+  ticket:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/tickets
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Incident/ticket management"
+    methods: ["create", "get-list", "get-detail", "update", "add-feedback"]
+
+  knowledge-base:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/knowledge-base
+    timeout: 3000
+    cacheTier: static
+    cacheTtl: 43200
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Knowledge base & FAQ search"
+    methods: ["search", "get-article", "get-faq"]
+
+  # =============================================================================
+  # Phase 2/3 Services — Compact Configuration
+  # =============================================================================
+
+  # --- Notifications (Epic 6) ---
+  proactive-notification:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/proactive-notifications
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Proactive area alerts"
+    methods: ["get-alerts", "subscribe", "unsubscribe"]
+
+  notification:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/notifications
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 300
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Multi-channel notification dispatch"
+    methods: ["send", "get-history", "get-preferences", "update-preferences"]
+
+  # --- Omnichannel & Session (Epic 7) ---
+  session:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/sessions
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Session store & event recording"
+    methods: ["create", "get", "append-event", "get-events"]
+
+  cross-channel-session:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/cross-channel-sessions
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Cross-channel session continuation"
+    methods: ["transfer", "get-context", "resume"]
+
+  # --- Resilient Communication (Epic 1, Story 1.2) ---
+  zalo-adapter:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/zalo
+    timeout: 5000
+    cacheTier: transaction
+    circuitBreaker:
+      errorThreshold: 40
+      resetTimeout: 15000
+      minRequests: 3
+    description: "Zalo OA webhook adapter"
+    methods: ["send-message", "send-template", "get-user-info"]
+
+  hotline-adapter:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/hotline
+    timeout: 5000
+    cacheTier: transaction
+    circuitBreaker:
+      errorThreshold: 40
+      resetTimeout: 15000
+      minRequests: 3
+    description: "Hotline IVR adapter"
+    methods: ["initiate-call", "get-call-status", "hang-up"]
+
+  counter-adapter:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/counter
+    timeout: 3000
+    cacheTier: transaction
+    circuitBreaker:
+      errorThreshold: 40
+      resetTimeout: 15000
+      minRequests: 3
+    description: "Counter/branch adapter"
+    methods: ["check-in", "get-queue", "complete"]
+
+  web-adapter:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/web
+    timeout: 3000
+    cacheTier: transaction
+    circuitBreaker:
+      errorThreshold: 40
+      resetTimeout: 15000
+      minRequests: 3
+    description: "Web portal adapter"
+    methods: ["track-event", "get-session"]
+
+  # --- Document Management ---
+  document:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/documents
+    timeout: 5000
+    cacheTier: transaction
+    circuitBreaker:
+      errorThreshold: 30
+      resetTimeout: 30000
+      minRequests: 3
+    description: "Document upload & download"
+    methods: ["upload", "download", "get-list"]
+
+  # --- Reporting & Analytics ---
+  report:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/reports
+    timeout: 5000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Reporting & analytics"
+    methods: ["get-summary", "get-detail", "export"]
+
+  # --- Configuration Management ---
+  config-management:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/config
+    timeout: 3000
+    cacheTier: static
+    cacheTtl: 43200
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "System configuration management"
+    methods: ["get", "update"]
+
+  # --- User Management ---
+  user-management:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/users
+    timeout: 3000
+    cacheTier: static
+    cacheTtl: 43200
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "User management & RBAC"
+    methods: ["get-profile", "update-profile", "get-roles", "assign-role"]
+
+  # --- Audit Log ---
+  audit-log:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/audit
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Audit log queries"
+    methods: ["search", "get-detail", "export"]
+
+  # --- Health Check (Internal) ---
+  health-check:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/health
+    timeout: 2000
+    cacheTier: dynamic
+    cacheTtl: 60
+    circuitBreaker:
+      errorThreshold: 60
+      resetTimeout: 10000
+      minRequests: 3
+    description: "Backend health check"
+    methods: ["check"]
+
+  # --- Feedback & CSAT ---
+  feedback:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/feedback
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Feedback & CSAT collection"
+    methods: ["submit", "get-by-ticket", "get-stats"]
+
+  # --- Geographic / Area ---
+  area:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/areas
+    timeout: 3000
+    cacheTier: static
+    cacheTtl: 43200
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Geographic area management"
+    methods: ["get-list", "get-detail", "search"]
+
+  # --- Water Supply Status ---
+  water-supply:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/water-supply
+    timeout: 3000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker:
+      errorThreshold: 50
+      resetTimeout: 10000
+      minRequests: 5
+    description: "Water supply status & outages"
+    methods: ["get-status", "get-outages", "get-schedule"]
