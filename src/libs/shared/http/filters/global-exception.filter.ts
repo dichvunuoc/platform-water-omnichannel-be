@@ -16,6 +16,11 @@ import {
   ForbiddenException,
   ConflictException,
 } from 'src/libs/core/common';
+import {
+  PortDownstreamException,
+  PortTimeoutException,
+  PortNotRegisteredException,
+} from 'src/libs/shared/port/port-exceptions';
 
 /**
  * Global Exception Filter
@@ -125,6 +130,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 
   private getHttpStatus(exception: BaseException): number {
+    // Port infrastructure exceptions
+    if (exception instanceof PortDownstreamException) {
+      // Proxy the downstream status code to the client (4xx → 4xx, 5xx → 5xx)
+      // but cap at 500 to avoid leaking non-standard downstream codes
+      return exception.statusCode >= 500 ? HttpStatus.BAD_GATEWAY : exception.statusCode;
+    }
+    if (exception instanceof PortTimeoutException) {
+      return HttpStatus.GATEWAY_TIMEOUT;
+    }
+    if (exception instanceof PortNotRegisteredException) {
+      return HttpStatus.INTERNAL_SERVER_ERROR;
+    }
+
+    // Domain exceptions
     if (exception instanceof NotFoundException) {
       return HttpStatus.NOT_FOUND;
     }

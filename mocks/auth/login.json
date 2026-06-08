@@ -1,0 +1,10 @@
+{
+  "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Nguyễn Văn A",
+  "phone": "0901234567",
+  "email": null,
+  "role": "customer",
+  "status": "active",
+  "sessionId": "660e8400-e29b-41d4-a716-446655440001",
+  "expiresAt": "2026-06-12T00:00:00.000Z"
+}

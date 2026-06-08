@@ -12,8 +12,9 @@ import {
   ContextModule,
   CorrelationIdMiddleware,
 } from 'src/libs/shared';
-import { ProductModule } from './modules/product/product.module';
-import { OrderModule } from './modules/order/order.module';
+import { PortModule } from 'src/libs/shared/port';
+import { AuthPropagationModule, AuthPropagationMiddleware } from 'src/libs/shared/auth-propagation';
+import { AuthModule } from 'src/modules/auth/auth.module';
 
 @Global()
 @Module({
@@ -38,10 +39,15 @@ import { OrderModule } from './modules/order/order.module';
     OutboxModule,
     // Health check endpoints
     HealthModule,
-    // Product Feature Module (DDD/CQRS Example)
-    ProductModule,
-    // Order Feature Module (IUnitOfWork Demo - Multi-Aggregate Transaction)
-    OrderModule,
+    // Auth Module — customer registration & multi-provider authentication
+    AuthModule,
+    // Auth Propagation — JWT signing for BFF→downstream identity propagation
+    AuthPropagationModule,
+    // Hexagonal Port Registry — centralized downstream service interface (needs AuthPropagationModule)
+    PortModule,
+  ],
+  providers: [
+    // CACHE_SERVICE_TOKEN now provided by PortModule (which is @Global)
   ],
 })
 export class AppModule implements NestModule {
@@ -55,6 +61,13 @@ export class AppModule implements NestModule {
    * - Enables distributed tracing across services
    */
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
+    // Order matters: CorrelationId first (creates context), then AuthPropagation (enriches context)
+    consumer
+      .apply(CorrelationIdMiddleware)
+      .forRoutes('*');
+    consumer
+      .apply(AuthPropagationMiddleware)
+      .exclude('api/auth', 'health', 'webhooks')
+      .forRoutes('*');
   }
 }

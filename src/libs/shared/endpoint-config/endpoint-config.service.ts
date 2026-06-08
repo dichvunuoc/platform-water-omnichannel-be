@@ -1,11 +1,12 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
-import * as fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import * as path from 'path';
 import * as chokidar from 'chokidar';
 import { parse as parseYaml } from 'yaml';
 import { StructuredLogger } from '../observability/structured-logger.service';
 import { PortEndpointConfig, EndpointConfig } from './endpoint-config.interface';
-import { ApiEndpointsSchema } from '../../../config/api-endpoints.schema';
+import { ApiEndpointsSchema } from '../../../../config/api-endpoints.schema';
+import { NotFoundException } from '../../core/common/exceptions';
 
 /**
  * Endpoint Configuration Service
@@ -13,12 +14,13 @@ import { ApiEndpointsSchema } from '../../../config/api-endpoints.schema';
  * Loads per-service endpoint configuration from config/api-endpoints.yaml.
  * Supports hot-reload via chokidar file watching (< 100ms reload).
  * Validates config against Zod schema on load.
+ * Resolves ${ENV_VAR} template variables in YAML values.
  *
  * AC: #3 — Hot-Reload via chokidar
  */
 @Injectable()
 export class EndpointConfigService implements OnModuleInit, OnModuleDestroy {
-  private config: Map<string, PortEndpointConfig> = new Map();
+  private config = new Map<string, PortEndpointConfig>();
   private watcher: chokidar.FSWatcher | null = null;
   private readonly configPath: string;
   private readonly logger = new Logger(EndpointConfigService.name);
@@ -47,7 +49,7 @@ export class EndpointConfigService implements OnModuleInit, OnModuleDestroy {
   getEndpointConfig(portName: string): PortEndpointConfig {
     const config = this.config.get(portName);
     if (!config) {
-      throw new Error(`Endpoint config not found for port: ${portName}`);
+      throw new NotFoundException(`Endpoint config not found for port: ${portName}`, 'ENDPOINT_CONFIG_NOT_FOUND', { portName });
     }
     return config;
   }
@@ -76,13 +78,44 @@ export class EndpointConfigService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Force reload config from disk.
+   * Public for testing — production code should rely on chokidar auto-reload.
+   */
+  async reloadConfig(): Promise<void> {
+    await this.loadConfig();
+  }
+
+  /**
+   * Resolve ${VAR_NAME} template variables in a string using process.env.
+   * Fix #4: Throws fatal error on missing env var (fail-to-start principle).
+   */
+  private resolveEnvVars(content: string): string {
+    return content.replace(/\$\{([^}]+)\}/g, (_match, varName: string) => {
+      const value = process.env[varName];
+      if (value === undefined || value === null) {
+        throw new Error(
+          `Required environment variable not set: ${varName}. ` +
+          `Check your .env file or container environment configuration.`,
+        );
+      }
+      return value;
+    });
+  }
+
+  /**
    * Load and validate the YAML config file.
+   * Uses async file I/O to avoid blocking the event loop.
+   * Resolves ${ENV_VAR} templates before Zod validation.
    * Validates against Zod schema — fatal on mismatch in non-production.
    */
   private async loadConfig(): Promise<void> {
     try {
-      const fileContent = fs.readFileSync(this.configPath, 'utf-8');
-      const rawConfig = parseYaml(fileContent) as EndpointConfig;
+      // Fix #7: async file read
+      const rawContent = await fsPromises.readFile(this.configPath, 'utf-8');
+
+      // Fix #2: resolve ${ENV_VAR} template variables
+      const resolvedContent = this.resolveEnvVars(rawContent);
+      const rawConfig = parseYaml(resolvedContent) as EndpointConfig;
 
       // Validate against Zod schema
       const result = ApiEndpointsSchema.safeParse(rawConfig);
@@ -96,10 +129,12 @@ export class EndpointConfigService implements OnModuleInit, OnModuleDestroy {
       }
 
       const validated = result.data;
-      this.config.clear();
+      // Atomic swap: build new map first, then assign — never leave config empty
+      const newConfig = new Map<string, PortEndpointConfig>();
       for (const [key, value] of Object.entries(validated.services)) {
-        this.config.set(key, value);
+        newConfig.set(key, value);
       }
+      this.config = newConfig;
 
       this.logger.log(`Loaded ${this.config.size} endpoint configurations`);
     } catch (error) {

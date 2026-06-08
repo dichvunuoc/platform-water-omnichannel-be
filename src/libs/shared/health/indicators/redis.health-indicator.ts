@@ -2,8 +2,7 @@ import { Injectable, Inject, Logger, Optional } from '@nestjs/common';
 import type { ICacheService } from '../../caching/cache.interface';
 import type { IHealthIndicator, HealthCheckResult } from '../health.interface';
 import { HealthStatus } from '../health.interface';
-
-export const CACHE_SERVICE_TOKEN = Symbol('ICacheService');
+import { CACHE_SERVICE_TOKEN } from '../../../core/constants';
 
 /**
  * Redis Health Indicator

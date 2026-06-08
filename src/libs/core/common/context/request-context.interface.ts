@@ -84,4 +84,18 @@ export interface IRequestContextProvider {
    * @param userId Optional user ID
    */
   create(correlationId?: string, userId?: string): IRequestContext;
+
+  /**
+   * Create context with full options — used by middleware to enrich context
+   * with authentication identity (roles, provider, sessionId) via metadata.
+   *
+   * @param options Full context creation options
+   */
+  createFull(options: {
+    correlationId?: string;
+    causationId?: string;
+    userId?: string;
+    tenantId?: string;
+    metadata?: Record<string, unknown>;
+  }): IRequestContext;
 }

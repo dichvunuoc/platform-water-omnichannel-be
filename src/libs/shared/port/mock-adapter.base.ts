@@ -7,11 +7,12 @@
  * AC: #2 (MOCK_MODE Override), #6 (Contract Validation Gate)
  */
 
-import * as fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import * as path from 'path';
 import { Logger } from '@nestjs/common';
 import type { ZodType } from 'zod';
 import type { IPortAdapter } from './port.interface';
+import { NotFoundException, ValidationException } from '../../core/common/exceptions';
 
 /**
  * Abstract base class for mock adapters.
@@ -39,6 +40,7 @@ export abstract class MockAdapterBase implements IPortAdapter {
 
   /**
    * Execute a mock method — read JSON file, validate against Zod schema.
+   * Fix #7: Uses async fs.promises.readFile to avoid blocking the event loop.
    *
    * AC: #6 — In non-production, Zod validation failure throws fatal error (fail-to-start).
    * In production, logs warning and returns raw data (graceful degradation).
@@ -50,11 +52,13 @@ export abstract class MockAdapterBase implements IPortAdapter {
 
     let rawData: unknown;
     try {
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
+      const fileContent = await fsPromises.readFile(filePath, 'utf-8');
       rawData = JSON.parse(fileContent);
     } catch (error) {
-      throw new Error(
+      throw new NotFoundException(
         `Mock file not found or invalid JSON [${this.portName}/${method}]: ${(error as Error).message}`,
+        'MOCK_FILE_NOT_FOUND',
+        { portName: this.portName, method },
       );
     }
 
@@ -67,7 +71,7 @@ export abstract class MockAdapterBase implements IPortAdapter {
 
         // AC: #6 — Fail-to-start in non-production
         if (process.env.NODE_ENV !== 'production') {
-          throw new Error(errorMsg);
+          throw new ValidationException(errorMsg);
         }
 
         // In production: log warning, return raw data (graceful)

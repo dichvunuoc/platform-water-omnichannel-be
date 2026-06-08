@@ -21,6 +21,12 @@ export interface InternalAdapterConfig {
   baseUrl: string;
   /** Timeout in milliseconds */
   timeout: number;
+  /**
+   * Explicit HTTP method mapping per operation name.
+   * Keys are method names (e.g., 'get-list'), values are HTTP verbs.
+   * Unlisted methods default to POST.
+   */
+  methodMap?: Record<string, 'GET' | 'POST' | 'PUT' | 'DELETE'>;
 }
 
 /**
@@ -31,7 +37,15 @@ export interface InternalAdapterConfig {
  * ```typescript
  * class InvoiceInternalAdapter extends InternalAdapterBase {
  *   constructor(httpClient: PortHttpClient, logger: Logger) {
- *     super('invoice', httpClient, { baseUrl: '...', timeout: 3000 }, logger);
+ *     super('invoice', httpClient, {
+ *       baseUrl: '...',
+ *       timeout: 3000,
+ *       methodMap: {
+ *         'get-list': 'GET',
+ *         'get-detail': 'GET',
+ *         'download': 'GET',
+ *       },
+ *     }, logger);
  *   }
  * }
  * ```
@@ -60,7 +74,7 @@ export abstract class InternalAdapterBase implements IPortAdapter {
    */
   async execute(method: string, params: Record<string, unknown>): Promise<unknown> {
     const url = this.buildUrl(method, params);
-    const httpMethod = this.resolveHttpMethod(method, params);
+    const httpMethod = this.resolveHttpMethod(method);
 
     this.logger.debug(`Calling downstream [${this.portName}/${method}] ${httpMethod} ${url}`);
 
@@ -76,19 +90,39 @@ export abstract class InternalAdapterBase implements IPortAdapter {
 
   /**
    * Build the downstream URL for a method call.
+   * Supports {param} and :param placeholder substitution from params.
    * Override in subclass for custom URL patterns.
+   *
+   * Example:
+   *   baseUrl = 'https://api.example.com/invoices'
+   *   method = '{id}/detail'
+   *   params = { id: 'INV-001' }
+   *   → 'https://api.example.com/invoices/INV-001/detail'
    */
-  protected buildUrl(method: string, _params: Record<string, unknown>): string {
-    // Default: baseUrl/method
-    return `${this.config.baseUrl}/${method}`;
+  protected buildUrl(method: string, params: Record<string, unknown>): string {
+    let url = `${this.config.baseUrl}/${method}`;
+    // Replace {key} or :key placeholders with param values
+    url = url.replace(/\{(\w+)\}|:(\w+)/g, (_match, braceKey?: string, colonKey?: string) => {
+      const key = braceKey || colonKey;
+      if (key && params[key] !== undefined && params[key] !== null) {
+        return encodeURIComponent(String(params[key]));
+      }
+      return _match; // Leave placeholder if no param provided
+    });
+    return url;
   }
 
   /**
-   * Resolve HTTP method from the operation name.
-   * Convention: methods starting with 'get-', 'search', 'list' → GET; others → POST.
-   * Override in subclass for custom mapping.
+   * Fix #6: Resolve HTTP method — explicit map first, then safe defaults.
+   * Checks the methodMap config, falls back to convention, then POST.
    */
-  protected resolveHttpMethod(method: string, _params: Record<string, unknown>): 'GET' | 'POST' | 'PUT' | 'DELETE' {
+  protected resolveHttpMethod(method: string): 'GET' | 'POST' | 'PUT' | 'DELETE' {
+    // 1. Explicit method map from config (highest priority)
+    if (this.config.methodMap?.[method]) {
+      return this.config.methodMap[method];
+    }
+
+    // 2. Safe convention-based defaults for known read operations
     if (method.startsWith('get-') || method.startsWith('search') || method.startsWith('list')) {
       return 'GET';
     }
@@ -98,6 +132,8 @@ export abstract class InternalAdapterBase implements IPortAdapter {
     if (method.startsWith('delete') || method.startsWith('remove') || method.startsWith('cancel')) {
       return 'DELETE';
     }
+
+    // 3. Default: POST for all mutations
     return 'POST';
   }
 }

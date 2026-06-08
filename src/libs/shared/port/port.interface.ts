@@ -58,6 +58,22 @@ export interface PortEntry {
 }
 
 /**
+ * Metadata attached to a PortResult for observability and client hints.
+ *
+ * AC: #2 — cachedAt timestamp on fallback/cached responses.
+ */
+export interface PortResultMetadata {
+  /** ISO timestamp when the data was cached (e.g. "updated at 14:30") */
+  cachedAt?: string;
+  /** True when the response comes from a CB OPEN fallback (degraded state) */
+  degraded?: boolean;
+  /** Human-readable message explaining degraded/fallback state */
+  message?: string;
+  /** True when the response was served from inbound idempotency cache */
+  fromIdempotency?: boolean;
+}
+
+/**
  * Result of a port execution, including metadata about which adapter was used.
  */
 export interface PortResult<T> {
@@ -69,4 +85,6 @@ export interface PortResult<T> {
   fromCache: boolean;
   /** Execution duration in ms */
   duration: number;
+  /** Optional metadata for observability and client hints */
+  metadata?: PortResultMetadata;
 }

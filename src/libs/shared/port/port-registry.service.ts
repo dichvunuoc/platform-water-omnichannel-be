@@ -8,16 +8,20 @@
  * AC: #1 (Port Registry Init), #2 (MOCK_MODE Override), #4 (Zero-Core-Change)
  */
 
-import { Injectable, Inject, Logger } from '@nestjs/common';
-import { CACHE_SERVICE_TOKEN } from '../../core';
+import { Injectable, Inject, Logger, Optional } from '@nestjs/common';
+import { CACHE_SERVICE_TOKEN, REQUEST_CONTEXT_TOKEN } from '../../core';
 import type { ICacheService } from '../caching/cache.interface';
+import type { IRequestContextProvider } from '../../core';
 import { StructuredLogger } from '../observability/structured-logger.service';
 import { EndpointConfigService } from '../endpoint-config/endpoint-config.service';
 import { CircuitBreakerState } from '../resilience/circuit-breaker.state';
 import { CircuitState } from '../resilience/circuit-breaker.decorator';
 import { FallbackProvider } from '../resilience/fallback.provider';
-import type { IPortAdapter, PortConfig, PortEntry, PortResult } from './port.interface';
+import type { IPortAdapter, PortConfig, PortEntry, PortResult, PortResultMetadata } from './port.interface';
 import type { CacheTier } from '../endpoint-config/endpoint-config.interface';
+import { InboundIdempotencyService } from './inbound-idempotency.service';
+import { PortNotRegisteredException, PortFallbackException, PortDownstreamException } from './port-exceptions';
+import { generateShortHash } from '../utils/hash.util';
 
 /**
  * Default cache TTLs by tier (in seconds).
@@ -27,6 +31,26 @@ const DEFAULT_TTL_BY_TIER: Record<CacheTier, number> = {
   dynamic: 900,      // 15 minutes
   transaction: 0,    // No cache
 };
+
+/**
+ * Cache key version prefix. Bumped when the hash algorithm changes
+ * to avoid orphaning old keys during deployment (prevents cache stampede).
+ */
+const CACHE_KEY_VERSION = 'v2';
+
+/**
+ * Shared errorFilter for circuit breakers: only count infrastructure
+ * errors (5xx, timeouts) as CB failures. 4xx client errors do NOT
+ * trip the circuit because they indicate a caller problem, not a
+ * downstream outage.
+ */
+function isInfrastructureError(error: Error): boolean {
+  if (error instanceof PortDownstreamException) {
+    return error.statusCode >= 500;
+  }
+  // Timeouts and unknown errors always count
+  return true;
+}
 
 @Injectable()
 export class PortRegistry {
@@ -40,6 +64,10 @@ export class PortRegistry {
     private readonly cacheService: ICacheService,
     private readonly fallbackProvider: FallbackProvider,
     private readonly structuredLogger: StructuredLogger,
+    @Inject(REQUEST_CONTEXT_TOKEN)
+    private readonly requestContext: IRequestContextProvider,
+    @Optional()
+    private readonly idempotencyService?: InboundIdempotencyService,
   ) {}
 
   /**
@@ -69,6 +97,7 @@ export class PortRegistry {
           resetTimeout: endpointConfig.circuitBreaker?.resetTimeout ?? 10000,
           minRequests: endpointConfig.circuitBreaker?.minRequests ?? 5,
           name,
+          errorFilter: isInfrastructureError,
         },
         active: true,
         ...config,
@@ -78,13 +107,14 @@ export class PortRegistry {
       resolvedConfig = {
         name,
         cacheTier: 'dynamic',
-        cacheTtl: 900,
+        cacheTtl: DEFAULT_TTL_BY_TIER.dynamic,
         timeout: 3000,
         circuitBreaker: {
           errorThreshold: 50,
           resetTimeout: 10000,
           minRequests: 5,
           name,
+          errorFilter: isInfrastructureError,
         },
         active: true,
         ...config,
@@ -96,13 +126,14 @@ export class PortRegistry {
     this.circuitBreakers.set(name, cb);
 
     // Register fallback for this port (cache-based fallback)
-    this.fallbackProvider.register(name, async (error, _context) => {
+    // Fix #3: Throw a distinct error when no cached fallback is available
+    this.fallbackProvider.register(name, async (_error, _context) => {
       const cached = this.fallbackProvider.getCached(name);
-      if (cached) {
+      if (cached !== null && cached !== undefined) {
         this.logger.warn(`Returning cached fallback for port: ${name}`);
         return cached;
       }
-      throw error;
+      throw new PortFallbackException(name);
     });
 
     // Store port entry
@@ -121,42 +152,87 @@ export class PortRegistry {
    * Execute a port call.
    *
    * Flow:
-   * 1. Resolve adapter (MOCK_MODE override → config.adapter → mock/live)
-   * 2. Check cache (skip if transaction tier)
-   * 3. Check circuit breaker state
-   * 4. Execute via adapter
-   * 5. On success: cache result, record CB success
-   * 6. On failure: record CB failure, attempt fallback
+   * 1. Resolve adapter (MOCK_MODE env → YAML adapter field → live)
+   * 2. Check inbound idempotency (if idempotencyKey provided)
+   * 3. Check cache (skip if transaction tier)
+   * 4. Check circuit breaker state
+   * 5. Execute via adapter
+   * 6. On success: cache result, record CB success, store idempotency result
+   * 7. On failure: record CB failure, attempt fallback
    *
-   * AC: #1, #2 (MOCK_MODE override), #4
+   * AC: #1 (CB per-port), #2 (cachedAt timestamp), #7 (inbound idempotency)
    */
   async execute<T = unknown>(
     portName: string,
     method: string,
     params: Record<string, unknown> = {},
+    idempotencyKey?: string,
   ): Promise<PortResult<T>> {
     const startTime = Date.now();
     const entry = this.ports.get(portName);
 
     if (!entry) {
-      throw new Error(`Port not registered: ${portName}`);
+      throw new PortNotRegisteredException(portName);
     }
 
-    // AC: #2 — MOCK_MODE forces mock adapter
-    const useMock = this.configService.isMockMode();
-    const adapter = useMock ? entry.mockAdapter : entry.liveAdapter;
-    const adapterUsed = useMock ? 'mock' as const : 'live' as const;
+    const correlationId = this.getCorrelationId();
 
-    // Check cache (skip for transaction tier)
-    const cacheKey = this.buildCacheKey(portName, method, params);
-    if (entry.config.cacheTier !== 'transaction' && entry.config.cacheTtl > 0) {
-      const cached = await this.cacheService.get<T>(cacheKey);
-      if (cached) {
+    // Three-step priority chain — MOCK_MODE → YAML adapter field → live
+    let adapter: IPortAdapter;
+    let adapterUsed: 'mock' | 'live';
+
+    if (this.configService.isMockMode()) {
+      // Step 1: MOCK_MODE=true forces all ports to mock
+      adapter = entry.mockAdapter;
+      adapterUsed = 'mock';
+    } else if (this.configService.hasEndpointConfig(portName)) {
+      // Step 2: Respect per-service adapter field from YAML
+      const endpointConfig = this.configService.getEndpointConfig(portName);
+      const useMock = endpointConfig.adapter === 'mock';
+      adapter = useMock ? entry.mockAdapter : entry.liveAdapter;
+      adapterUsed = useMock ? 'mock' : 'live';
+    } else {
+      // Step 3: Default to live
+      adapter = entry.liveAdapter;
+      adapterUsed = 'live';
+    }
+
+    // AC: #7 — Check inbound idempotency FIRST (before cache check)
+    if (idempotencyKey && this.idempotencyService) {
+      const idempotencyResult = await this.idempotencyService.check<T>(idempotencyKey);
+      if (idempotencyResult.hit && idempotencyResult.data !== undefined) {
+        this.structuredLogger.info(`Idempotency hit, returning cached result [${portName}]`, {
+          operation: { name: `${portName}:${method}` },
+          trace: { correlationId },
+          data: { idempotencyKey },
+        });
         return {
-          data: cached,
+          data: idempotencyResult.data,
           adapterUsed,
           fromCache: true,
           duration: Date.now() - startTime,
+          metadata: { fromIdempotency: true },
+        };
+      }
+    }
+
+    // Fix #5: Compute cache key ONCE and reuse for both get and set
+    const shouldCache = entry.config.cacheTier !== 'transaction' && entry.config.cacheTtl > 0;
+    let cacheKey: string | undefined;
+
+    if (shouldCache) {
+      cacheKey = this.buildCacheKey(portName, method, params);
+      const cachedEntry = await this.cacheService.get<{ data: T; cachedAt: string }>(cacheKey);
+      // Fix #2: Use strict null check to avoid falsy-zero bug
+      if (cachedEntry !== null && cachedEntry !== undefined) {
+        return {
+          data: cachedEntry.data,
+          adapterUsed,
+          fromCache: true,
+          duration: Date.now() - startTime,
+          metadata: {
+            cachedAt: cachedEntry.cachedAt,
+          },
         };
       }
     }
@@ -167,48 +243,92 @@ export class PortRegistry {
       if (cb.getState() === CircuitState.OPEN) {
         if (cb.shouldAttemptReset()) {
           cb.halfOpen();
+          // AC: #3 — HALF_OPEN probe: allow single probe request
+          this.structuredLogger.debug(`Circuit breaker HALF_OPEN probe [${portName}]`, {
+            operation: { name: `${portName}:${method}` },
+            trace: { correlationId },
+          });
         } else {
-          // Circuit open — try fallback
-          return this.executeFallback<T>(portName, entry, adapterUsed, startTime);
+          // AC: #1, #2 — Circuit open → return fallback with cachedAt metadata
+          const cachedAt = new Date().toISOString();
+          this.structuredLogger.warn(`Circuit breaker OPEN, returning fallback [${portName}]`, {
+            operation: { name: `${portName}:${method}` },
+            trace: { correlationId },
+            data: { cbState: CircuitState.OPEN, cachedAt },
+          });
+          return this.executeFallback<T>(portName, entry, adapterUsed, startTime, null);
         }
       }
     }
 
-    // Execute via adapter
+    // Execute via adapter — only the adapter call is in the CB try/catch.
+    // Post-processing writes (cache, fallback cache, idempotency) are
+    // fire-and-forget so they cannot trip the circuit breaker.
+    let data: T;
+    let duration: number;
+
     try {
-      const data = (await adapter.execute(method, params)) as T;
-      const duration = Date.now() - startTime;
+      data = (await adapter.execute(method, params)) as T;
+      duration = Date.now() - startTime;
 
       // Record circuit breaker success
       cb?.recordSuccess();
-
-      // Cache result (skip for transaction tier)
-      if (entry.config.cacheTier !== 'transaction' && entry.config.cacheTtl > 0) {
-        await this.cacheService.set(cacheKey, data, entry.config.cacheTtl);
-      }
-
-      // Cache for fallback use
-      this.fallbackProvider.setCached(portName, data);
-
-      return {
-        data,
-        adapterUsed,
-        fromCache: false,
-        duration,
-      };
     } catch (error) {
-      // Record circuit breaker failure
-      cb?.recordFailure(error as Error);
+      const originalError = error as Error;
 
-      // Check if circuit should open
+      // Record circuit breaker failure
+      cb?.recordFailure(originalError);
+
+      // AC: #1 — Check if circuit should open
       if (cb?.shouldOpen()) {
         cb.open();
-        this.logger.warn(`Circuit breaker OPENED for port: ${portName}`);
+        this.structuredLogger.error(
+          `Circuit breaker tripped OPEN [${portName}]`,
+          originalError,
+          {
+            operation: { name: `${portName}:${method}`, duration: Date.now() - startTime },
+            trace: { correlationId },
+            data: { cbState: CircuitState.OPEN },
+          },
+        );
       }
 
-      // Attempt fallback
-      return this.executeFallback<T>(portName, entry, adapterUsed, startTime);
+      // Pass original error to fallback for error chain preservation
+      return this.executeFallback<T>(portName, entry, adapterUsed, startTime, originalError);
     }
+
+    // ── Post-processing: fire-and-forget writes (Fix #1) ──────────
+    // These are intentionally outside the adapter try/catch so that
+    // cache/Redis failures do NOT trip the circuit breaker.
+    const cachedAt = new Date().toISOString();
+
+    // Cache result with insertion timestamp (Fix #4)
+    if (shouldCache && cacheKey) {
+      try {
+        await this.cacheService.set(cacheKey, { data, cachedAt }, entry.config.cacheTtl);
+      } catch (cacheError) {
+        this.logger.warn(`Cache write failed for ${portName}: ${(cacheError as Error).message}`);
+      }
+    }
+
+    // Cache for fallback use
+    this.fallbackProvider.setCached(portName, data);
+
+    // AC: #7 — Store idempotency result after successful execution
+    if (idempotencyKey && this.idempotencyService) {
+      try {
+        await this.idempotencyService.store(idempotencyKey, data);
+      } catch (idempotencyError) {
+        this.logger.warn(`Idempotency store failed for ${portName}: ${(idempotencyError as Error).message}`);
+      }
+    }
+
+    return {
+      data,
+      adapterUsed,
+      fromCache: false,
+      duration,
+    };
   }
 
   /**
@@ -240,18 +360,39 @@ export class PortRegistry {
   }
 
   /**
+   * Get all circuit breaker states for health reporting.
+   * Returns port name → { state, metrics } mapping.
+   */
+  getAllCircuitBreakerStates(): Array<{
+    portName: string;
+    state: CircuitState;
+    metrics: { requests: number; failures: number; successRate: number; failureRate: number };
+  }> {
+    return Array.from(this.circuitBreakers.entries()).map(([portName, cb]) => ({
+      portName,
+      state: cb.getState(),
+      metrics: cb.getMetrics(),
+    }));
+  }
+
+  /**
    * Execute fallback when circuit breaker is open or call fails.
+   * Fix #3: Produces distinct error messages for original failure vs fallback failure.
+   * AC: #2 — Adds metadata.degraded and metadata.cachedAt to fallback responses.
    */
   private async executeFallback<T>(
     portName: string,
-    entry: PortEntry,
+    _entry: PortEntry,
     adapterUsed: 'mock' | 'live',
     startTime: number,
+    originalError: Error | null,
   ): Promise<PortResult<T>> {
+    const cachedAt = new Date().toISOString();
+
     try {
       const fallbackData = await this.fallbackProvider.execute(
         portName,
-        new Error(`Circuit breaker open or call failed for ${portName}`),
+        originalError ?? new Error(`Circuit breaker open for ${portName}`),
         {
           operation: portName,
           args: [],
@@ -261,43 +402,48 @@ export class PortRegistry {
         },
       );
 
+      const metadata: PortResultMetadata = {
+        cachedAt,
+        degraded: true,
+        message: 'Service temporarily unavailable, serving cached data',
+      };
+
       return {
         data: fallbackData as T,
         adapterUsed,
         fromCache: true,
         duration: Date.now() - startTime,
+        metadata,
       };
     } catch (fallbackError) {
-      // Fallback also failed — throw original error
-      throw new Error(
-        `Port call and fallback both failed [${portName}]: ${(fallbackError as Error).message}`,
-      );
+      // Preserve original error type via PortFallbackException with cause chain
+      throw new PortFallbackException(portName, originalError ?? (fallbackError as Error));
     }
   }
 
   /**
    * Build cache key for a port call.
-   * Pattern: cache:port:{portName}:{hashOfMethodAndParams}
+   * Uses SHA-256 (16-char truncated) via shared hash utility.
+   * Pattern: cache:v2:port:{portName}:{sha256OfMethodAndParams}
+   *
+   * Fix #8: v2 prefix prevents cache stampede when hash algorithm changes.
    */
   private buildCacheKey(
     portName: string,
     method: string,
     params: Record<string, unknown>,
   ): string {
-    const paramsHash = this.simpleHash(JSON.stringify({ method, params }));
-    return `cache:port:${portName}:${paramsHash}`;
+    const payload = JSON.stringify({ method, params });
+    const hash = generateShortHash(payload);
+    return `cache:${CACHE_KEY_VERSION}:port:${portName}:${hash}`;
   }
 
   /**
-   * Simple string hash function for cache keys.
+   * Get the current correlation ID from request context.
+   * Falls back to 'no-correlation-id' if context is not available.
    */
-  private simpleHash(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
-    }
-    return Math.abs(hash).toString(36);
+  private getCorrelationId(): string {
+    const context = this.requestContext?.current();
+    return context?.correlationId ?? 'no-correlation-id';
   }
 }

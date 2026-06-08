@@ -108,6 +108,7 @@ export class StructuredLogger {
     @Optional()
     @Inject(REQUEST_CONTEXT_TOKEN)
     private readonly requestContext?: IRequestContextProvider,
+    @Optional()
     config?: {
       serviceName?: string;
       serviceVersion?: string;

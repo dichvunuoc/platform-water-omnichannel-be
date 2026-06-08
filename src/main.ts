@@ -25,6 +25,9 @@ async function bootstrap() {
     new FastifyAdapter(),
     {
       bufferLogs: true,
+      // CRITICAL: Disable body parser — better-auth needs raw body access
+      // for webhook signature verification and OAuth flow handling
+      bodyParser: false,
     },
   );
 
@@ -69,9 +72,8 @@ In production, add Bearer token authentication.
     `,
     )
     .setVersion('1.0')
-    .addTag('products', 'Product management endpoints')
-    .addTag('orders', 'Order management endpoints')
     .addTag('health', 'Health check endpoints')
+    .addTag('auth', 'Authentication & user management')
     .addBearerAuth(
       {
         type: 'http',

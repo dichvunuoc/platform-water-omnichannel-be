@@ -39,13 +39,16 @@
     "@opentelemetry/exporter-prometheus": "^0.208.0",
     "@opentelemetry/sdk-node": "^0.208.0",
     "@opentelemetry/semantic-conventions": "^1.38.0",
+    "@thallesp/nestjs-better-auth": "^2.6.1",
     "@types/redis": "^4.0.11",
     "@types/yaml": "^1.9.6",
+    "better-auth": "^1.6.14",
     "chokidar": "^4.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "drizzle-orm": "^0.45.1",
     "fastify": "^5.1.0",
+    "jose": "^6.2.3",
     "nestjs-pino": "^4.5.0",
     "pg": "^8.13.1",
     "pino": "^10.1.0",
@@ -94,6 +97,9 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(jose)/)"
+    ],
     "collectCoverageFrom": [
       "src/**/*.(t|j)s",
       "!src/**/*.spec.ts",
@@ -103,13 +109,15 @@
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^@core$": "<rootDir>/libs/core/index.ts",
-      "^@core/(.*)$": "<rootDir>/libs/core/$1",
+      "^@core$": "<rootDir>/src/libs/core/index.ts",
+      "^@core/(.*)$": "<rootDir>/src/libs/core/$1",
+      "^@shared$": "<rootDir>/src/libs/shared/index.ts",
+      "^@shared/(.*)$": "<rootDir>/src/libs/shared/$1",
       "^@modules/(.*)$": "<rootDir>/src/modules/$1"
     },
     "roots": [
       "<rootDir>/src",
-      "<rootDir>/libs"
+      "<rootDir>/test"
     ]
   }
 }
