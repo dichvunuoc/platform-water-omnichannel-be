@@ -49,26 +49,29 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: My Water Account (FR6–FR9, FR16–FR22)
-  epic-2: backlog
-  2-1-customer-profile-360: backlog
-  2-2-contract-lookup-management: backlog
-  2-3-meter-information-history: backlog
+  epic-2: in-progress
+  2-1-customer-profile-360: done
+  2-2-contract-lookup-management: done
+  2-3-meter-information-history: done
   epic-2-retrospective: optional
 
+  # Cross-Epic Refactoring
+  R-1-session-auth-guard-current-user-decorator: done
+
   # Epic 3: Consumption & Billing (FR23–FR32)
-  epic-3: backlog
-  3-1-consumption-history-charts: backlog
-  3-2-tariff-pricing-display: backlog
-  3-3-invoice-list-detail-download: backlog
+  epic-3: in-progress
+  3-1-consumption-history-charts: done
+  3-2-tariff-pricing-display: done
+  3-3-invoice-list-detail-download: done
   epic-3-retrospective: optional
 
   # Epic 4: Payments & Financial Management (FR33–FR40)
-  epic-4: backlog
-  4-1-payment-initiation-qr-generation: backlog
-  4-2-payment-webhook-confirmation: backlog
-  4-3-payment-history-multi-invoice-payment: backlog
-  4-4-auto-debit-registration: backlog
-  4-5-debt-overview-history: backlog
+  epic-4: in-progress
+  4-1-payment-initiation-qr-generation: done
+  4-2-payment-webhook-confirmation: done
+  4-3-payment-history-multi-invoice-payment: done
+  4-4-auto-debit-registration: done
+  4-5-debt-overview-history: review
   epic-4-retrospective: optional
 
   # Epic 5: Issue Reporting & Self-Service (FR41–FR49, FR58–FR60)

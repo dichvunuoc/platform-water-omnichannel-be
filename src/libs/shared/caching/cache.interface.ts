@@ -16,6 +16,12 @@ export interface ICacheService {
   incr(key: string, by?: number): Promise<number>;
   decr(key: string, by?: number): Promise<number>;
   ttl(key: string): Promise<number>;
+  /**
+   * Delete all keys matching a glob-style pattern.
+   * Pattern uses glob matching (e.g., "cache:v2:port:invoice:*").
+   * Returns the number of keys deleted.
+   */
+  deleteByPattern(pattern: string): Promise<number>;
 }
 
 /**

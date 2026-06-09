@@ -1,0 +1,26 @@
+{
+  "versions": [
+    {
+      "versionId": "VER-003",
+      "versionNumber": 3,
+      "changeDescription": "Cập nhật điều khoản giá — áp dụng giá nước mới theo Nghị định 117/2024",
+      "effectiveDate": "2024-07-01",
+      "changedBy": "Hệ thống tự động"
+    },
+    {
+      "versionId": "VER-002",
+      "versionNumber": 2,
+      "changeDescription": "Điều chỉnh hạn mức nước sinh hoạt: 30m³ → 50m³",
+      "effectiveDate": "2024-04-01",
+      "changedBy": "Trần Thị Mai"
+    },
+    {
+      "versionId": "VER-001",
+      "versionNumber": 1,
+      "changeDescription": "Ký hợp đồng mới — cấp nước sinh hoạt",
+      "effectiveDate": "2024-01-15",
+      "changedBy": "Phòng Kinh doanh"
+    }
+  ],
+  "totalCount": 3
+}

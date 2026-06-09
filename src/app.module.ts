@@ -15,6 +15,11 @@ import {
 import { PortModule } from 'src/libs/shared/port';
 import { AuthPropagationModule, AuthPropagationMiddleware } from 'src/libs/shared/auth-propagation';
 import { AuthModule } from 'src/modules/auth/auth.module';
+import { CustomerModule } from 'src/modules/customer/customer.module';
+import { ContractModule } from 'src/modules/contract/contract.module';
+import { MeterModule } from 'src/modules/meter/meter.module';
+import { BillingModule } from 'src/modules/billing/billing.module';
+import { PaymentModule } from 'src/modules/payment/payment.module';
 
 @Global()
 @Module({
@@ -41,6 +46,16 @@ import { AuthModule } from 'src/modules/auth/auth.module';
     HealthModule,
     // Auth Module — customer registration & multi-provider authentication
     AuthModule,
+    // Customer Module — 360° profile, timeline, related accounts (AC: Epic 2)
+    CustomerModule,
+    // Contract Module — contract lookup, detail, versions, PDF (AC: Epic 2)
+    ContractModule,
+    // Meter Module — meter list, calibration status, replacement history (AC: Epic 2)
+    MeterModule,
+    // Billing Module — tariff plan, breakdown, applicable fees, invoices (AC: Epic 3)
+    BillingModule,
+    // Payment Module — payment initiation, QR generation (AC: Epic 4)
+    PaymentModule,
     // Auth Propagation — JWT signing for BFF→downstream identity propagation
     AuthPropagationModule,
     // Hexagonal Port Registry — centralized downstream service interface (needs AuthPropagationModule)

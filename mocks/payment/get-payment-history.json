@@ -1,0 +1,32 @@
+{
+  "payments": [
+    {
+      "paymentId": "PAY-2026-001",
+      "invoiceIds": ["INV-2026-001"],
+      "amount": 123273,
+      "method": "qr_code",
+      "status": "completed",
+      "createdAt": "2026-06-01T10:00:00Z"
+    },
+    {
+      "paymentId": "PAY-2026-002",
+      "invoiceIds": ["INV-2026-002", "INV-2026-003"],
+      "amount": 245546,
+      "method": "payment_link",
+      "status": "pending",
+      "createdAt": "2026-06-05T14:30:00Z"
+    },
+    {
+      "paymentId": "PAY-2026-003",
+      "invoiceIds": ["INV-2026-004"],
+      "amount": 59730,
+      "method": "bank_transfer",
+      "status": "failed",
+      "createdAt": "2026-06-08T09:15:00Z"
+    }
+  ],
+  "totalCount": 15,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 2
+}

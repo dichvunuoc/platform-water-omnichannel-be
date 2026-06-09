@@ -132,6 +132,21 @@ export class MemoryCacheService implements ICacheService, OnModuleDestroy {
     return remaining > 0 ? remaining : -2;
   }
 
+  async deleteByPattern(pattern: string): Promise<number> {
+    const fullPattern = this.getFullKey(pattern);
+    const regex = this.globToRegex(fullPattern);
+    let deletedCount = 0;
+
+    for (const key of Array.from(this.cache.keys())) {
+      if (regex.test(key)) {
+        this.cache.delete(key);
+        deletedCount++;
+      }
+    }
+
+    return deletedCount;
+  }
+
   getStats() {
     return {
       size: this.cache.size,
@@ -157,5 +172,17 @@ export class MemoryCacheService implements ICacheService, OnModuleDestroy {
         this.cache.delete(key);
       }
     }
+  }
+
+  /**
+   * Convert glob pattern to RegExp.
+   * Supports: * (any chars), ? (single char), [...] (character class).
+   */
+  private globToRegex(pattern: string): RegExp {
+    const escaped = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '.*')
+      .replace(/\?/g, '.');
+    return new RegExp(`^${escaped}$`);
   }
 }

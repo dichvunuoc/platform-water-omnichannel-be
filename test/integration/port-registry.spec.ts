@@ -14,12 +14,16 @@ import { FallbackProvider } from '../../src/libs/shared/resilience/fallback.prov
 import { PortRegistry } from '../../src/libs/shared/port/port-registry.service';
 import { AggregationService } from '../../src/libs/shared/port/aggregation.service';
 import { MockAdapterBase } from '../../src/libs/shared/port/mock-adapter.base';
-import { InvoiceGetListSchema } from '../../config/mock-schemas';
+import { InvoiceGetListSchema, InvoiceGetByIdSchema, InvoiceGetPdfSchema } from '../../config/mock-schemas';
 
-// Concrete invoice mock adapter for integration test
+// Concrete invoice mock adapter for integration test — validates all invoice methods
 class InvoiceMockAdapter extends MockAdapterBase {
   constructor() {
-    super('invoice', { 'get-list': InvoiceGetListSchema });
+    super('invoice', {
+      'get-list': InvoiceGetListSchema,
+      'get-by-id': InvoiceGetByIdSchema,
+      'get-pdf': InvoiceGetPdfSchema,
+    });
   }
 }
 
@@ -91,14 +95,14 @@ describe('Port Registry Integration', () => {
 
   describe('Full flow: load config → register port → execute', () => {
     it('should execute invoice get-list and return validated mock data', async () => {
-      const result = await registry.execute<{ data: any[]; pagination: any }>('invoice', 'get-list', {
+      const result = await registry.execute<{ invoices: any[]; totalCount: number }>('invoice', 'get-list', {
         customerId: 'USR-12345',
       });
 
       expect(result.data).toBeDefined();
-      expect(result.data.data).toBeInstanceOf(Array);
-      expect(result.data.data.length).toBeGreaterThan(0);
-      expect(result.data.pagination).toBeDefined();
+      expect(result.data.invoices).toBeInstanceOf(Array);
+      expect(result.data.invoices.length).toBeGreaterThan(0);
+      expect(result.data.totalCount).toBeGreaterThan(0);
       expect(result.fromCache).toBe(false);
     });
 
@@ -112,14 +116,14 @@ describe('Port Registry Integration', () => {
 
       // Second call: cache hit — cache stores { data, cachedAt } wrapper (Fix #4)
       const cachedData = {
-        data: [{ id: 'INV-CACHED' }],
-        pagination: { page: 1, limit: 10, total: 1, totalPages: 1, hasNext: false, hasPrev: false },
+        invoices: [{ invoiceId: 'INV-CACHED', contractId: 'CTR-001', period: '2026-05', totalAmount: 100000, paymentStatus: 'paid', issueDate: '2026-06-01' }],
+        totalCount: 1, page: 1, limit: 10, totalPages: 1,
       };
       mockCacheService.get.mockResolvedValueOnce({ data: cachedData, cachedAt: '2026-06-05T10:00:00.000Z' });
 
-      const result = await registry.execute<{ data: any[]; pagination: any }>('invoice', 'get-list');
+      const result = await registry.execute<{ invoices: any[]; totalCount: number }>('invoice', 'get-list');
       expect(result.fromCache).toBe(true);
-      expect(result.data.data[0].id).toBe('INV-CACHED');
+      expect(result.data.invoices[0].invoiceId).toBe('INV-CACHED');
     });
   });
 

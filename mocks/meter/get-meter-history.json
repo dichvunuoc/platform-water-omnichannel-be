@@ -1,0 +1,23 @@
+{
+  "entries": [
+    {
+      "eventDate": "2023-06-15",
+      "eventType": "installation",
+      "description": "Đồng hồ nước cơ học DN15 lắp đặt mới tại khu dân cư",
+      "performedBy": "Kỹ sư Nguyễn Văn A"
+    },
+    {
+      "eventDate": "2024-06-15",
+      "eventType": "calibration",
+      "description": "Hiệu chuẩn định kỳ lần 1 — đạt chuẩn Class B",
+      "performedBy": "Trung tâm Kiểm định Đo lường"
+    },
+    {
+      "eventDate": "2024-08-20",
+      "eventType": "replacement",
+      "description": "Thay thế đồng hồ do lỗi bánh răng — chuyển từ cơ học sang siêu âm",
+      "performedBy": "Kỹ sư Trần Văn B"
+    }
+  ],
+  "totalCount": 3
+}

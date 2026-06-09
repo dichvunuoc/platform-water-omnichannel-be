@@ -1,0 +1,20 @@
+{
+  "contractId": "CTR-2024-0001",
+  "address": "123 Nguyễn Văn Linh, Phường Tân Phong, Quận 7, TP. Hồ Chí Minh",
+  "meterId": "DNG-2024-0001",
+  "waterQuota": 50,
+  "subscriptionType": "residential",
+  "status": "active",
+  "startDate": "2024-01-15",
+  "endDate": null,
+  "pricingTerms": {
+    "basePrice": 6500,
+    "currency": "VND",
+    "billingCycle": "monthly"
+  },
+  "specialConditions": [
+    "Giá nước sinh hoạt bậc thang theo Nghị định 117/2024/NĐ-CP",
+    "Phí bảo vệ môi trường: 10% trên hóa đơn",
+    "Thanh toán chậm quá 15 ngày: phí phạt 0.05%/ngày"
+  ]
+}

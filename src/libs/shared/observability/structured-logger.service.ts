@@ -136,7 +136,7 @@ export class StructuredLogger {
         pid: process.pid,
         hostname: require('os').hostname(),
       },
-      // Redact sensitive fields
+      // Redact sensitive fields (AC#2: bankAccount, cardNumber, cvv added for Story 4.4)
       redact: config?.redactKeys || [
         'password',
         'token',
@@ -148,6 +148,10 @@ export class StructuredLogger {
         'user.token',
         'data.password',
         'data.token',
+        'bankAccount',
+        '*.bankAccount',
+        '*.cardNumber',
+        '*.cvv',
       ],
       // Add timestamp
       timestamp: pino.stdTimeFunctions.isoTime,

@@ -1,0 +1,31 @@
+{
+  "contracts": [
+    {
+      "contractId": "CTR-2024-0001",
+      "address": "123 Nguyễn Văn Linh, Phường Tân Phong, Quận 7, TP. Hồ Chí Minh",
+      "meterId": "DNG-2024-0001",
+      "waterQuota": 50,
+      "subscriptionType": "residential",
+      "status": "active",
+      "startDate": "2024-01-15",
+      "endDate": null,
+      "pricingTerms": {
+        "basePrice": 6500,
+        "currency": "VND",
+        "billingCycle": "monthly"
+      }
+    },
+    {
+      "contractId": "CTR-2023-0012",
+      "address": "456 Lê Văn Việt, Phường Hiệp Phú, Quận 9, TP. Hồ Chí Minh",
+      "meterId": "DNG-2023-0012",
+      "waterQuota": null,
+      "subscriptionType": "residential",
+      "status": "expired",
+      "startDate": "2023-03-01",
+      "endDate": "2024-02-28",
+      "pricingTerms": null
+    }
+  ],
+  "totalCount": 2
+}

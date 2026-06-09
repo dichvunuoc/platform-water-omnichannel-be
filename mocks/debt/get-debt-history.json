@@ -1,0 +1,53 @@
+{
+  "entries": [
+    {
+      "invoiceRef": "INV-2025-047",
+      "amount": 298000,
+      "dueDate": "2025-12-01",
+      "paidDate": null,
+      "status": "outstanding",
+      "agingAtPayment": null
+    },
+    {
+      "invoiceRef": "INV-2026-001",
+      "amount": 185637,
+      "dueDate": "2026-03-05",
+      "paidDate": null,
+      "status": "outstanding",
+      "agingAtPayment": null
+    },
+    {
+      "invoiceRef": "INV-2026-002",
+      "amount": 245546,
+      "dueDate": "2026-04-10",
+      "paidDate": null,
+      "status": "outstanding",
+      "agingAtPayment": null
+    },
+    {
+      "invoiceRef": "INV-2026-004",
+      "amount": 123273,
+      "dueDate": "2026-05-15",
+      "paidDate": null,
+      "status": "outstanding",
+      "agingAtPayment": null
+    },
+    {
+      "invoiceRef": "INV-2025-030",
+      "amount": 156000,
+      "dueDate": "2025-10-01",
+      "paidDate": "2025-11-15",
+      "status": "paid",
+      "agingAtPayment": "31-60"
+    },
+    {
+      "invoiceRef": "INV-2025-015",
+      "amount": 89000,
+      "dueDate": "2025-07-01",
+      "paidDate": "2025-07-28",
+      "status": "paid",
+      "agingAtPayment": "current"
+    }
+  ],
+  "totalCount": 6
+}

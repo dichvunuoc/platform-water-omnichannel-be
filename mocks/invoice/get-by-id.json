@@ -1,0 +1,42 @@
+{
+  "invoiceId": "INV-2026-001",
+  "contractId": "CTR-2024-0001",
+  "period": "2026-05",
+  "lineItems": [
+    {
+      "description": "Tiêu thụ nước sinh hoạt (bậc 1: 0-10m³)",
+      "volume": 10,
+      "unitPrice": 5973,
+      "amount": 59730
+    },
+    {
+      "description": "Tiêu thụ nước sinh hoạt (bậc 2: 10-20m³)",
+      "volume": 5.5,
+      "unitPrice": 7052,
+      "amount": 38786
+    },
+    {
+      "description": "Phí bảo vệ môi trường (10%)",
+      "volume": 15.5,
+      "unitPrice": 597.3,
+      "amount": 9258
+    },
+    {
+      "description": "Phí thoát nước (5%)",
+      "volume": 15.5,
+      "unitPrice": 298.65,
+      "amount": 4629
+    }
+  ],
+  "subtotal": 112403,
+  "fees": [
+    { "feeName": "Phụ phí vùng sâu vùng xa", "amount": 5000 },
+    { "feeName": "Thuế GTGT (5%)", "amount": 5870 }
+  ],
+  "totalAmount": 123273,
+  "paymentStatus": "unpaid",
+  "cqtCode": "CQT-2026-00001-HĐT",
+  "lookupCode": "F33/2026/ABCDEF123",
+  "issueDate": "2026-06-01T00:00:00Z",
+  "dueDate": "2026-06-15T00:00:00Z"
+}

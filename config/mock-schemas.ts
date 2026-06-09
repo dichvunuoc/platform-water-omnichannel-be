@@ -13,40 +13,53 @@ import { z } from 'zod';
 // Invoice Schemas
 // =============================================================================
 
-export const InvoiceItemSchema = z.object({
-  description: z.string(),
-  quantity: z.number(),
-  unitPrice: z.number().nonnegative(),
-  amount: z.number().nonnegative(),
-});
-
-export const InvoiceSchema = z.object({
-  id: z.string(),
+export const InvoiceListItemSchema = z.object({
+  invoiceId: z.string(),
   contractId: z.string(),
-  customerId: z.string(),
   period: z.string(),
-  issueDate: z.string(),
-  dueDate: z.string(),
   totalAmount: z.number().nonnegative(),
-  currency: z.string(),
-  status: z.enum(['paid', 'unpaid', 'overdue', 'cancelled']),
-  paidDate: z.string().optional(),
-  waterUsage: z.number().nonnegative(),
-  items: z.array(InvoiceItemSchema),
-});
-
-export const PaginationSchema = z.object({
-  page: z.number().int().positive(),
-  limit: z.number().int().positive(),
-  total: z.number().int().nonnegative(),
-  totalPages: z.number().int().nonnegative(),
-  hasNext: z.boolean(),
-  hasPrev: z.boolean(),
+  paymentStatus: z.enum(['paid', 'unpaid', 'overdue', 'cancelled']),
+  issueDate: z.string(),
+  dueDate: z.string().optional(),
 });
 
 export const InvoiceGetListSchema = z.object({
-  data: z.array(InvoiceSchema),
-  pagination: PaginationSchema,
+  invoices: z.array(InvoiceListItemSchema),
+  totalCount: z.number(),
+  page: z.number().int().positive(),
+  limit: z.number().int().positive(),
+  totalPages: z.number(),
+});
+
+export const InvoiceGetByIdSchema = z.object({
+  invoiceId: z.string(),
+  contractId: z.string(),
+  period: z.string(),
+  lineItems: z.array(z.object({
+    description: z.string(),
+    volume: z.number().nonnegative(),
+    unitPrice: z.number().nonnegative(),
+    amount: z.number().nonnegative(),
+  })),
+  subtotal: z.number().nonnegative(),
+  fees: z.array(z.object({
+    feeName: z.string(),
+    amount: z.number().nonnegative(),
+  })),
+  totalAmount: z.number().nonnegative(),
+  paymentStatus: z.enum(['paid', 'unpaid', 'overdue', 'cancelled']),
+  cqtCode: z.string().nullable(),
+  lookupCode: z.string().nullable(),
+  issueDate: z.string(),
+  dueDate: z.string().optional(),
+});
+
+export const InvoiceGetPdfSchema = z.object({
+  invoiceId: z.string(),
+  pdfUrl: z.string().url(),
+  cqtCode: z.string(),
+  lookupCode: z.string(),
+  digitalSignature: z.string(),
 });
 
 // =============================================================================
@@ -56,5 +69,7 @@ export const InvoiceGetListSchema = z.object({
 export const MOCK_SCHEMAS: Record<string, Record<string, z.ZodType<unknown>>> = {
   invoice: {
     'get-list': InvoiceGetListSchema,
+    'get-by-id': InvoiceGetByIdSchema,
+    'get-pdf': InvoiceGetPdfSchema,
   },
 };

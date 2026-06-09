@@ -1,0 +1,75 @@
+{
+  "entries": [
+    {
+      "eventType": "contract_signed",
+      "timestamp": "2024-01-15T09:30:00.000Z",
+      "summary": "Hợp đồng cấp nước SH-2024-0001 được ký kết",
+      "channel": "counter",
+      "referenceId": "CONTRACT-2024-0001"
+    },
+    {
+      "eventType": "meter_installed",
+      "timestamp": "2024-01-20T14:00:00.000Z",
+      "summary": "Đồng hồ nước DNG-2024-0001 được lắp đặt",
+      "channel": null,
+      "referenceId": "METER-2024-0001"
+    },
+    {
+      "eventType": "reading_recorded",
+      "timestamp": "2024-02-01T08:00:00.000Z",
+      "summary": "Chỉ số đồng hồ: 125 m³",
+      "channel": null,
+      "referenceId": "READING-2024-02"
+    },
+    {
+      "eventType": "invoice_issued",
+      "timestamp": "2024-02-05T10:00:00.000Z",
+      "summary": "Hóa đơn INV-2024-02-0001 phát hành — 350,000 VNĐ",
+      "channel": null,
+      "referenceId": "INV-2024-02-0001"
+    },
+    {
+      "eventType": "payment_received",
+      "timestamp": "2024-02-10T16:30:00.000Z",
+      "summary": "Thanh toán 350,000 VNĐ qua QR code",
+      "channel": "web",
+      "referenceId": "PAY-2024-02-0001"
+    },
+    {
+      "eventType": "complaint_submitted",
+      "timestamp": "2024-03-15T11:00:00.000Z",
+      "summary": "Phản ánh áp lực nước yếu tại khu vực",
+      "channel": "hotline",
+      "referenceId": "TK-2024-03-0001"
+    },
+    {
+      "eventType": "complaint_resolved",
+      "timestamp": "2024-03-18T15:00:00.000Z",
+      "summary": "Sự cố áp lực nước đã được khắc phục",
+      "channel": "zalo",
+      "referenceId": "TK-2024-03-0001"
+    },
+    {
+      "eventType": "reading_recorded",
+      "timestamp": "2024-03-01T08:00:00.000Z",
+      "summary": "Chỉ số đồng hồ: 248 m³",
+      "channel": null,
+      "referenceId": "READING-2024-03"
+    },
+    {
+      "eventType": "invoice_issued",
+      "timestamp": "2024-03-05T10:00:00.000Z",
+      "summary": "Hóa đơn INV-2024-03-0001 phát hành — 420,000 VNĐ",
+      "channel": null,
+      "referenceId": "INV-2024-03-0001"
+    },
+    {
+      "eventType": "payment_received",
+      "timestamp": "2024-03-12T09:15:00.000Z",
+      "summary": "Thanh toán 420,000 VNĐ qua chuyển khoản",
+      "channel": "counter",
+      "referenceId": "PAY-2024-03-0001"
+    }
+  ],
+  "totalCount": 10
+}

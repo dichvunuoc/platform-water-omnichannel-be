@@ -1,5 +1,6 @@
 import { Module, Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import {
   DATABASE_WRITE_TOKEN,
 } from '@core/constants/tokens';
@@ -16,6 +17,7 @@ import { PiiEncryptionService } from './infrastructure/persistence/encryption/pi
 import { MockAuthAdapter } from './infrastructure/ports/auth.port';
 import { ZaloOAuthProvider } from './infrastructure/oauth/zalo-oauth.provider';
 import { createBetterAuth } from './infrastructure/better-auth/better-auth.setup';
+import { SessionAuthGuard } from './infrastructure/guards/session-auth.guard';
 
 /**
  * Auth Module
@@ -54,6 +56,14 @@ import { createBetterAuth } from './infrastructure/better-auth/better-auth.setup
         return createBetterAuth(db, configService);
       },
       inject: [DATABASE_WRITE_TOKEN, ConfigService],
+    },
+
+    // SessionAuthGuard — registered as global APP_GUARD so every endpoint
+    // is authenticated by default. Use @Public() to bypass on specific routes.
+    SessionAuthGuard,
+    {
+      provide: APP_GUARD,
+      useExisting: SessionAuthGuard,
     },
   ],
   exports: [

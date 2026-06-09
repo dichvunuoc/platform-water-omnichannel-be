@@ -1,0 +1,17 @@
+{
+  "readings": [
+    { "month": "2025-06", "volume": 22, "readingDate": "2025-06-30" },
+    { "month": "2025-05", "volume": 18, "readingDate": "2025-05-31" },
+    { "month": "2025-04", "volume": 20, "readingDate": "2025-04-30" },
+    { "month": "2025-03", "volume": 15, "readingDate": "2025-03-31" },
+    { "month": "2025-02", "volume": 12, "readingDate": "2025-02-28" },
+    { "month": "2025-01", "volume": 14, "readingDate": "2025-01-31" },
+    { "month": "2024-12", "volume": 16, "readingDate": "2024-12-31" },
+    { "month": "2024-11", "volume": 18, "readingDate": "2024-11-30" },
+    { "month": "2024-10", "volume": 20, "readingDate": "2024-10-31" },
+    { "month": "2024-09", "volume": 24, "readingDate": "2024-09-30" },
+    { "month": "2024-08", "volume": 28, "readingDate": "2024-08-31" },
+    { "month": "2024-07", "volume": 30, "readingDate": "2024-07-31" }
+  ],
+  "totalCount": 12
+}

@@ -1,0 +1,24 @@
+{
+  "contractId": "CTR-2024-0001",
+  "fees": [
+    {
+      "feeType": "environmental",
+      "feeName": "Phí bảo vệ môi trường",
+      "rate": 10,
+      "isPercentage": true
+    },
+    {
+      "feeType": "drainage",
+      "feeName": "Phí thoát nước",
+      "rate": 5,
+      "isPercentage": true
+    },
+    {
+      "feeType": "surcharge",
+      "feeName": "Phụ phí vùng sâu vùng xa",
+      "rate": 5000,
+      "isPercentage": false
+    }
+  ],
+  "vatPercentage": 5
+}

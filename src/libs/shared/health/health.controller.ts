@@ -7,11 +7,14 @@ import {
 } from '@nestjs/common';
 import { HealthService } from './health.service';
 import { HealthStatus, type HealthCheckResponse } from './health.interface';
+import { Public } from '@modules/auth/infrastructure/decorators/public.decorator';
 
 /**
  * Health Check Controller
- * Provides health check endpoints for monitoring and load balancers
+ * Provides health check endpoints for monitoring and load balancers.
+ * @Public() — health checks must bypass SessionAuthGuard (load balancers, k8s probes have no session).
  */
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}

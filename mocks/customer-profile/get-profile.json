@@ -1,0 +1,18 @@
+{
+  "customerId": "USR-20240101-0001",
+  "fullName": "Nguyễn Anh Tuấn",
+  "classification": "sinh_hoat",
+  "address": {
+    "street": "123 Nguyễn Văn Linh",
+    "ward": "Phường Tân Phong",
+    "district": "Quận 7",
+    "city": "TP. Hồ Chí Minh",
+    "fullAddress": "123 Nguyễn Văn Linh, Phường Tân Phong, Quận 7, TP. Hồ Chí Minh"
+  },
+  "contactInfo": {
+    "phone": "0901234567",
+    "email": "anh.tuan.nguyen@email.com",
+    "contactAddress": "123 Nguyễn Văn Linh, Phường Tân Phong, Quận 7, TP. Hồ Chí Minh"
+  },
+  "status": "active"
+}

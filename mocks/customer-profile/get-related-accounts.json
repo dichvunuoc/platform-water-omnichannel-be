@@ -1,0 +1,44 @@
+{
+  "accounts": [
+    {
+      "customerId": "USR-20240101-0100",
+      "name": "KCN Tân Thuận (Trạm chính)",
+      "relationshipType": "parent_kcn",
+      "address": "KCN Tân Thuận, Quận 7, TP. Hồ Chí Minh",
+      "contactInfo": {
+        "phone": "028-12345678",
+        "email": "admin@kcntanthuan.vn"
+      }
+    },
+    {
+      "customerId": "USR-20240101-0101",
+      "name": "Nhà máy ABC Vina",
+      "relationshipType": "member_factory",
+      "address": "Lô A1, KCN Tân Thuận, Quận 7, TP. Hồ Chí Minh",
+      "contactInfo": {
+        "phone": "028-98765432",
+        "email": "factory@abcvina.vn"
+      }
+    },
+    {
+      "customerId": "USR-20240101-0102",
+      "name": "Nhà máy DEF Industries",
+      "relationshipType": "member_factory",
+      "address": "Lô B5, KCN Tân Thuận, Quận 7, TP. Hồ Chí Minh",
+      "contactInfo": {
+        "phone": "028-11112222",
+        "email": "ops@defind.vn"
+      }
+    },
+    {
+      "customerId": "USR-20240101-0103",
+      "name": "Trần Thị Mai (Người liên hệ phụ)",
+      "relationshipType": "auxiliary_contact",
+      "address": null,
+      "contactInfo": {
+        "phone": "090-8888999",
+        "email": "mai.tran@email.com"
+      }
+    }
+  ]
+}

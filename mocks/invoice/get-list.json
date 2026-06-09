@@ -1,83 +1,35 @@
 {
-  "data": [
+  "invoices": [
     {
-      "id": "INV-2026-001",
-      "contractId": "CTR-2024-000123",
-      "customerId": "USR-12345",
+      "invoiceId": "INV-2026-001",
+      "contractId": "CTR-2024-0001",
       "period": "2026-05",
+      "totalAmount": 123273,
+      "paymentStatus": "unpaid",
       "issueDate": "2026-06-01T00:00:00Z",
-      "dueDate": "2026-06-15T00:00:00Z",
-      "totalAmount": 285000,
-      "currency": "VND",
-      "status": "unpaid",
-      "waterUsage": 15.5,
-      "items": [
-        {
-          "description": "Tiêu thụ nước sinh hoạt (bậc 1)",
-          "quantity": 10,
-          "unitPrice": 12000,
-          "amount": 120000
-        },
-        {
-          "description": "Tiêu thụ nước sinh hoạt (bậc 2)",
-          "quantity": 5.5,
-          "unitPrice": 15000,
-          "amount": 82500
-        },
-        {
-          "description": "Phí bảo vệ nguồn nước",
-          "quantity": 15.5,
-          "unitPrice": 2000,
-          "amount": 31000
-        },
-        {
-          "description": "Thuế GTGT (5%)",
-          "quantity": 1,
-          "unitPrice": 233500,
-          "amount": 11675
-        }
-      ]
+      "dueDate": "2026-06-15T00:00:00Z"
     },
     {
-      "id": "INV-2026-002",
-      "contractId": "CTR-2024-000123",
-      "customerId": "USR-12345",
+      "invoiceId": "INV-2026-002",
+      "contractId": "CTR-2024-0001",
       "period": "2026-04",
-      "issueDate": "2026-05-01T00:00:00Z",
-      "dueDate": "2026-05-15T00:00:00Z",
       "totalAmount": 198000,
-      "currency": "VND",
-      "status": "paid",
-      "paidDate": "2026-05-10T14:30:00Z",
-      "waterUsage": 10.2,
-      "items": [
-        {
-          "description": "Tiêu thụ nước sinh hoạt (bậc 1)",
-          "quantity": 10.2,
-          "unitPrice": 12000,
-          "amount": 122400
-        },
-        {
-          "description": "Phí bảo vệ nguồn nước",
-          "quantity": 10.2,
-          "unitPrice": 2000,
-          "amount": 20400
-        },
-        {
-          "description": "Thuế GTGT (5%)",
-          "quantity": 1,
-          "unitPrice": 142800,
-          "amount": 7140
-        }
-      ]
+      "paymentStatus": "paid",
+      "issueDate": "2026-05-01T00:00:00Z",
+      "dueDate": "2026-05-15T00:00:00Z"
+    },
+    {
+      "invoiceId": "INV-2026-003",
+      "contractId": "CTR-2024-0001",
+      "period": "2026-03",
+      "totalAmount": 312000,
+      "paymentStatus": "overdue",
+      "issueDate": "2026-04-01T00:00:00Z",
+      "dueDate": "2026-04-15T00:00:00Z"
     }
   ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 2,
-    "totalPages": 1,
-    "hasNext": false,
-    "hasPrev": false
-  }
+  "totalCount": 3,
+  "page": 1,
+  "limit": 10,
+  "totalPages": 1
 }

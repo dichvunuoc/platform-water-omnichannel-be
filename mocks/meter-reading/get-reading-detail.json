@@ -1,0 +1,18 @@
+{
+  "period": "2025-06",
+  "previousIndex": 1247,
+  "currentIndex": 1269,
+  "volume": 22,
+  "evidencePhotos": [
+    {
+      "url": "https://storage.ioc.local/photos/meter/DNG-2024-0001/2025-06-30-001.jpg",
+      "caption": "Chỉ số đồng hồ nước — cuối kỳ",
+      "takenAt": "2025-06-30T09:15:00.000Z"
+    },
+    {
+      "url": "https://storage.ioc.local/photos/meter/DNG-2024-0001/2025-06-30-002.jpg",
+      "caption": "Toàn cảnh vị trí đồng hồ",
+      "takenAt": "2025-06-30T09:16:00.000Z"
+    }
+  ]
+}

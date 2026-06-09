@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { BETTER_AUTH_INSTANCE_TOKEN } from '../../constants/tokens';
 import type { BetterAuthInstance } from './better-auth.setup';
+import { Public } from '../decorators/public.decorator';
 
 /**
  * Better Auth Controller
@@ -12,7 +13,11 @@ import type { BetterAuthInstance } from './better-auth.setup';
  *
  * CRITICAL: Requires bodyParser: false in main.ts
  * better-auth needs raw body access for signature verification.
+ *
+ * @Public() — all better-auth routes must bypass SessionAuthGuard.
+ * Login, OTP verification, and OAuth callbacks have no session yet.
  */
+@Public()
 @ApiTags('BetterAuth')
 @Controller('api/auth')
 export class BetterAuthController {

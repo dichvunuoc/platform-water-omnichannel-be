@@ -130,6 +130,26 @@ export class RedisCacheService
     }
   }
 
+  async deleteByPattern(pattern: string): Promise<number> {
+    try {
+      const fullPattern = this.getFullKey(pattern);
+      const keys = await this.redis.keys(fullPattern);
+      if (keys.length === 0) return 0;
+
+      await this.redis.del(keys);
+      this.logger.log(
+        `Deleted ${keys.length} keys matching pattern: ${pattern}`,
+      );
+      return keys.length;
+    } catch (error) {
+      this.logger.error(
+        `Failed to delete keys by pattern: ${pattern}`,
+        error,
+      );
+      throw error;
+    }
+  }
+
   async clear(): Promise<void> {
     try {
       if (this.keyPrefix) {

@@ -1,0 +1,14 @@
+{
+  "planId": "TARIFF-RES-2025-001",
+  "planName": "Bậc thang sinh hoạt",
+  "customerType": "residential",
+  "applicableContractId": "CTR-2024-0001",
+  "tiers": [
+    { "tier": 1, "fromVolume": 0, "toVolume": 10, "pricePerM3": 5973 },
+    { "tier": 2, "fromVolume": 10, "toVolume": 20, "pricePerM3": 7052 },
+    { "tier": 3, "fromVolume": 20, "toVolume": 30, "pricePerM3": 8669 },
+    { "tier": 4, "fromVolume": 30, "toVolume": null, "pricePerM3": 15929 }
+  ],
+  "effectiveFrom": "2025-01-01",
+  "effectiveTo": null
+}

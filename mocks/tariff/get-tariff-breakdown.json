@@ -1,0 +1,10 @@
+{
+  "invoiceId": "INV-2025-06-001",
+  "contractId": "CTR-2024-0001",
+  "tiers": [
+    { "tier": 1, "fromVolume": 0, "toVolume": 10, "volume": 10, "pricePerM3": 5973, "subtotal": 59730 },
+    { "tier": 2, "fromVolume": 10, "toVolume": 20, "volume": 10, "pricePerM3": 7052, "subtotal": 70520 },
+    { "tier": 3, "fromVolume": 20, "toVolume": 30, "volume": 2, "pricePerM3": 8669, "subtotal": 17338 }
+  ],
+  "totalBeforeFees": 147588
+}

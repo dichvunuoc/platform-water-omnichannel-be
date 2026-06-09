@@ -1,0 +1,35 @@
+{
+  "meters": [
+    {
+      "meterId": "MT-001",
+      "serialNumber": "SN-2024-00123",
+      "type": "mechanical",
+      "diameter": "DN15",
+      "accuracyClass": "Class B",
+      "manufactureYear": 2023,
+      "installationDate": "2023-06-15",
+      "status": "active"
+    },
+    {
+      "meterId": "MT-002",
+      "serialNumber": "SN-2024-00456",
+      "type": "ultrasonic",
+      "diameter": "DN20",
+      "accuracyClass": "Class C",
+      "manufactureYear": 2024,
+      "installationDate": "2024-01-10",
+      "status": "active"
+    },
+    {
+      "meterId": "MT-003",
+      "serialNumber": "SN-2022-00789",
+      "type": "electromagnetic",
+      "diameter": "DN50",
+      "accuracyClass": "Class C",
+      "manufactureYear": 2022,
+      "installationDate": "2022-03-20",
+      "status": "active"
+    }
+  ],
+  "totalCount": 3
+}

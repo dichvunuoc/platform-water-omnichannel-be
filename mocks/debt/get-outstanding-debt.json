@@ -1,0 +1,40 @@
+{
+  "totalAmount": 852456,
+  "agingBreakdown": {
+    "current": 123273,
+    "31-60": 245546,
+    "61-90": 185637,
+    ">90": 298000
+  },
+  "debts": [
+    {
+      "invoiceRef": "INV-2026-004",
+      "amount": 123273,
+      "dueDate": "2026-05-15",
+      "daysOverdue": 25,
+      "agingBucket": "current"
+    },
+    {
+      "invoiceRef": "INV-2026-002",
+      "amount": 245546,
+      "dueDate": "2026-04-10",
+      "daysOverdue": 60,
+      "agingBucket": "31-60"
+    },
+    {
+      "invoiceRef": "INV-2026-001",
+      "amount": 185637,
+      "dueDate": "2026-03-05",
+      "daysOverdue": 96,
+      "agingBucket": "61-90"
+    },
+    {
+      "invoiceRef": "INV-2025-047",
+      "amount": 298000,
+      "dueDate": "2025-12-01",
+      "daysOverdue": 190,
+      "agingBucket": ">90"
+    }
+  ],
+  "totalCount": 4
+}

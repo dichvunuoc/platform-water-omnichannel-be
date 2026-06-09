@@ -67,6 +67,6 @@ import { MemoryCacheService } from '../caching/memory-cache.service';
       inject: [ConfigService],
     },
   ],
-  exports: [PortRegistry, PortHttpClient, AggregationService, InboundIdempotencyService],
+  exports: [PortRegistry, PortHttpClient, AggregationService, InboundIdempotencyService, CACHE_SERVICE_TOKEN],
 })
 export class PortModule {}

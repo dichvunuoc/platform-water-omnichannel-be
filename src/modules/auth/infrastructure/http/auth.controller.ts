@@ -3,7 +3,6 @@ import {
   Post,
   Get,
   Body,
-  Req,
   Inject,
   Logger,
   HttpCode,
@@ -16,9 +15,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import type { FastifyRequest } from 'fastify';
 import { PortHttpClient } from '@shared/port/port-http-client.service';
-import { UnauthorizedException } from '@core/common';
 import {
   RegisterPhoneSchema,
 } from '../../application/dtos/register-phone.dto';
@@ -28,8 +25,8 @@ import {
   VerifyOtpSchema,
 } from '../../application/dtos/register-provider.dto';
 import { ValidationException } from '@core/common';
-import { BETTER_AUTH_INSTANCE_TOKEN } from '../../constants/tokens';
-import type { BetterAuthInstance } from '../../infrastructure/better-auth/better-auth.setup';
+import { CurrentUser } from '../decorators/current-user.decorator';
+import { Public } from '../decorators/public.decorator';
 import {
   SwaggerRegisterPhoneDto,
   SwaggerVerifyOtpDto,
@@ -65,39 +62,8 @@ export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
   constructor(
-    @Inject(BETTER_AUTH_INSTANCE_TOKEN)
-    private readonly authInstance: BetterAuthInstance,
     private readonly portHttpClient: PortHttpClient,
   ) {}
-
-  /**
-   * Extract authenticated user ID from the better-auth session.
-   * Throws UnauthorizedException if no valid session found.
-   */
-  private async getAuthenticatedUserId(request: FastifyRequest): Promise<string> {
-    try {
-      const api = (this.authInstance as Record<string, unknown>)?.api as Record<string, unknown> | undefined;
-      const getSessionFn = api?.getSession as ((opts: { headers: Record<string, string | string[] | undefined> }) => Promise<unknown>) | undefined;
-      const session = await getSessionFn?.({
-          headers: request.headers,
-        });
-
-      if (!session || typeof session !== 'object') {
-        throw UnauthorizedException.missingToken();
-      }
-
-      const sessionData = session as { user?: { id?: string } };
-      if (!sessionData.user?.id) {
-        throw UnauthorizedException.missingToken();
-      }
-
-      return sessionData.user.id;
-    } catch (error) {
-      if (error instanceof UnauthorizedException) throw error;
-      this.logger.warn('Failed to extract session from request');
-      throw UnauthorizedException.invalidToken('Session verification failed');
-    }
-  }
 
   /**
    * POST /auth/register-phone
@@ -105,6 +71,7 @@ export class AuthController {
    * NOTE: OTP is sent via better-auth's phoneNumber plugin.
    * AC#1
    */
+  @Public()
   @Post('register-phone')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Register / login with phone number — sends OTP' })
@@ -133,6 +100,7 @@ export class AuthController {
    *       → sync customer to Backend API
    * AC#1
    */
+  @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify OTP code for phone registration/login' })
@@ -166,6 +134,7 @@ export class AuthController {
    * and syncs to Backend API.
    * AC#2, AC#3
    */
+  @Public()
   @Post('provider/callback')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Handle OAuth provider callback (Zalo, Google, Facebook, Apple)' })
@@ -211,10 +180,9 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Authentication required' })
   @ApiResponse({ status: 400, description: 'Validation error' })
   async linkProvider(
-    @Req() request: FastifyRequest,
+    @CurrentUser('id') userId: string,
     @Body() body: LinkProviderDto,
   ) {
-    const userId = await this.getAuthenticatedUserId(request);
 
     const parsed = LinkProviderSchema.safeParse(body);
     if (!parsed.success) {
@@ -244,8 +212,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current authenticated user profile' })
   @ApiResponse({ status: 200, type: SwaggerAuthResponseDto })
   @ApiResponse({ status: 401, description: 'Authentication required' })
-  async getMe(@Req() request: FastifyRequest) {
-    const userId = await this.getAuthenticatedUserId(request);
+  async getMe(@CurrentUser('id') userId: string) {
 
     // TODO: When Backend API is available:
     // return this.portHttpClient.request({

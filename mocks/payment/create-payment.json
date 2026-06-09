@@ -1,0 +1,11 @@
+{
+  "paymentId": "PAY-2026-001",
+  "invoiceId": "INV-2026-001",
+  "amount": 123273,
+  "method": "qr_code",
+  "qrCodeUrl": "https://pay.ioc.local/qr/PAY-2026-001",
+  "paymentLink": null,
+  "status": "pending",
+  "expiresAt": "2026-06-09T10:00:00Z",
+  "createdAt": "2026-06-09T09:00:00Z"
+}
