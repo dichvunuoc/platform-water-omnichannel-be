@@ -1,12 +1,38 @@
+# Dependencies & build artifacts (must be reinstalled inside the image)
 node_modules
 dist
 build
+
+# Version control & editor config
 .git
+.gitignore
 .vscode
+.idea
+.claude
+
+# Secrets — glob `.env*` catches .env, .env.local, .env.docker.compose, etc.
+# Inject via env_file / runtime secrets instead of baking into the image.
+.env*
+
+# Logs & test/coverage output
 *.log
-.env
-nest-app
-nest-app-binary
-docker-compose.yml
+coverage
+test
+*.spec.ts
+*.integration.ts
+
+# Docker files (not needed inside the image)
+docker-compose*.yml
 Dockerfile
 .dockerignore
+
+# Local pre-built binaries (avoid clobbering the freshly compiled one)
+nest-app
+nest-app-binary
+
+# Docs & BMAD/planning artifacts (large, irrelevant at runtime)
+*.md
+docs
+_bmad
+_bmad-output
+monitoring
