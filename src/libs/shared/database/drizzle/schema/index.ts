@@ -22,6 +22,8 @@ import {
 
 import { sessionsTable } from '@modules/auth/infrastructure/persistence/drizzle/schema/session.schema';
 
+import { verificationTable } from '@modules/auth/infrastructure/persistence/drizzle/schema/verification.schema';
+
 export const schema = {
   outboxTable,
   outboxStatusEnum,
@@ -32,4 +34,5 @@ export const schema = {
   providerLinksTable,
   providerTypeEnum,
   sessionsTable,
+  verificationTable,
 };

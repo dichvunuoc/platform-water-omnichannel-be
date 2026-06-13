@@ -1,6 +1,7 @@
 import { Module, Global, DynamicModule, Provider } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseService } from './database.service';
+import { DatabaseMigrationService } from './migration/database-migration.service';
 import {
   DATABASE_READ_TOKEN,
   DATABASE_WRITE_TOKEN,
@@ -46,6 +47,8 @@ export class DrizzleDatabaseModule {
   ): DynamicModule {
     const providers: Provider[] = [
       DatabaseService,
+      // Auto-migration on startup — runs pending Drizzle migrations before app serves traffic
+      DatabaseMigrationService,
       createDrizzleProvider(
         DATABASE_WRITE_TOKEN,
         'WRITE',

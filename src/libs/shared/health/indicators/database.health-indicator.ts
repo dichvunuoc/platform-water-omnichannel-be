@@ -1,14 +1,12 @@
-import { Injectable, Inject, Logger, Optional } from '@nestjs/common';
-import { Pool } from 'pg';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import type { IHealthIndicator, HealthCheckResult } from '../health.interface';
 import { HealthStatus } from '../health.interface';
-import { DATABASE_WRITE_TOKEN } from '../../database/drizzle/database.provider';
-
-export const DATABASE_POOL_TOKEN = Symbol('DATABASE_POOL');
+import { DatabaseService } from '../../database/drizzle/database.service';
 
 /**
  * Database Health Indicator
- * Checks PostgreSQL database connection health
+ * Checks PostgreSQL database connection health via DatabaseService.
+ * Uses the WRITE pool for health checks.
  */
 @Injectable()
 export class DatabaseHealthIndicator implements IHealthIndicator {
@@ -16,15 +14,14 @@ export class DatabaseHealthIndicator implements IHealthIndicator {
 
   constructor(
     @Optional()
-    @Inject(DATABASE_POOL_TOKEN)
-    private readonly pool?: Pool,
+    private readonly databaseService?: DatabaseService,
   ) {}
 
   async check(): Promise<HealthCheckResult> {
-    if (!this.pool) {
+    if (!this.databaseService) {
       return {
         status: HealthStatus.DEGRADED,
-        message: 'Database pool is not configured',
+        message: 'Database service is not configured',
         timestamp: new Date().toISOString(),
       };
     }
@@ -32,21 +29,30 @@ export class DatabaseHealthIndicator implements IHealthIndicator {
     const startTime = Date.now();
 
     try {
-      const result = await this.pool.query('SELECT 1 as health_check');
+      const isHealthy = await this.databaseService.checkConnection('WRITE');
       const responseTime = Date.now() - startTime;
 
-      if (result.rows && result.rows.length > 0) {
+      if (isHealthy) {
+        const stats = this.databaseService.getPoolStats('WRITE');
         return {
           status: HealthStatus.UP,
           message: 'Database connection is healthy',
           responseTime: `${responseTime}ms`,
           timestamp: new Date().toISOString(),
+          ...(stats ? {
+            pool: {
+              total: stats.totalCount,
+              idle: stats.idleCount,
+              waiting: stats.waitingCount,
+            },
+          } : {}),
         };
       }
 
       return {
         status: HealthStatus.DOWN,
-        message: 'Database query returned no results',
+        message: 'Database connection health check failed',
+        responseTime: `${responseTime}ms`,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
