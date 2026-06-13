@@ -2,7 +2,7 @@ import { GetDebtHistoryHandler } from './get-debt-history.handler';
 import { GetDebtHistoryQuery } from '../get-debt-history.query';
 import type { PortRegistry } from '@shared/port/port-registry.service';
 import type { DebtHistoryResponse } from '../../dtos/debt.dto';
-import { NotFoundException } from '@core/common';
+import { PortFallbackException } from '@shared/port/port-exceptions';
 
 describe('GetDebtHistoryHandler', () => {
   let handler: GetDebtHistoryHandler;
@@ -77,7 +77,7 @@ describe('GetDebtHistoryHandler', () => {
   // ── Null guard ───────────────────────────────────────────────────────────────
 
   describe('null guard', () => {
-    it('should throw NotFoundException when port returns null data', async () => {
+    it('should throw PortFallbackException when result.data is null', async () => {
       portRegistry.execute.mockResolvedValue({
         data: null,
         adapterUsed: 'mock' as const,
@@ -87,7 +87,15 @@ describe('GetDebtHistoryHandler', () => {
 
       await expect(
         handler.execute(new GetDebtHistoryQuery('USR-001')),
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(PortFallbackException);
+    });
+
+    it('should throw PortFallbackException when result is undefined', async () => {
+      portRegistry.execute.mockResolvedValue(undefined as any);
+
+      await expect(
+        handler.execute(new GetDebtHistoryQuery('USR-001')),
+      ).rejects.toThrow(PortFallbackException);
     });
   });
 });

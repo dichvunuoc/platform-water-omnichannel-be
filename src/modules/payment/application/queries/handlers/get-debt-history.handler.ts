@@ -9,7 +9,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { PortRegistry } from '@shared/port';
 import { GetDebtHistoryQuery } from '../get-debt-history.query';
 import type { DebtHistoryResponse } from '../../dtos/debt.dto';
-import { NotFoundException } from '@core/common';
+import { PortFallbackException } from '@shared/port/port-exceptions';
 
 @QueryHandler(GetDebtHistoryQuery)
 export class GetDebtHistoryHandler implements IQueryHandler<GetDebtHistoryQuery> {
@@ -22,10 +22,8 @@ export class GetDebtHistoryHandler implements IQueryHandler<GetDebtHistoryQuery>
       { customerId: query.customerId },
     );
 
-    if (!result.data) {
-      throw new NotFoundException(
-        `Debt history not found for customer: ${query.customerId}`,
-      );
+    if (!result?.data) {
+      throw new PortFallbackException('debt');
     }
 
     return result.data;

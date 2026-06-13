@@ -15,9 +15,9 @@ import { z } from 'zod';
 export const AgingBucketSchema = z.enum(['current', '31-60', '61-90', '>90']);
 
 export const DebtEntrySchema = z.object({
-  invoiceRef: z.string(),
+  invoiceRef: z.string().min(1),
   amount: z.number().positive(),
-  dueDate: z.string(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}/),
   daysOverdue: z.number().int().nonnegative(),
   agingBucket: AgingBucketSchema,
 });
@@ -41,10 +41,10 @@ export const OutstandingDebtResponseSchema = z.object({
 // =============================================================================
 
 export const DebtHistoryEntrySchema = z.object({
-  invoiceRef: z.string(),
+  invoiceRef: z.string().min(1),
   amount: z.number().nonnegative(),
-  dueDate: z.string(),
-  paidDate: z.string().nullable(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}/),
+  paidDate: z.string().regex(/^\d{4}-\d{2}-\d{2}/).nullable(),
   status: z.enum(['outstanding', 'paid', 'written_off']),
   agingAtPayment: z.string().nullable(),
 });

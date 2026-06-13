@@ -2,6 +2,8 @@ import { HandlePaymentWebhookHandler } from './handle-payment-webhook.handler';
 import { HandlePaymentWebhookCommand } from '../handle-payment-webhook.command';
 import type { ICacheService } from '@shared/caching/cache.interface';
 import type { PaymentWebhookPayload } from '../../dtos/payment.dto';
+import { DispatchNotificationCommand } from '@modules/communication/application/commands/dispatch-notification.command';
+import { RecordSessionEventCommand } from '@modules/session/application/commands/record-session-event.command';
 
 // Local mock interface — avoids importing IdempotencyService
 // which has deep decorator chains that break test context
@@ -14,6 +16,7 @@ describe('HandlePaymentWebhookHandler', () => {
   let handler: HandlePaymentWebhookHandler;
   let cacheService: jest.Mocked<ICacheService>;
   let idempotencyService: IdempotencyMock;
+  let commandBus: { execute: jest.Mock };
 
   const successPayload: PaymentWebhookPayload = {
     paymentId: 'PAY-2026-001',
@@ -39,7 +42,9 @@ describe('HandlePaymentWebhookHandler', () => {
       store: jest.fn().mockResolvedValue(undefined),
     };
 
-    handler = new HandlePaymentWebhookHandler(cacheService, idempotencyService as any);
+    commandBus = { execute: jest.fn().mockResolvedValue({ dispatched: true }) };
+
+    handler = new HandlePaymentWebhookHandler(cacheService, idempotencyService as any, commandBus as any);
   });
 
   // ── AC#2: Success flow ──────────────────────────────────────────────────────
@@ -77,14 +82,46 @@ describe('HandlePaymentWebhookHandler', () => {
       );
     });
 
-    it('should log session event stub and notification stub', async () => {
+    it('should dispatch RecordSessionEventCommand for payment_completed', async () => {
+      await handler.execute(new HandlePaymentWebhookCommand(successPayload));
+
+      // commandBus is called twice: once for session event, once for notification
+      const sessionEventCall = commandBus.execute.mock.calls.find(
+        (call: any[]) => call[0] instanceof RecordSessionEventCommand,
+      );
+      expect(sessionEventCall).toBeDefined();
+      const cmd = sessionEventCall![0];
+      expect(cmd).toBeInstanceOf(RecordSessionEventCommand);
+      expect(cmd.payload.userId).toBe('USR-001');
+      expect(cmd.payload.eventType).toBe('payment_completed');
+      expect(cmd.payload.channel).toBe('web');
+    });
+
+    // AC#5: Dispatch notification on success (Story 6.2)
+    it('should dispatch DispatchNotificationCommand on success', async () => {
+      await handler.execute(new HandlePaymentWebhookCommand(successPayload));
+
+      expect(commandBus.execute).toHaveBeenCalledTimes(2);
+      const notificationCall = commandBus.execute.mock.calls.find(
+        (call: any[]) => call[0] instanceof DispatchNotificationCommand,
+      );
+      expect(notificationCall).toBeDefined();
+      const callArg = notificationCall![0];
+      expect(callArg).toBeInstanceOf(DispatchNotificationCommand);
+      expect(callArg.payload.type).toBe('payment_completed');
+      expect(callArg.payload.isCritical).toBe(true);
+      expect(callArg.payload.customerId).toBe('USR-001');
+      expect(callArg.payload.invoiceId).toBe('INV-2026-001');
+      expect(callArg.payload.amount).toBe(123273);
+    });
+
+    it('should NOT contain NOTIFICATION STUB on success', async () => {
       const logSpy = jest.spyOn(handler['logger'], 'log');
 
       await handler.execute(new HandlePaymentWebhookCommand(successPayload));
 
       const allLogs = logSpy.mock.calls.map(c => c[0]).join(' ');
-      expect(allLogs).toContain('SESSION EVENT STUB');
-      expect(allLogs).toContain('NOTIFICATION STUB');
+      expect(allLogs).not.toContain('NOTIFICATION STUB');
     });
   });
 
@@ -125,6 +162,27 @@ describe('HandlePaymentWebhookHandler', () => {
       const warnMsg = warnSpy.mock.calls[0][0];
       expect(warnMsg).toContain('Payment failed');
       expect(warnMsg).toContain('[REDACTED]');
+    });
+
+    // AC#5: Dispatch notification on failure (Story 6.2)
+    it('should dispatch DispatchNotificationCommand on failure', async () => {
+      await handler.execute(new HandlePaymentWebhookCommand(failedPayload));
+
+      expect(commandBus.execute).toHaveBeenCalledTimes(1);
+      const callArg = commandBus.execute.mock.calls[0][0];
+      expect(callArg).toBeInstanceOf(DispatchNotificationCommand);
+      expect(callArg.payload.type).toBe('payment_failed');
+      expect(callArg.payload.isCritical).toBe(true);
+      expect(callArg.payload.customerId).toBe('USR-001');
+    });
+
+    it('should NOT contain NOTIFICATION STUB on failure', async () => {
+      const logSpy = jest.spyOn(handler['logger'], 'log');
+
+      await handler.execute(new HandlePaymentWebhookCommand(failedPayload));
+
+      const allLogs = logSpy.mock.calls.map(c => c[0]).join(' ');
+      expect(allLogs).not.toContain('NOTIFICATION STUB');
     });
   });
 
@@ -172,6 +230,41 @@ describe('HandlePaymentWebhookHandler', () => {
       await handler.execute(new HandlePaymentWebhookCommand(successPayload));
 
       expect(idempotencyService.store).not.toHaveBeenCalled();
+    });
+
+    it('should NOT dispatch notification on duplicate', async () => {
+      idempotencyService.getExisting.mockResolvedValue({
+        result: { processed: true, paymentId: 'PAY-2026-001', status: 'success' },
+        storedAt: new Date(),
+        expiresAt: new Date(Date.now() + 3600000),
+        commandType: 'HandlePaymentWebhook',
+      });
+
+      await handler.execute(new HandlePaymentWebhookCommand(successPayload));
+
+      expect(commandBus.execute).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── Notification dispatch error resilience (Story 6.2 review fix) ───────
+
+  describe('notification dispatch failure', () => {
+    it('should still return success when notification dispatch throws', async () => {
+      commandBus.execute.mockRejectedValue(new Error('Circuit breaker open'));
+
+      const result = await handler.execute(new HandlePaymentWebhookCommand(successPayload));
+
+      expect(result.processed).toBe(true);
+      expect(result.status).toBe('success');
+    });
+
+    it('should still return failed when notification dispatch throws on failure', async () => {
+      commandBus.execute.mockRejectedValue(new Error('Circuit breaker open'));
+
+      const result = await handler.execute(new HandlePaymentWebhookCommand(failedPayload));
+
+      expect(result.processed).toBe(true);
+      expect(result.status).toBe('failed');
     });
   });
 });
