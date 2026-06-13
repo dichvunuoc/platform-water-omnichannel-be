@@ -1,0 +1,25 @@
+{
+  "alerts": [
+    {
+      "id": "ALERT-2026-001",
+      "type": "outage",
+      "description": "Cúp nước bảo trì đường ống Nguyễn Văn Cừ — Khu vực Quận 1",
+      "affectedArea": "Quận 1, Phường Bến Nghé",
+      "expectedStartTime": "2026-06-12T08:00:00+07:00",
+      "expectedEndTime": "2026-06-12T18:00:00+07:00",
+      "status": "active",
+      "severity": "high"
+    },
+    {
+      "id": "ALERT-2026-002",
+      "type": "maintenance",
+      "description": "Bảo trì định kỳ trạm bơm Tân Thuận",
+      "affectedArea": "Quận 7, Phường Tân Thuận Đông",
+      "expectedStartTime": "2026-06-15T06:00:00+07:00",
+      "expectedEndTime": "2026-06-15T12:00:00+07:00",
+      "status": "scheduled",
+      "severity": "medium"
+    }
+  ],
+  "totalCount": 2
+}

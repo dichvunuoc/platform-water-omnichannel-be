@@ -1,0 +1,31 @@
+{
+  "notifications": [
+    {
+      "id": "NTF-001",
+      "type": "payment_completed",
+      "channel": "zns",
+      "contentSummary": "Thanh toán hóa đơn INV-2026-0042 thành công",
+      "timestamp": "2026-06-11T09:15:00Z",
+      "deliveryStatus": "delivered"
+    },
+    {
+      "id": "NTF-002",
+      "type": "alert_outage",
+      "channel": "push",
+      "contentSummary": "Thông báo cắt nước khu vực KCN Cẩm Phả từ 14:00-17:00",
+      "timestamp": "2026-06-11T08:00:00Z",
+      "deliveryStatus": "sent"
+    },
+    {
+      "id": "NTF-003",
+      "type": "ticket_status_changed",
+      "channel": "in_app",
+      "contentSummary": "Phiếu tiếp nhận TK-2026-002 đã được chuyển sang 'Đang xử lý'",
+      "timestamp": "2026-06-10T16:45:00Z",
+      "deliveryStatus": "delivered"
+    }
+  ],
+  "totalCount": 3,
+  "page": 1,
+  "pageSize": 20
+}

@@ -1,0 +1,20 @@
+{
+  "articles": [
+    {
+      "id": "art-1",
+      "title": "Hướng dẫn thanh toán hóa đơn nước online",
+      "summary": "Các bước thanh toán hóa đơn nước qua ứng dụng My Công ty...",
+      "category": "thanh-toan",
+      "relevanceScore": 0.95
+    },
+    {
+      "id": "art-2",
+      "title": "Cách tra cứu hóa đơn điện tử",
+      "summary": "Hướng dẫn tải hóa đơn điện tử có mã CQT...",
+      "category": "hoa-don",
+      "relevanceScore": 0.82
+    }
+  ],
+  "total": 2,
+  "query": "hóa đơn thanh toán"
+}

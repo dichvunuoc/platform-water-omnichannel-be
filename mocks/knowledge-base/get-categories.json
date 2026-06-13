@@ -1,0 +1,9 @@
+{
+  "categories": [
+    { "id": "cat-1", "name": "Hóa đơn", "slug": "hoa-don", "articleCount": 8 },
+    { "id": "cat-2", "name": "Ghi chỉ số", "slug": "ghi-chi-so", "articleCount": 5 },
+    { "id": "cat-3", "name": "Sự cố", "slug": "su-co", "articleCount": 12 },
+    { "id": "cat-4", "name": "Thanh toán", "slug": "thanh-toan", "articleCount": 7 },
+    { "id": "cat-5", "name": "Lắp đặt mới", "slug": "lap-dat-moi", "articleCount": 4 }
+  ]
+}

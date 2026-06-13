@@ -1,0 +1,11 @@
+{
+  "customerId": "USR-00001",
+  "channels": [
+    { "channel": "push", "enabled": true, "isCritical": true },
+    { "channel": "in_app", "enabled": true, "isCritical": true },
+    { "channel": "zns", "enabled": false, "isCritical": false },
+    { "channel": "sms", "enabled": true, "isCritical": false },
+    { "channel": "email", "enabled": true, "isCritical": false }
+  ],
+  "updatedAt": "2026-06-11T10:35:00Z"
+}
