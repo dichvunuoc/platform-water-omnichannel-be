@@ -39,6 +39,10 @@ services:
       POSTGRES_DB: nestjs_project
     networks:
       - app_network
+    # ⚠️ PRODUCTION: `users.phone_number` is plaintext by better-auth plugin design
+    # (see user.schema.ts). The `postgres_data` volume MUST be encrypted at rest
+    # (LUKS / encrypted EBS / Postgres TDE) as the compensating control for NFR-S1.
+    # The dev volume below is NOT encrypted — dev only.
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

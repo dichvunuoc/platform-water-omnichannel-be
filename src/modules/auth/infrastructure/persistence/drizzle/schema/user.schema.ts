@@ -42,7 +42,13 @@ export const usersTable = pgTable(
     emailHash: varchar('email_hash', { length: 64 }),
     phoneHash: varchar('phone_hash', { length: 64 }),
     name: varchar('name', { length: 255 }),
-    // better-auth phone-number plugin fields
+    // ⚠️ PLAINTEXT BY PLUGIN DESIGN — see SECURITY note below.
+    // better-auth's phoneNumber plugin requires an equality lookup
+    // (`WHERE phone_number = <input>`), so it MUST store the raw phone to match.
+    // Unlike `phone`/`email` (AES-256-GCM via databaseHooks), this column CANNOT
+    // be encrypted without forking the plugin. PROTECTION IS AT THE STORAGE LAYER:
+    // the Postgres volume MUST be encrypted at rest (LUKS / encrypted EBS / TDE)
+    // in every environment — this is the compensating control for NFR-S1.
     phoneNumber: varchar('phone_number', { length: 512 }),
     phoneNumberVerified: boolean('phone_number_verified').default(false),
     // better-auth email verification
