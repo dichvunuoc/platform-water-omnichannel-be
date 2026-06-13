@@ -9,6 +9,7 @@
  */
 
 import { CanActivate, ExecutionContext, Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class InterServiceApiKeyGuard implements CanActivate {
@@ -24,7 +25,13 @@ export class InterServiceApiKeyGuard implements CanActivate {
       throw new ForbiddenException('Service configuration error');
     }
 
-    if (!apiKey || apiKey !== expectedKey) {
+    if (!apiKey || typeof apiKey !== 'string') {
+      this.logger.warn(`Missing x-api-key header from ${request.ip || 'unknown'}. Path: ${request.url}`);
+      throw new ForbiddenException('Invalid API key');
+    }
+
+    // Timing-safe comparison — prevents timing attacks
+    if (apiKey.length !== expectedKey.length || !crypto.timingSafeEqual(Buffer.from(apiKey), Buffer.from(expectedKey))) {
       this.logger.warn(`Invalid API key from ${request.ip || 'unknown'}. Path: ${request.url}`);
       throw new ForbiddenException('Invalid API key');
     }
