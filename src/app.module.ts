@@ -20,6 +20,9 @@ import { ContractModule } from 'src/modules/contract/contract.module';
 import { MeterModule } from 'src/modules/meter/meter.module';
 import { BillingModule } from 'src/modules/billing/billing.module';
 import { PaymentModule } from 'src/modules/payment/payment.module';
+import { TicketModule } from 'src/modules/ticket/ticket.module';
+import { CommunicationModule } from 'src/modules/communication/communication.module';
+import { SessionModule } from 'src/modules/session/session.module';
 
 @Global()
 @Module({
@@ -56,6 +59,12 @@ import { PaymentModule } from 'src/modules/payment/payment.module';
     BillingModule,
     // Payment Module — payment initiation, QR generation (AC: Epic 4)
     PaymentModule,
+    // Ticket Module — incident report submission, photo upload (AC: Epic 5)
+    TicketModule,
+    // Communication Module — proactive area alerts, notification dispatch (AC: Epic 6)
+    CommunicationModule,
+    // Session Module — atomic Redis session store & event recording (AC: Epic 7)
+    SessionModule,
     // Auth Propagation — JWT signing for BFF→downstream identity propagation
     AuthPropagationModule,
     // Hexagonal Port Registry — centralized downstream service interface (needs AuthPropagationModule)

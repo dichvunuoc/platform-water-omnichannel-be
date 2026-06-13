@@ -5,6 +5,18 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": false,
-    "tsConfigPath": "tsconfig.json"
+    "tsConfigPath": "tsconfig.json",
+    "assets": [
+      {
+        "include": "**/*.lua",
+        "outDir": "dist/src"
+      },
+      {
+        "include": "**/*.json",
+        "glob": "mocks/**/*.json",
+        "outDir": "dist/src"
+      }
+    ],
+    "watchAssets": true
   }
 }

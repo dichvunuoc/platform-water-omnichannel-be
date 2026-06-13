@@ -37,6 +37,14 @@ RUN apt-get update && apt-get install -y \
 # Copy only the compiled binary from the builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/build/nest-app /app/nest-app
 
+# Copy migration files — required by DatabaseMigrationService at runtime
+# Bun --compile does NOT bundle external SQL files
+COPY --from=builder --chown=nodejs:nodejs /app/drizzle /app/drizzle
+
+# Copy config files — required by EndpointConfigService at runtime
+# api-endpoints.yaml, schemas, etc. are read at runtime, not bundled
+COPY --from=builder --chown=nodejs:nodejs /app/config /app/config
+
 # Switch to non-root user
 USER nodejs
 

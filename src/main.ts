@@ -18,6 +18,7 @@ import {
   ResponseInterceptor,
   GlobalValidationPipe,
 } from 'src/libs/shared/http';
+import fastifyRawBody from 'fastify-raw-body';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -25,14 +26,20 @@ async function bootstrap() {
     new FastifyAdapter(),
     {
       bufferLogs: true,
-      // CRITICAL: Disable body parser — better-auth needs raw body access
-      // for webhook signature verification and OAuth flow handling
-      bodyParser: false,
     },
   );
 
   // Use Pino logger for all NestJS logging
   app.useLogger(app.get(Logger));
+
+  // Register raw body — needed for webhook signature verification
+  // and better-auth (which requires raw body stream access).
+  // global: true so all routes have rawBody available.
+  await app.register(fastifyRawBody, {
+    field: 'rawBody',
+    global: true,
+    encoding: 'utf8',
+  });
 
   // Enable graceful shutdown hooks
   app.enableShutdownHooks();

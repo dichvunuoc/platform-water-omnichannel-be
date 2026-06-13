@@ -1,29 +1,44 @@
-version: "3.8"
+# Định nghĩa mạng nội bộ để cách ly các service với bên ngoài
+networks:
+  app_network:
+    driver: bridge
 
 services:
   app:
     image: nestjs-bun-binary
     container_name: nestjs-ddd-app
     ports:
-      - "3000:3000"
+      - "3000:3000" # Có thể ẩn đi nếu bạn dùng Nginx/Reverse Proxy ở phía trước
     env_file:
-      - .env.docker.test
+      - .env.docker.compose
+    networks:
+      - app_network
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 1G # Chống rò rỉ RAM làm sập server
 
   postgres:
     image: postgres:16-alpine
     container_name: nestjs-ddd-postgres
-    ports:
-      - "5432:5432"
+    # BỎ CỔNG 5432: Không mở DB ra internet, app gọi qua mạng nội bộ 'app_network'
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: nestjs_project
+    networks:
+      - app_network
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -31,46 +46,79 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
     container_name: nestjs-ddd-redis
-    ports:
-      - "6379:6379"
+    # BỎ CỔNG 6379: Tránh bị hacker quét và mã hóa dữ liệu Redis
+    networks:
+      - app_network
+    volumes:
+      - redis_data:/data # Thêm volume để Redis không mất dữ liệu khi restart
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   jaeger:
-    image: jaegertracing/all-in-one:latest
+    # Nên chốt version thay vì dùng 'latest' trong production
+    image: jaegertracing/all-in-one:1.53 
     container_name: nestjs-ddd-jaeger
+    # Chỉ mở cổng UI (16686) nếu cần xem. Cổng nhận trace (14268) để nội bộ.
     ports:
-      - "16686:16686" # UI
-      - "14268:14268" # HTTP Collector
+      - "16686:16686"
     environment:
       - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+    networks:
+      - app_network
+    restart: unless-stopped
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.45.0 # Chốt version ổn định
     container_name: nestjs-ddd-prometheus
-    ports:
-      - "9090:9090"
+    # BỎ CỔNG 9090: Grafana sẽ đọc nội bộ, không cần mở ra ngoài
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus # Thêm volume để lưu metrics
+    networks:
+      - app_network
+    restart: unless-stopped
+
+  # --- FIX LỖI LOKI PERMISSION ---
+  loki-init:
+    image: alpine:latest
+    container_name: nestjs-ddd-loki-init
+    user: root
+    # Tạo thư mục và cấp quyền cho user 10001 (user mặc định của Loki)
+    command: sh -c "mkdir -p /loki && chown -R 10001:10001 /loki"
+    volumes:
+      - loki_data:/loki
+    networks:
+      - app_network
 
   loki:
     image: grafana/loki:2.9.2
     container_name: nestjs-ddd-loki
-    ports:
-      - "3100:3100"
+    # Ép chạy dưới quyền non-root an toàn
+    user: "10001:10001"
+    # BỎ CỔNG 3100: App gửi log vào nội bộ, không mở public
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - ./monitoring/loki/loki-config.yaml:/etc/loki/local-config.yaml
+      - loki_data:/loki # Gắn volume dữ liệu đã được cấp quyền
+    networks:
+      - app_network
+    depends_on:
+      loki-init:
+        condition: service_completed_successfully # Chờ Init cấp quyền xong
+    restart: unless-stopped
+  # -------------------------------
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:10.2.2 # Chốt version thay vì latest
     container_name: nestjs-ddd-grafana
     ports:
       - "3001:3000"
@@ -78,11 +126,19 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./monitoring/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - grafana_data:/var/lib/grafana # Giữ lại các dashboard khi restart container
+    networks:
+      - app_network
     depends_on:
       - prometheus
       - loki
       - jaeger
+    restart: unless-stopped
 
-
+# Khai báo tất cả các managed volumes
 volumes:
   postgres_data:
+  redis_data:
+  loki_data:
+  prometheus_data:
+  grafana_data:
