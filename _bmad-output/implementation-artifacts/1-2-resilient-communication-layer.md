@@ -1,6 +1,10 @@
 # Story 1.2: Resilient Communication Layer
 
-Status: ready-for-dev
+Status: done
+
+<!-- AC verification (2026-06-10 retro): All 8 ACs functionally delivered across Stories 1.1, 1.4, and 4.2.
+Implementation lives in: PortRegistry, CircuitBreakerState, FallbackProvider, InboundIdempotencyService,
+PortHttpClient, api-endpoints.yaml. Sprint-status correctly shows "done". -->
 
 ## Story
 

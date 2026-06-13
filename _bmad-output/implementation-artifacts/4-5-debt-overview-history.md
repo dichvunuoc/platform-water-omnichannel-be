@@ -1,6 +1,6 @@
 # Story 4.5: Debt Overview & History
 
-Status: review
+Status: done
 
 ## Story
 
@@ -445,3 +445,10 @@ Claude Opus 4.8 (glm-5[1m])
 ## Change Log
 
 - 2026-06-09: Story 4.5 implementation complete — Debt Overview & History. 8 tasks, 574 tests passing. Epic 4 complete.
+- 2026-06-10: Code review fixes applied (H1+H2+M1+M2+M3+L1):
+  - H1: Swapped `NotFoundException` → `PortFallbackException` in both handlers (matches ticket module canonical pattern)
+  - H2: Added optional chaining `result?.data` for null/undefined guard in both handlers
+  - M1: Updated test assertions from `NotFoundException` → `PortFallbackException`
+  - M2: Added `result is undefined` test case to both handler specs
+  - M3: Added `.min(1)` to `invoiceRef` in `DebtEntrySchema` and `DebtHistoryEntrySchema`
+  - L1: Added `.regex(/^\d{4}-\d{2}-\d{2}/)` to `dueDate` and `paidDate` fields
