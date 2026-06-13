@@ -1,6 +1,5 @@
 import {
   pgTable,
-  uuid,
   varchar,
   timestamp,
   integer,
@@ -16,8 +15,8 @@ import { usersTable } from './user.schema';
  * This is the BFF↔Frontend session concern (NOT BFF→downstream JWT — that's Story 1.4).
  */
 export const sessionsTable = pgTable('sessions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
+  id: varchar('id', { length: 256 }).primaryKey(),
+  userId: varchar('user_id', { length: 256 })
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' }),
   token: varchar('token', { length: 512 }).notNull(),

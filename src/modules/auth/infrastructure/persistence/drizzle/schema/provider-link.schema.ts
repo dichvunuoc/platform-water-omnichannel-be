@@ -1,6 +1,5 @@
 import {
   pgTable,
-  uuid,
   varchar,
   timestamp,
   boolean,
@@ -30,8 +29,8 @@ export const providerTypeEnum = pgEnum('provider_type', [
 export const providerLinksTable = pgTable(
   'provider_links',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id')
+    id: varchar('id', { length: 256 }).primaryKey(),
+    userId: varchar('user_id', { length: 256 })
       .notNull()
       .references(() => usersTable.id, { onDelete: 'cascade' }),
     providerType: providerTypeEnum('provider_type').notNull(),

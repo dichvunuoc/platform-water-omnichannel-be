@@ -1,8 +1,8 @@
 import {
   pgTable,
-  uuid,
   varchar,
   timestamp,
+  boolean,
   pgEnum,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
@@ -34,7 +34,7 @@ export const userStatusEnum = pgEnum('user_status', [
 export const usersTable = pgTable(
   'users',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
+    id: varchar('id', { length: 256 }).primaryKey(),
     // PII fields — AES-256-GCM encrypted (random IV, NOT searchable directly)
     email: varchar('email', { length: 512 }),
     phone: varchar('phone', { length: 512 }),
@@ -42,6 +42,12 @@ export const usersTable = pgTable(
     emailHash: varchar('email_hash', { length: 64 }),
     phoneHash: varchar('phone_hash', { length: 64 }),
     name: varchar('name', { length: 255 }),
+    // better-auth phone-number plugin fields
+    phoneNumber: varchar('phone_number', { length: 512 }),
+    phoneNumberVerified: boolean('phone_number_verified').default(false),
+    // better-auth email verification
+    emailVerified: boolean('email_verified').default(false),
+    image: varchar('image', { length: 1024 }),
     role: userRoleEnum('role').default('customer'),
     status: userStatusEnum('status').default('active'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

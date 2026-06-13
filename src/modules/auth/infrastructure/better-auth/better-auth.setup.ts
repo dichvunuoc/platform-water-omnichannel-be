@@ -7,6 +7,7 @@ import { Logger } from '@nestjs/common';
 import { usersTable } from '../persistence/drizzle/schema/user.schema';
 import { providerLinksTable } from '../persistence/drizzle/schema/provider-link.schema';
 import { sessionsTable } from '../persistence/drizzle/schema/session.schema';
+import { verificationTable } from '../persistence/drizzle/schema/verification.schema';
 import { PiiEncryptionService } from '../persistence/encryption/pii-encryption.service';
 
 /**
@@ -36,13 +37,45 @@ export function createBetterAuth(
   // Initialize PII encryption for database hooks
   const piiEncryption = new PiiEncryptionService(configService);
 
+  // Only enable social providers when credentials are configured
+  const socialProviders: Record<string, unknown> = {};
+
+  const googleClientId = configService.get('GOOGLE_CLIENT_ID', '');
+  const googleClientSecret = configService.get('GOOGLE_CLIENT_SECRET', '');
+  if (googleClientId && googleClientSecret && !googleClientId.startsWith('stub-')) {
+    socialProviders.google = { clientId: googleClientId, clientSecret: googleClientSecret };
+  }
+
+  const facebookClientId = configService.get('FACEBOOK_CLIENT_ID', '');
+  const facebookClientSecret = configService.get('FACEBOOK_CLIENT_SECRET', '');
+  if (facebookClientId && facebookClientSecret && !facebookClientId.startsWith('stub-')) {
+    socialProviders.facebook = { clientId: facebookClientId, clientSecret: facebookClientSecret };
+  }
+
+  const appleClientId = configService.get('APPLE_CLIENT_ID', '');
+  const appleClientSecret = configService.get('APPLE_CLIENT_SECRET', '');
+  if (appleClientId && appleClientSecret && !appleClientId.startsWith('stub-')) {
+    socialProviders.apple = {
+      clientId: appleClientId,
+      clientSecret: appleClientSecret,
+      mapProfileToUser: (profile: Record<string, unknown>) => ({
+        email: (profile.email as string) ?? `${profile.sub}@apple.placeholder.local`,
+      }),
+    };
+  }
+
+  // Base URL — required by better-auth for callback/redirect URLs
+  const baseURL = configService.get('BETTER_AUTH_URL', 'http://localhost:3000');
+
   return betterAuth({
+    baseURL,
     database: drizzleAdapter(db as Parameters<typeof drizzleAdapter>[0], {
       provider: 'pg',
       schema: {
         user: usersTable,
         session: sessionsTable,
         account: providerLinksTable, // Map provider links as better-auth "accounts"
+        verification: verificationTable, // Required by phoneNumber plugin for OTP
       },
     }),
     /**
@@ -151,24 +184,7 @@ export function createBetterAuth(
         ],
       }),
     ],
-    socialProviders: {
-      google: {
-        clientId: configService.get('GOOGLE_CLIENT_ID', ''),
-        clientSecret: configService.get('GOOGLE_CLIENT_SECRET', ''),
-      },
-      facebook: {
-        clientId: configService.get('FACEBOOK_CLIENT_ID', ''),
-        clientSecret: configService.get('FACEBOOK_CLIENT_SECRET', ''),
-      },
-      apple: {
-        clientId: configService.get('APPLE_CLIENT_ID', ''),
-        clientSecret: configService.get('APPLE_CLIENT_SECRET', ''),
-        mapProfileToUser: (profile) => ({
-          // Apple only emits email on first sign-in — use placeholder after
-          email: (profile.email as string) ?? `${profile.sub}@apple.placeholder.local`,
-        }),
-      },
-    },
+    ...(Object.keys(socialProviders).length > 0 ? { socialProviders } : {}),
     session: {
       expiresIn: 7 * 24 * 60 * 60, // 7 days (NFR-S5)
       updateAge: 24 * 60 * 60, // Refresh session every 24h
@@ -186,4 +202,5 @@ export function createBetterAuth(
  * Type for the better-auth instance.
  * Exported for use in controllers and the auth module.
  */
-export type BetterAuthInstance = ReturnType<typeof createBetterAuth>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type BetterAuthInstance = ReturnType<typeof betterAuth>;
