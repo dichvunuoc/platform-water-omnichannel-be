@@ -28,10 +28,24 @@ import { PiiEncryptionService } from '../persistence/encryption/pii-encryption.s
  * Without these hooks, better-auth would store plaintext in columns designed
  * for AES-256-GCM ciphertext, causing decrypt() to crash on read.
  */
-export function createBetterAuth(
-  db: unknown,
-  configService: ConfigService,
-) {
+/**
+ * Read the phone number from a better-auth user record.
+ *
+ * The `phoneNumber` plugin stores the phone in `phoneNumber` (its own column),
+ * while the BFF encryption layer targets the `phone` column. This helper reads
+ * whichever is present so the hook can encrypt + blind-index the value regardless
+ * of which better-auth code path populated the record.
+ */
+function readPhone(user: Record<string, unknown>): string | undefined {
+  return (
+    (user.phoneNumber as string | undefined) ??
+    (user.phone as string | undefined) ??
+    undefined
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function createBetterAuth(db: unknown, configService: ConfigService): any {
   const logger = new Logger('BetterAuth');
 
   // Initialize PII encryption for database hooks
@@ -95,7 +109,9 @@ export function createBetterAuth(
         create: {
           before: async (user) => {
             const rawEmail = user.email as string | undefined;
-            const rawPhone = (user as Record<string, unknown>).phone as string | undefined;
+            // better-auth phoneNumber plugin stores the phone in `phoneNumber`,
+            // NOT `phone` — read it so the BFF `phone`/`phone_hash` columns get populated.
+            const rawPhone = readPhone(user);
 
             return {
               data: {
@@ -112,7 +128,7 @@ export function createBetterAuth(
         update: {
           before: async (user) => {
             const rawEmail = user.email as string | undefined;
-            const rawPhone = (user as Record<string, unknown>).phone as string | undefined;
+            const rawPhone = readPhone(user);
 
             const encrypted: Record<string, unknown> = { ...user };
 
@@ -132,6 +148,33 @@ export function createBetterAuth(
     },
     emailAndPassword: {
       enabled: false, // No username/password — FR1: only Phone/OTP, Zalo, Social
+    },
+    user: {
+      // Declare the BFF-owned columns as additionalFields so better-auth's
+      // data conversion layer (convertToDB) PERSISTS them. Without this, values
+      // the databaseHooks set on these columns are silently stripped before the
+      // drizzle INSERT (verified via SQL logging — they were bound as `default`).
+      // `input: false`  → clients cannot set these (server-computed by hooks).
+      // `returned: false` → omitted from API responses (never expose hashes).
+      additionalFields: {
+        emailHash: {
+          type: 'string',
+          required: false,
+          input: false,
+          returned: false,
+        },
+        phoneHash: {
+          type: 'string',
+          required: false,
+          input: false,
+          returned: false,
+        },
+        phone: {
+          type: 'string',
+          required: false,
+          input: false,
+        },
+      },
     },
     plugins: [
       // Phone/OTP Authentication
