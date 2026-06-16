@@ -118,6 +118,13 @@ In production, add Bearer token authentication.
       operationsSorter: 'alpha',
     },
     customSiteTitle: 'NestJS DDD/CQRS API Docs',
+    // Bun --compile binary does NOT bundle node_modules, so the default
+    // swagger-ui-dist asset path (absolute node_modules path) is absent at
+    // runtime → CSS/JS assets 404. Point to a directory we COPY into the
+    // image (see Dockerfile). Falls back to default in dev (ts-node/bun run).
+    ...(process.env.SWAGGER_UI_DIST
+      ? { customSwaggerUiPath: process.env.SWAGGER_UI_DIST }
+      : {}),
   });
 
   const port = process.env.PORT ?? 3000;

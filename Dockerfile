@@ -49,6 +49,17 @@ COPY --from=builder /app/drizzle /app/drizzle
 # api-endpoints.yaml, schemas, etc. are read at runtime, not bundled
 COPY --from=builder /app/config /app/config
 
+# Copy mock data files — required by MockAdapterBase when api-endpoints.yaml
+# sets adapter: mock (the default for all CSKH ports until Backend API is live).
+# MockAdapterBase reads these JSON files on-demand at runtime.
+COPY --from=builder /app/mocks /app/mocks
+
+# Copy swagger-ui-dist static assets — Bun --compile does NOT bundle
+# node_modules, so NestJS Swagger's default absolute path to swagger-ui-dist
+# is absent at runtime and CSS/JS assets 404. main.ts reads SWAGGER_UI_DIST
+# to serve these from a known location instead.
+COPY --from=builder /app/node_modules/swagger-ui-dist /app/swagger-ui-dist
+
 # Expose the application port
 EXPOSE 3000
 

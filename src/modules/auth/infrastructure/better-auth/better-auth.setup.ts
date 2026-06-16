@@ -81,8 +81,19 @@ export function createBetterAuth(db: unknown, configService: ConfigService): any
   // Base URL — required by better-auth for callback/redirect URLs
   const baseURL = configService.get('BETTER_AUTH_URL', 'http://localhost:3000');
 
+  // Additional trusted origins (e.g. a separate-origin Next.js frontend).
+  // better-auth always trusts `baseURL`; this adds more origins for cross-origin
+  // clients. Comma-separated via BETTER_AUTH_TRUSTED_ORIGINS env var.
+  // In production, better-auth rejects requests whose Origin/Host isn't trusted,
+  // so any FE served from a different port/host must be listed here.
+  const trustedOrigins = (configService.get<string>('BETTER_AUTH_TRUSTED_ORIGINS', '') ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   return betterAuth({
     baseURL,
+    ...(trustedOrigins.length ? { trustedOrigins } : {}),
     database: drizzleAdapter(db as Parameters<typeof drizzleAdapter>[0], {
       provider: 'pg',
       schema: {
