@@ -83,6 +83,40 @@ export class InboundIdempotencyService {
   }
 
   /**
+   * Atomically CLAIM an inbound request id (SETNX), closing the check-then-act race.
+   *
+   * Use at ingress (webhook controller): the FIRST caller wins (returns true) and
+   * proceeds; concurrent/retry duplicates lose (returns false) and must be dropped.
+   * This is the proper implementation of the "SETNX message_id 24h → drop retry"
+   * idempotency requirement (no duplicate outbox rows under concurrent retries).
+   *
+   * @returns true if this caller acquired the key (proceed), false if already claimed (drop).
+   */
+  async claim(rawKey: string): Promise<boolean> {
+    if (!this.cacheService) {
+      return true; // no cache → no dedup possible → allow processing
+    }
+    try {
+      const won = await this.cacheService.setIfNotExist(
+        this.buildCacheKey(rawKey),
+        'claimed',
+        this.DEFAULT_TTL,
+      );
+      if (won) {
+        this.logger.debug(`Idempotency CLAIMED: ${this.buildCacheKey(rawKey)}`);
+      } else {
+        this.logger.debug(`Idempotency CLAIM-LOST (duplicate): ${this.buildCacheKey(rawKey)}`);
+      }
+      return won;
+    } catch (error) {
+      this.logger.warn(
+        `Cache error claiming idempotency for ${rawKey}: ${(error as Error).message}`,
+      );
+      return true; // fail-open: allow processing if the claim store is unavailable
+    }
+  }
+
+  /**
    * Store the result of a processed inbound request.
    *
    * @param rawKey - The raw message identifier (messageId, callId, etc.)

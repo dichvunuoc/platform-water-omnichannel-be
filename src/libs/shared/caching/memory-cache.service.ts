@@ -59,6 +59,17 @@ export class MemoryCacheService implements ICacheService, OnModuleDestroy {
     this.cache.set(fullKey, { value, expiry });
   }
 
+  async setIfNotExist<T>(key: string, value: T, ttl?: number): Promise<boolean> {
+    const fullKey = this.getFullKey(key);
+    // Check existing (and drop if expired) — mimics Redis SETNX semantics in-process.
+    const existing = this.cache.get(fullKey);
+    if (existing && (existing.expiry === null || existing.expiry > Date.now())) {
+      return false; // key present → caller does NOT win
+    }
+    await this.set(key, value, ttl);
+    return true;
+  }
+
   async delete(key: string): Promise<void> {
     const fullKey = this.getFullKey(key);
     this.cache.delete(fullKey);
