@@ -20,8 +20,7 @@ import {
   RegisterPhoneSchema,
 } from '../../application/dtos/register-phone.dto';
 import {
-  RegisterProviderSchema,
-  LinkProviderSchema,
+  RegisterProviderSchema,  LinkProviderSchema,
   VerifyOtpSchema,
 } from '../../application/dtos/register-provider.dto';
 import { ValidationException } from '@core/common';
@@ -45,6 +44,7 @@ import type {
   LinkProviderDto,
   VerifyOtpDto,
 } from '../../application/dtos/register-provider.dto';
+import { ZaloAccountLinkingService } from '../../application/zalo-account-linking.service';
 
 /**
  * Auth Controller
@@ -63,6 +63,7 @@ export class AuthController {
 
   constructor(
     private readonly portHttpClient: PortHttpClient,
+    private readonly zaloLinking: ZaloAccountLinkingService,
   ) {}
 
   /**
@@ -149,15 +150,36 @@ export class AuthController {
 
     this.logger.log(`Provider callback: ${parsed.data.providerType}`);
 
-    // Validate input — actual OAuth handled by better-auth's social/genericOAuth plugins
-    // When Backend API is available, sync customer record:
-    // await this.portHttpClient.request({
-    //   url: `${backendUrl}/customers/sync`,
-    //   method: 'POST',
-    //   portName: 'customer-profile',
-    //   body: { providerType, providerId, email, name, phoneNumber },
-    // });
+    // Zalo OA Account Linking: when the callback carries our single-use OAuth
+    // `state` nonce + a phone (granted via the phone_number scope), link the
+    // Zalo sender to the internal user. After this, inbound Zalo messages from
+    // that sender are recorded on the customer's timeline (omnichannel).
+    if (
+      parsed.data.providerType === 'zalo' &&
+      parsed.data.state &&
+      parsed.data.phoneNumber
+    ) {
+      const result = await this.zaloLinking.linkByNonce(
+        parsed.data.state,
+        parsed.data.phoneNumber,
+      );
+      if (result.linked) {
+        return {
+          message: `Zalo account linked to user ${result.userId}.`,
+          providerType: parsed.data.providerType,
+          linked: true,
+          userId: result.userId,
+        };
+      }
+      return {
+        message: `Zalo linking not completed: ${result.reason}.`,
+        providerType: parsed.data.providerType,
+        linked: false,
+        reason: result.reason,
+      };
+    }
 
+    // Non-Zalo providers (or Zalo without phone/state): OAuth handled by better-auth.
     return {
       message: `Provider ${parsed.data.providerType} validated. OAuth flow handled by better-auth.`,
       providerType: parsed.data.providerType,

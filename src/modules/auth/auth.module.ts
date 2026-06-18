@@ -18,6 +18,12 @@ import { MockAuthAdapter } from './infrastructure/ports/auth.port';
 import { ZaloOAuthProvider } from './infrastructure/oauth/zalo-oauth.provider';
 import { createBetterAuth } from './infrastructure/better-auth/better-auth.setup';
 import { SessionAuthGuard } from './infrastructure/guards/session-auth.guard';
+// Zalo OA Account Linking (omnichannel) — nonce store is shared with the
+// Communication module via the global CACHE_SERVICE_TOKEN (same Redis), so
+// both modules register ZaloOAuthStateService without a circular import.
+import { ProviderLinkRepository } from './infrastructure/persistence/drizzle/provider-link.repository';
+import { ZaloOAuthStateService } from '@modules/communication/infrastructure/zalo/zalo-oauth-state.service';
+import { ZaloAccountLinkingService } from './application/zalo-account-linking.service';
 
 /**
  * Auth Module
@@ -65,6 +71,11 @@ import { SessionAuthGuard } from './infrastructure/guards/session-auth.guard';
       provide: APP_GUARD,
       useExisting: SessionAuthGuard,
     },
+
+    // Zalo OA omnichannel Account Linking (nonce store + provider-link repo + linking service)
+    ProviderLinkRepository,
+    ZaloOAuthStateService,
+    ZaloAccountLinkingService,
   ],
   exports: [
     PII_ENCRYPTION_SERVICE_TOKEN,

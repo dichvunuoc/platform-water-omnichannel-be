@@ -10,6 +10,12 @@ export const RegisterProviderSchema = z.object({
   email: z.string().email().optional(),
   name: z.string().min(1).max(255).optional(),
   phoneNumber: z.string().optional(), // Only for Zalo with phone_number scope
+  /**
+   * OAuth `state` value (opaque nonce). For the Zalo OA Account Linking flow,
+   * this is the single-use nonce that maps back to the sender's zalo_user_id.
+   * Ignored for non-Zalo providers.
+   */
+  state: z.string().min(1).max(512).optional(),
 });
 
 export type RegisterProviderDto = z.infer<typeof RegisterProviderSchema>;

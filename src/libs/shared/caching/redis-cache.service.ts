@@ -110,6 +110,24 @@ export class RedisCacheService
     }
   }
 
+  async setIfNotExist<T>(key: string, value: T, ttl?: number): Promise<boolean> {
+    try {
+      const fullKey = this.getFullKey(key);
+      const serializedValue = JSON.stringify(value);
+      const expiry = ttl ?? this.defaultTtl;
+      // Atomic SET NX (only sets if absent). node-redis v4 options-object syntax.
+      const result = await this.redis.set(fullKey, serializedValue, {
+        EX: expiry,
+        NX: true,
+      });
+      return result === 'OK';
+    } catch (error) {
+      this.logger.error(`Failed setIfNotExist for key: ${key}`, error);
+      // Fail-open: treat as NOT claimed so the caller can decide. Logging the error.
+      return false;
+    }
+  }
+
   async delete(key: string): Promise<void> {
     try {
       const fullKey = this.getFullKey(key);

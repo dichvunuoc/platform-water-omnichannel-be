@@ -5,6 +5,12 @@
 export interface ICacheService {
   get<T>(key: string): Promise<T | null>;
   set<T>(key: string, value: T, ttl?: number): Promise<void>;
+  /**
+   * Atomic SET-if-not-exists (SETNX). Returns true if THIS call set the key
+   * (caller "wins" → proceed), false if the key already existed (caller should
+   * treat as duplicate and drop). Used for idempotency claims.
+   */
+  setIfNotExist<T>(key: string, value: T, ttl?: number): Promise<boolean>;
   delete(key: string): Promise<void>;
   exists(key: string): Promise<boolean>;
   clear(): Promise<void>;
