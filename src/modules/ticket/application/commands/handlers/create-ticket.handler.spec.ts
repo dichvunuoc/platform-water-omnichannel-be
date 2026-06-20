@@ -5,7 +5,6 @@ import { PortFallbackException } from '@shared/port/port-exceptions';
 describe('CreateTicketHandler', () => {
   let handler: CreateTicketHandler;
   let portRegistry: any;
-  let commandBus: any;
 
   const mockTicketResponse = {
     trackingId: 'TK-2026-002',
@@ -17,10 +16,7 @@ describe('CreateTicketHandler', () => {
     portRegistry = {
       execute: jest.fn(),
     };
-    commandBus = {
-      execute: jest.fn().mockResolvedValue(undefined),
-    };
-    handler = new CreateTicketHandler(portRegistry, commandBus);
+    handler = new CreateTicketHandler(portRegistry);
   });
 
   const TEST_CUSTOMER_ID = 'USR-SESSION-001';
@@ -49,23 +45,6 @@ describe('CreateTicketHandler', () => {
       );
       expect(result.trackingId).toBe('TK-2026-002');
       expect(result.status).toBe('submitted');
-    });
-
-    it('should record a ticket_created session event on the 360° timeline', async () => {
-      portRegistry.execute.mockResolvedValue({ data: mockTicketResponse });
-
-      await handler.execute(
-        new CreateTicketCommand(TEST_CUSTOMER_ID, 'water_outage', 'No water since morning'),
-      );
-
-      expect(commandBus.execute).toHaveBeenCalledTimes(1);
-      const cmd = commandBus.execute.mock.calls[0][0];
-      expect(cmd.constructor.name).toBe('RecordSessionEventCommand');
-      expect(cmd.payload).toMatchObject({
-        userId: TEST_CUSTOMER_ID,
-        eventType: 'ticket_created',
-        channel: 'web',
-      });
     });
 
     it('should pass imageUrls when provided', async () => {
