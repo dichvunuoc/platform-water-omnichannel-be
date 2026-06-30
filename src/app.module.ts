@@ -12,8 +12,8 @@ import {
   ContextModule,
   CorrelationIdMiddleware,
 } from 'src/libs/shared';
-import { ProductModule } from './modules/product/product.module';
-import { OrderModule } from './modules/order/order.module';
+import { MessagingModule } from './modules/messaging/messaging.module';
+import { TicketingStubModule } from './modules/ticketing-stub/ticketing-stub.module';
 
 @Global()
 @Module({
@@ -38,10 +38,10 @@ import { OrderModule } from './modules/order/order.module';
     OutboxModule,
     // Health check endpoints
     HealthModule,
-    // Product Feature Module (DDD/CQRS Example)
-    ProductModule,
-    // Order Feature Module (IUnitOfWork Demo - Multi-Aggregate Transaction)
-    OrderModule,
+    // OmniCare Messaging Module (Epic 1 — ingestion spine + unified inbox)
+    MessagingModule,
+    // Ticketing Stub (wave-1 — in-memory Ticketing & SLA service simulator)
+    TicketingStubModule,
   ],
 })
 export class AppModule implements NestModule {

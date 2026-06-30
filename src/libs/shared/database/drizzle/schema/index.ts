@@ -1,27 +1,26 @@
 /**
  * Drizzle Schema Exports
  *
- * Export tất cả table schemas
+ * Export tất cả table schemas for the OmniCare project.
+ * (Product/Order demo modules removed — OmniCare modules registered here.)
  */
 
 import {
-  orderItemsRelations,
-  orderItemsTable,
-  ordersRelations,
-  ordersTable,
-} from '@modules/order/infrastructure/persistence/drizzle/schema';
-import { productsTable } from '@modules/product/infrastructure/persistence/drizzle/schema';
+  conversationsTable,
+  messagesTable,
+  conversationsRelations,
+  messagesRelations,
+} from '@modules/messaging/infrastructure/persistence/drizzle/schema';
 import {
   outboxStatusEnum,
   outboxTable,
 } from '@shared/database/outbox/drizzle/schema/outbox.schema';
 
 export const schema = {
-  productsTable,
-  ordersTable,
-  orderItemsTable,
-  ordersRelations,
-  orderItemsRelations,
+  conversationsTable,
+  messagesTable,
+  conversationsRelations,
+  messagesRelations,
   outboxTable,
   outboxStatusEnum,
 };

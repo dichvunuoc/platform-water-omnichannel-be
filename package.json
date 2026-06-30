@@ -100,13 +100,15 @@
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^@core$": "<rootDir>/libs/core/index.ts",
-      "^@core/(.*)$": "<rootDir>/libs/core/$1",
+      "^src/(.*)$": "<rootDir>/src/$1",
+      "^@core$": "<rootDir>/src/libs/core/index.ts",
+      "^@core/(.*)$": "<rootDir>/src/libs/core/$1",
+      "^@shared$": "<rootDir>/src/libs/shared/index.ts",
+      "^@shared/(.*)$": "<rootDir>/src/libs/shared/$1",
       "^@modules/(.*)$": "<rootDir>/src/modules/$1"
     },
     "roots": [
-      "<rootDir>/src",
-      "<rootDir>/libs"
+      "<rootDir>/src"
     ]
   }
 }
