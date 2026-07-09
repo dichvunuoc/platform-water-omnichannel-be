@@ -1,0 +1,11 @@
+{
+  "customerId": "USR-12345",
+  "calls": [
+    {
+      "callId": "CALL-2026-0091",
+      "startedAt": "2026-07-06T09:12:00Z",
+      "durationSec": 184,
+      "outcome": "completed"
+    }
+  ]
+}

@@ -513,6 +513,132 @@ describe('PortRegistry', () => {
   });
 
   // =========================================================================
+  // execute — Queued tier (Live→Cached→Queued) — queuePolicy
+  // =========================================================================
+  describe('execute — Queued tier', () => {
+    let queuedRegistry: PortRegistry;
+    let mockQueueService: { enqueue: jest.Mock; setReplayExecutor: jest.Mock };
+
+    beforeEach(() => {
+      mockQueueService = {
+        enqueue: jest.fn().mockResolvedValue('job-abc-123'),
+        setReplayExecutor: jest.fn(),
+      };
+      // Deterministic cache mock — clearAllMocks() does NOT reset mockResolvedValueOnce
+      // queues, so leftover once-values from earlier describes could turn a seed call into
+      // a false cache hit. Reset to a clean null default for every queued-tier test.
+      mockCacheService.get.mockReset();
+      mockCacheService.get.mockResolvedValue(null);
+      queuedRegistry = new PortRegistry(
+        configService,
+        mockCacheService as any,
+        fallbackProvider,
+        structuredLogger,
+        mockRequestContext as any,
+        mockIdempotencyService as any,
+        mockQueueService as any,
+      );
+      // queuedRegistry.onModuleInit() registers the replay executor — not needed here
+    });
+
+    it('queuePolicy=always: enqueues + throws PortQueuedException on adapter failure', async () => {
+      const failAdapter = createFailingAdapter(new Error('downstream down'));
+      queuedRegistry.register('write-port', failAdapter, failAdapter, {
+        cacheTier: 'transaction',
+        cacheTtl: 0,
+        timeout: 3000,
+        queuePolicy: 'always',
+      } as any);
+
+      await expect(queuedRegistry.execute('write-port', 'create', { x: 1 })).rejects.toThrow(
+        'Request queued for retry [write-port]: jobId=job-abc-123',
+      );
+      expect(mockQueueService.enqueue).toHaveBeenCalledTimes(1);
+      const payload = mockQueueService.enqueue.mock.calls[0][0];
+      expect(payload.portName).toBe('write-port');
+      expect(payload.method).toBe('create');
+      expect(payload.params).toEqual({ x: 1 });
+    });
+
+    it('queuePolicy=on-cache-miss: serves stale cache + fire-and-forget refresh', async () => {
+      // Seed fallback cache with a prior successful result
+      const seedAdapter = createMockAdapter({ data: 'stale' });
+      queuedRegistry.register('read-port', seedAdapter, seedAdapter, {
+        cacheTier: 'dynamic',
+        cacheTtl: 900,
+        timeout: 3000,
+        queuePolicy: 'on-cache-miss',
+      } as any);
+      await queuedRegistry.execute('read-port', 'get'); // populates fallback cache
+
+      // Flip adapter to fail (simulating outage)
+      const entry = queuedRegistry.getPort('read-port')!;
+      const failAdapter = createFailingAdapter(new Error('down'));
+      (entry as any).liveAdapter = failAdapter;
+      (entry as any).mockAdapter = failAdapter;
+      mockCacheService.get.mockResolvedValue(null); // request cache miss
+
+      const result = await queuedRegistry.execute('read-port', 'get');
+
+      expect(result.fromCache).toBe(true);
+      expect(result.metadata?.degraded).toBe(true);
+      expect(result.metadata?.message).toContain('refresh queued');
+      expect(mockQueueService.enqueue).toHaveBeenCalled(); // background refresh enqueued
+    });
+
+    it('queuePolicy=on-cache-miss with NO cache: enqueues + PortQueuedException', async () => {
+      const failAdapter = createFailingAdapter(new Error('down'));
+      queuedRegistry.register('fresh-port', failAdapter, failAdapter, {
+        cacheTier: 'dynamic',
+        cacheTtl: 900,
+        timeout: 3000,
+        queuePolicy: 'on-cache-miss',
+      } as any);
+
+      await expect(queuedRegistry.execute('fresh-port', 'get')).rejects.toThrow(
+        'Request queued for retry [fresh-port]: jobId=job-abc-123',
+      );
+      expect(mockQueueService.enqueue).toHaveBeenCalledTimes(1);
+    });
+
+    it('queuePolicy=never: falls back to cache then PortFallbackException (no enqueue)', async () => {
+      const failAdapter = createFailingAdapter(new Error('down'));
+      queuedRegistry.register('safe-port', failAdapter, failAdapter, {
+        cacheTier: 'dynamic',
+        cacheTtl: 900,
+        timeout: 3000,
+        queuePolicy: 'never',
+      } as any);
+
+      await expect(queuedRegistry.execute('safe-port', 'get')).rejects.toThrow(/safe-port/);
+      expect(mockQueueService.enqueue).not.toHaveBeenCalled();
+    });
+
+    it('executeReplay: calls live adapter inside synthesized context + refreshes fallback', async () => {
+      const liveAdapter = createMockAdapter({ replayed: true });
+      queuedRegistry.register('replay-port', createMockAdapter({}), liveAdapter, {
+        cacheTier: 'dynamic',
+        cacheTtl: 900,
+        timeout: 3000,
+        queuePolicy: 'always',
+      } as any);
+      mockRequestContext.createFull.mockReturnValue({ correlationId: 'replay-correlation' });
+      mockRequestContext.run.mockImplementation((_ctx: unknown, cb: () => unknown) => cb());
+
+      const data = await queuedRegistry.executeReplay({
+        portName: 'replay-port',
+        method: 'get',
+        params: { id: 9 },
+        context: { correlationId: 'replay-correlation' },
+      });
+
+      expect(data).toEqual({ replayed: true });
+      expect(liveAdapter.execute).toHaveBeenCalledWith('get', { id: 9 });
+      expect(mockRequestContext.run).toHaveBeenCalled();
+    });
+  });
+
+  // =========================================================================
   // getPort
   // =========================================================================
   describe('getPort', () => {

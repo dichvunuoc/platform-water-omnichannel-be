@@ -44,8 +44,8 @@ export class SessionController {
     @CurrentUser('id') userId: string,
     @Query('channel') channel?: string,
   ) {
-    // Validate channel param, default to 'web'
-    const effectiveChannel = channel || 'web';
+    // Validate channel param, default to 'app'
+    const effectiveChannel = channel || 'app';
     const channelResult = ChannelTypeSchema.safeParse(effectiveChannel);
     if (!channelResult.success) {
       throw new ValidationException(`Invalid channel: ${effectiveChannel}`);

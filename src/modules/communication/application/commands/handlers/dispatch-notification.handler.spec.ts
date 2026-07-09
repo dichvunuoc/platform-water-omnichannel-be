@@ -77,7 +77,7 @@ describe('DispatchNotificationHandler', () => {
       expect(callArg).toBeInstanceOf(RecordSessionEventCommand);
       expect(callArg.payload.userId).toBe(TEST_CUSTOMER_ID);
       expect(callArg.payload.eventType).toBe('notification_sent');
-      expect(callArg.payload.channel).toBe('zalo'); // zns → zalo mapping
+      expect(callArg.payload.channel).toBe('app'); // App-only — session touchpoint is always 'app'
     });
   });
 

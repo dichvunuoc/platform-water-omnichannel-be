@@ -114,3 +114,26 @@ export class PortFallbackException extends PortException {
     }
   }
 }
+
+/**
+ * Thrown when a port call has been enqueued for retry by the Queued tier
+ * (Live→Cached→Queued) instead of being served synchronously. The global
+ * exception filter maps this to HTTP 202 Accepted with the job id so the
+ * client knows the request is pending and will be replayed by the worker.
+ */
+export class PortQueuedException extends PortException {
+  /** Port name that was queued */
+  readonly portName: string;
+  /** BullMQ job id for replay tracking */
+  readonly jobId: string;
+
+  constructor(portName: string, jobId: string) {
+    super(
+      `Request queued for retry [${portName}]: jobId=${jobId}`,
+      'PORT_QUEUED',
+      { portName, jobId, status: 'queued' },
+    );
+    this.portName = portName;
+    this.jobId = jobId;
+  }
+}

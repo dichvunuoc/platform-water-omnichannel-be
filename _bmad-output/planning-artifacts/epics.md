@@ -1,11 +1,14 @@
 ---
 stepsCompleted: [step-01, step-02, step-03-epic-1, step-03-epic-2, step-03-epic-3, step-03-epic-4, step-03-epic-5, step-03-epic-6, step-03-epic-7, step-04-validation]
 status: 'complete'
-completedAt: '2026-06-04'
+completedAt: '2026-07-02'
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/architecture.md
+  - _bmad-output/planning-artifacts/My-Cong-ty_Bao-cao-Ke-hoach.docx
+revisionNote: '2026-07-06 — Auth = BFF-owned better-auth BUILD MỚI (registration, login, OTP/social/Zalo, token issue + verify, auto-refresh 401, multi-provider linking, Customer Auth DB in PostgreSQL). FR1/FR3/FR4/FR5 + Stories 1.3/1.4 describe this better-auth build. Other realignments: Queued tier MVP (Story 1.2), `account` module, 36 services → 30 Ports (FR10).'
 ---
+
 
 # IOC Customer — Module CSKH - Epic Breakdown
 
@@ -13,20 +16,24 @@ inputDocuments:
 
 This document provides the complete epic and story breakdown for IOC Customer — Module CSKH, decomposing the requirements from the PRD, UX Design if it exists, and Architecture requirements into implementable stories.
 
+> **📱 App-only (2026-07-06):** Customer touchpoint = **App only** (no Web Portal / Zalo OA as channels). Zalo kept as **auth** (login/OTP via ZNS message). Multi-channel / cross-channel references below — incl. Story 7.2 (Cross-Channel Session Continuation), Context Preservation, "Zalo OA" inbound, `cskh` port, "Web Portal" — are **STALE pending narrative reframe**; **code is App-only** (Zalo OA inbound + `cskh` port removed). Multi-channel NOTIFICATION dispatch (Epic 6, S32: push/SMS/Zalo/email) remains valid — those are notification delivery channels, not customer touchpoints.
+
 ## Requirements Inventory
 
 ### Functional Requirements
 
-- **FR1:** Customer authenticates via Phone/OTP, Zalo ID, or Social login (Google, Facebook, Apple) — no username/password required
-- **FR2:** System links 1 Customer with multiple Providers (Phone, Zalo ID, Email) for cross-channel identification
-- **FR3:** System issues authenticated token containing customer identity, linked providers, session reference for every authenticated KH
-- **FR4:** System auto-refreshes access token on receiving 401 from downstream — KH sees no disruption
-- **FR5:** BFF owns Customer Auth DB (PostgreSQL) — stores customer profiles, provider links, tokens
+- **FR1:** Customer **registers and authenticates** via **better-auth (BFF-owned, build new)** — Phone/OTP, Zalo ID, or Social login (Google, Facebook, Apple); no username/password required.
+- **FR2:** System links 1 Customer with multiple Providers (Phone, Zalo ID, Email) for cross-provider identification — multi-provider linking via **better-auth**
+- **FR3:** The **BFF issues** the authenticated token (customer identity, linked providers, mã KH scope, session reference) for every authenticated KH via **better-auth**, and **verifies + propagates** it downstream.
+- **FR4:** On receiving 401 from downstream (expired token), the **BFF auto-refreshes** the access token via **better-auth** and retries — the customer does not see disruption (BFF-owned refresh).
+- **FR5:** The **BFF owns the Customer Auth DB** (PostgreSQL, via better-auth) — users, credentials, provider links, sessions, tokens.
+
+> 📌 *(2026-07-06) Auth = **better-auth (BFF-owned, build new)** — registration + login + token issue/verify + auto-refresh, all in the BFF. FR1–FR5 + Stories 1.3/1.4 describe this better-auth build. Implement in the auth epic.*
 - **FR6:** KH views 360° profile: customer ID, identity info, usage classification, address, contact info
 - **FR7:** KH views 360° interaction timeline: contracts → meters → readings → invoices → payments → complaints → multi-channel interactions, ordered chronologically
 - **FR8:** KH updates contact info (phone, email, contact address)
 - **FR9:** KH views relationship tree (Industrial Zone → member factories), auxiliary contacts
-- **FR10:** Each downstream Microservice communicates via Port interface (30 Port Interfaces total: 14 MVP + 12 Phase 2 + 4 Phase 3)
+- **FR10:** Each downstream Microservice communicates via Port interface (36 downstream services → 30 Port Interfaces: 14 MVP + 12 Phase 2 + 4 Phase 3; 6 unported: Revenue, Fraud, Forecast, Churn, Agent-Assist, SCADA) *(revised 2026-07-02 — 36 services / 30 Ports)*
 - **FR11:** Adapter implementation is injectable — MockAdapter for development, InternalAdapter for production, ExternalAdapter for SaaS
 - **FR12:** Frontend only knows Port schema — never exposed to downstream raw schema
 - **FR13:** Adding a new downstream service = adding Port + Adapter — no BFF core modification
@@ -123,13 +130,15 @@ This document provides the complete epic and story breakdown for IOC Customer �
 
 **From Architecture — Technical Infrastructure:**
 - Brownfield NestJS 11 project — DDD/CQRS foundation already exists in `libs/core/` and `libs/shared/`. No greenfield starter needed.
-- New `libs/shared/port/` layer: Port Registry, base adapter classes, per-port CB/cache wrapper (P0 priority)
+- New `libs/shared/port/` layer: Port Registry, base adapter classes, per-port CB/cache/queue wrapper (P0 priority)
+- New `libs/shared/queue/`: BullMQ on Redis — Queued tier (Live→Cached→Queued) + DLQ, MVP per decision D11 (P0)
 - New `libs/shared/endpoint-config/`: YAML config + chokidar hot-reload for mock/live switching
-- New `libs/shared/auth-propagation/`: JWT signing via jose library
-- 30 Port Interfaces total: 14 MVP + 12 Phase 2 + 4 Phase 3, each with mock/live adapters
+- New `libs/shared/auth/`: **better-auth** instance (BFF-owned) — registration, login, token issue + verify, auto-refresh, linking (BFF signs its own JWTs)
+- 36 downstream services → 30 Port Interfaces (14 MVP + 12 Phase 2 + 4 Phase 3; 6 unported), each with mock/live adapters
 - Mock Data Strategy: 24 JSON datasets with Zod schema validation, CI/CD contract validation gate
-- Session Store: Redis Hash + Sorted Set + Lua script for atomic session event writes
+- Session Store: Redis Hash + Sorted Set + Lua script for atomic session event writes (context only — NOT auth sessions)
 - Aggregation Service: Promise.allSettled for fan-out with partial failure handling
+- Account Module (`modules/account/`): owns "Liên kết & hồ sơ" — account linking (via better-auth) + Customer Profile 360°
 
 **From Architecture — Existing Infrastructure to Leverage (~60-70% already built):**
 - DDD Core Library (`libs/core/`) — AggregateRoot, VOs, Specs, Repos
@@ -146,22 +155,22 @@ This document provides the complete epic and story breakdown for IOC Customer �
 **From Architecture — Implementation Sequence:**
 - Phase 1: Infrastructure Foundation (Week 1-2) — Docker Compose, Port Infrastructure, Endpoint Config, Auth Propagation, Mock Data
 - Phase 2: MVP Domain Modules (Week 3-6) — Auth, Session, Input Adapters, Customer, Contract, Meter, Billing, Payment, Ticket, Communication, Document
-- Phase 3: Integration & Testing (Week 7-8) — Webhook integration, E2E tests for Context Preservation, Port Registry, Circuit Breaker, Aggregation
+- Phase 3: Integration & Testing (Week 7-8) — Webhook integration, E2E tests for Session Continuity, Port Registry, Circuit Breaker, Aggregation
 - Phase 4: Growth/Phase 2 Services (Month 3-6) — 12 additional modules
 - Phase 5: Vision/Phase 3 Services (Month 7+) — 4 additional modules
 
 ### FR Coverage Map
 
-FR1: Epic 1 — Customer authenticates via Phone/OTP, Zalo, Social login
-FR2: Epic 1 — Multi-provider linking for cross-channel identification
-FR3: Epic 1 — Authenticated token issued with customer identity
-FR4: Epic 1 — Auto-refresh access token on 401 from downstream
-FR5: Epic 1 — BFF owns Customer Auth DB (PostgreSQL)
+FR1: Epic 1 — Customer registers + authenticates via better-auth (Phone/OTP, Zalo, Social)
+FR2: Epic 1 — Multi-provider linking for cross-provider identification
+FR3: Epic 1 — BFF issues + verifies + propagates token via better-auth
+FR4: Epic 1 — On 401, BFF auto-refreshes via better-auth (disruption-free)
+FR5: Epic 1 — BFF owns Customer Auth DB (better-auth, PostgreSQL)
 FR6: Epic 2 — KH views 360° profile
 FR7: Epic 2 — KH views 360° interaction timeline
 FR8: Epic 2 — KH updates contact info
 FR9: Epic 2 — KH views relationship tree
-FR10: Epic 1 — Each downstream Microservice communicates via Port interface (30 Ports)
+FR10: Epic 1 — Each downstream Microservice communicates via Port interface (36 services → 30 Ports)
 FR11: Epic 1 — Adapter implementation injectable (Mock/Internal/External)
 FR12: Epic 1 — Frontend only knows Port schema
 FR13: Epic 1 — New service = new Port + Adapter, no core change
@@ -257,7 +266,7 @@ FR72: Epic 7 — Internal webhook static API key verification
 
 ## Epic 1: Customer Identity & Resilient Foundation
 
-**Goal:** KH can authenticate and every downstream call is protected from day one. The Port Registry ships with Circuit Breaker, tiered caching, and idempotency baked in — all future epics inherit resilient communication automatically.
+**Goal:** KH can authenticate (via **better-auth, BFF-owned** — registration, login, token issue/verify, auto-refresh) and every downstream call is protected from day one. The Port Registry ships with Circuit Breaker, tiered caching, the **Queued tier (Live→Cached→Queued)**, and idempotency baked in — all future epics inherit resilient communication automatically.
 
 ### Story 1.1: Hexagonal Port Infrastructure
 
@@ -330,6 +339,13 @@ So that I always get a response even when a backend service is down, and I never
 **When** a call is made
 **Then** no caching occurs — every request hits the downstream service live.
 
+**Given** the Circuit Breaker is OPEN for a port **and** no cached data exists (cache MISS, or `cacheTier: none` for write/transaction ports like payment)
+**When** a KH request arrives for that port
+**Then** the request is **enqueued** to the per-port BullMQ queue (`bull:{portName}:queue`) for retry with exponential backoff — this is the **Queued tier** (3rd resilience layer, decision D11)
+**And** the system returns HTTP **202 Accepted** with a trace reference to the KH (e.g. "Your request is queued and will complete when the service recovers")
+**And** when the downstream recovers, the queued job executes; failures beyond the retry limit move to the DLQ (`bull:{portName}:dlq`) for manual handling
+**And** ports may override this via `queuePolicy`: `never` (e.g. `auth` — must NOT queue, return 401 immediately), `on-cache-miss` (default), or `always` (e.g. `payment` writes — must never lose data).
+
 **Given** an inbound webhook request arrives (e.g. Zalo callback)
 **When** the `idempotencyKey` is extracted (hash of messageId/callId)
 **Then** Redis `GET idempotency:{hash}` is checked first
@@ -341,7 +357,9 @@ So that I always get a response even when a backend service is down, and I never
 **Then** the `x-idempotency-key` header is automatically injected as `{correlationId}:{endpointHash}`
 **And** the header is included in every PortHttpClient outbound call.
 
-### Story 1.3: Customer Registration & Multi-Provider Auth
+### Story 1.3: Registration & Account Linking via better-auth
+
+> ✅ **Auth = better-auth (BFF-owned, build new) — decision D10.** Registration, OTP/OAuth login, credential storage, token issuance, and multi-provider linking all happen in the BFF via better-auth. The BFF owns the Customer Auth DB (PostgreSQL). The `account` module resolves mã KH + reads identity/linking via `IAuthPort`.
 
 As a **customer (Anh Tuấn / Cô Nguyễn)**,
 I want to register and sign in using my phone number, Zalo account, or social media,
@@ -350,67 +368,65 @@ So that I can access my water service information without creating yet another u
 **Acceptance Criteria:**
 
 **Given** a new customer opens the My Công ty App
-**When** they choose "Sign in with Phone Number" and enter a valid Vietnamese mobile number
-**Then** the system sends an OTP to that number
-**And** upon successful OTP verification, a new User record is created in PostgreSQL (BFF-owned DB)
-**And** the customer's phone number is stored as a linked Provider.
+**When** they choose "Register / Sign in with Phone Number" and enter a valid Vietnamese mobile number
+**Then** the BFF calls `IAuthPort.register`/`login(phone, method=otp)` → better-auth sends the OTP (via `INotificationPort`)
+**And** better-auth verifies the OTP, **creates (or resolves) the Customer identity** in the Customer Auth DB (PostgreSQL), and **issues** access + refresh tokens
+**And** the `account` module resolves the **mã KH** from the phone (links to existing KH or creates a profile) and binds it to the new identity.
 
 **Given** a customer chooses "Sign in with Zalo"
-**When** Zalo OAuth flow completes and returns the Zalo ID
-**Then** the system creates a User record with Zalo as linked Provider
-**And** if the Zalo profile includes a verified phone number (requires explicit `phone_number` scope request during Zalo OAuth/OA flow and user consent), the system checks for an existing User with that phone number and merges the Zalo Provider under the same UserID
-**And** if the phone number scope is denied or unavailable, the Zalo account is created as a standalone User — merging can be performed later via manual account linking.
+**When** the Zalo OAuth/OA flow completes
+**Then** the BFF hands the Zalo credential to better-auth, which creates/links the identity with Zalo as a provider
+**And** if the Zalo profile includes a verified phone number (explicit `phone_number` scope + consent), **better-auth** matches an existing identity by phone and **links** the Zalo provider under the same UserID (merging logic in better-auth)
+**And** if the phone scope is denied/unavailable, better-auth creates a standalone identity; linking can be done later via `IAuthPort.linkProvider`.
 
 **Given** a customer chooses "Sign in with Google/Facebook/Apple"
 **When** the social OAuth flow completes
-**Then** the system creates a User record with the social Provider linked
-**And** if the social email matches an existing user, the providers are merged under the same UserID.
+**Then** better-auth links the social provider and merges by matching email if one exists.
 
-**Given** an existing customer has authenticated via Phone/OTP
+**Given** an existing customer authenticated via Phone/OTP
 **When** they later sign in via Zalo using the same phone number
-**Then** the system recognizes the match **only if the Zalo OAuth flow successfully obtained the `phone_number` scope with user consent**
-**And** if matched, links the Zalo Provider to the existing User record
-**And** both Phone and Zalo now resolve to the same UserID — enabling cross-channel identification.
+**Then** better-auth recognizes the match (only if Zalo OAuth obtained the `phone_number` scope with consent) and links the Zalo provider to the existing identity
+**And** the `account` module can read the linked providers (via `IAuthPort` / `ICustomerProfilePort`) so Phone and Zalo resolve to the same UserID — enabling cross-provider identification.
 
-**Given** the BFF Auth DB (PostgreSQL) is initialized
-**When** the application starts
-**Then** the `users` table and `provider_links` table are migrated via Drizzle
-**And** User entity follows existing DDD patterns (extends `Entity` from `libs/core/`)
-**And** all PII fields (phone, email) are stored encrypted at rest (AES-256, NFR-S1).
+**Given** the `account` module owns "Liên kết & hồ sơ" (linking + profile)
+**When** linking or profile data is needed
+**Then** the `account` module calls better-auth (linking, via `IAuthPort`) + Customer Profile Service (S2, via `ICustomerProfilePort`) — the **Customer Auth DB is owned by the BFF** (better-auth, PostgreSQL).
 
-### Story 1.4: Authenticated Token Lifecycle
+### Story 1.4: Token Issuance, Verification & Identity Propagation via better-auth
+
+> ✅ **Auth = better-auth (BFF-owned) — decision D10.** The BFF issues + verifies + propagates its own JWTs via better-auth. On downstream 401, the BFF **auto-refreshes** via better-auth (disruption-free).
 
 As a **customer using any channel (App/Web/Zalo)**,
-I want to stay authenticated without noticing token expiration,
+I want my authenticated session to work seamlessly across the BFF and downstream services,
 So that I can use the service continuously without being logged out mid-task.
 
 **Acceptance Criteria:**
 
-**Given** a customer successfully authenticates (via any provider from Story 1.3)
+**Given** a customer successfully authenticates (Story 1.3, via better-auth)
 **When** the auth flow completes
-**Then** **better-auth** manages the frontend session: issuing and storing a 7-day refresh token for silent renewal on the BFF↔Frontend boundary
-**And** when `PortHttpClient` makes a downstream call, **jose** dynamically generates a 15-minute JWT on the fly containing: `sub` (UserID), `roles`, `provider` (channel), `session_id`, `xi_nghiep`, `iat`, `exp`
-**And** these are **two separate token systems**: better-auth for frontend session management, jose for BFF→downstream identity propagation — they must not be conflated.
+**Then** **better-auth issues** the access token (~15 min) + refresh token (~7 days) — the BFF stores the session in the Customer Auth DB and returns the access token to the client
+**And** the BFF **verifies** its own JWT (signature via `AUTH_SECRET`, `exp`, `aud`, `mã KH` scope) on each request using the better-auth session guard
+**And** the BFF **owns** token issuance + storage — there is no external token system.
 
-**Given** an authenticated customer makes a request to a downstream service
-**When** the downstream service returns HTTP 401 (expired/invalid token)
-**Then** the BFF Auth Propagation middleware automatically refreshes the jose JWT (using better-auth session to re-issue) and retries the downstream call once
-**And** the customer experiences zero disruption.
+**Given** an authenticated customer makes a downstream service call
+**When** `PortHttpClient` constructs the request
+**Then** it injects `Authorization: Bearer {BFF-issued JWT}` — **propagating** the verified token — plus the `x-correlation-id` header.
 
-**Given** the auto-refresh attempt also fails (better-auth session expired)
-**When** the retry returns 401
-**Then** the system returns a structured 401 response to the frontend with a clear "session expired" message
-**And** the frontend can prompt re-authentication.
+**Given** a downstream service returns HTTP 401 (expired BFF-issued token)
+**When** the BFF receives it
+**Then** the BFF **auto-refreshes** the access token via better-auth (using the refresh token) and retries the call — the customer does not see disruption (no structured 401 to the FE under normal expiry).
+
+**Given** better-auth signing key rotation
+**When** `AUTH_SECRET` is rotated (env swap + redeploy)
+**Then** newly issued tokens verify against the new key; outstanding refresh tokens are honoured until they rotate out.
 
 **Given** a customer has an active session on Web and opens the Zalo channel
-**When** both channels share the same UserID (via multi-provider linking from Story 1.3)
-**Then** both channels can operate concurrently with valid tokens
-**And** each channel's jose JWT carries the `provider` field identifying the source channel.
+**When** both channels share the same UserID (via better-auth multi-provider linking)
+**Then** both channels present tokens issued by the **same** better-auth instance and carry the `provider` (channel) + `mã KH` scope — concurrent use works.
 
-**Given** a downstream service call is made
-**When** the request is constructed by PortHttpClient
-**Then** the `Authorization: Bearer {joseJWT}` header is automatically injected
-**And** the `x-correlation-id` header is included for distributed tracing.
+**Given** the BFF owns credentials
+**When** the application runs
+**Then** the auth-related configuration is `AUTH_SECRET` (better-auth signing key) + `DATABASE_URL` (Customer Auth DB, PostgreSQL) — credentials live in the BFF.
 
 ## Epic 2: My Water Account
 
@@ -421,6 +437,8 @@ So that I can use the service continuously without being logged out mid-task.
 As a **customer (Anh Tuấn)**,
 I want to view my complete profile with all interactions in one place,
 So that I have full visibility into my water service relationship without calling the hotline.
+
+> **Owned by the `account` module ("Liên kết & hồ sơ", decision D3).** Profile 360° + account linking both live in `modules/account/`, reading the Customer Profile Service (S2) via `ICustomerProfilePort` and linking via `IAuthPort` (better-auth). **TARGET — not yet built** (current code: `modules/customer/`); planned after Queue (D11).
 
 **Acceptance Criteria:**
 
@@ -970,7 +988,7 @@ So that when I switch channels, the company remembers everything without me repe
 **Then** all session data is preserved (AOF persistence, NFR-R4)
 **And** active customers can continue their sessions without re-authentication.
 
-### Story 7.2: Cross-Channel Session Continuation
+### Story 7.2: Session Continuation within the App
 
 As a **customer (Anh Tuấn)**,
 I want to start a conversation on Zalo in the morning and continue on the Web portal in the afternoon without repeating myself,
@@ -979,9 +997,9 @@ So that my time is respected and my issue is handled seamlessly.
 **Acceptance Criteria:**
 
 **Given** a customer chatted via Zalo at 9:00 AM and received tracking ID `TK-2026-002`
-**When** they open the Web Portal at 2:00 PM and authenticate with the same UserID (via multi-provider linking from Epic 1)
+**When** they reopen the App at 2:00 PM (better-auth session still active — same UserID)
 **Then** the BFF loads the session from `session:{userId}:events`
-**And** the Web Portal displays the full history: Zalo chat at 9:00 AM + tracking ID + current ticket status
+**And** the App displays the full history: the morning's incident report + tracking ID + current ticket status
 **And** the customer does NOT need to re-enter any information.
 
 **Given** a customer switches from App to Zalo mid-conversation

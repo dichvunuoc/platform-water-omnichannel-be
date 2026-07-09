@@ -2,37 +2,39 @@
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 lastStep: 8
 status: 'complete'
-completedAt: '2026-06-04'
+completedAt: '2026-07-02'
 inputDocuments:
   - product-brief-IOC-Customer-2026-06-02.md
-  - prd.md (v4.0 — 30 downstream services)
+  - prd.md (v4.0 — 36 downstream services → 30 Ports)
   - docs/Mota_Tinh_Nang_KinhDoanh_KhachHang (AutoRecovered).docx
+  - My-Cong-ty_Bao-cao-Ke-hoach.docx (2026-07-02 — architecture realignment)
 workflowType: 'architecture'
 project_name: 'nestjs-project-example'
 user_name: 'Pc'
-date: '2026-06-04'
+date: '2026-07-02'
 projectClassification:
   type: 'BFF / API Gateway & Orchestrator Platform'
   domain: 'Utility'
   subDomain: 'Govtech'
   complexity: 'High'
-  complexityFocus: 'Port Orchestration, Resilience & Aggregation (NOT business logic)'
+  complexityFocus: 'Port Orchestration, 3-Tier Resilience (Live→Cached→Queued) & Aggregation (NOT business logic, NOT auth ownership)'
+revisionNote: '2026-07-06 — Auth = BFF-owned better-auth BUILD MỚI (Customer Auth DB in PostgreSQL — registration, login, OTP/social/Zalo, token issue + verify, auto-refresh 401, multi-provider linking). Other realignments: Queued tier MVP (Live→Cached→Queued), `account` module (Profile 360° + linking via better-auth), 36 services → 30 Ports (6 unported: Revenue, Fraud, Forecast, Churn, Agent-Assist, SCADA). NOTE: this better-auth rebuild is the TARGET — current code still runs the prior better-auth session-auth.guard; rebuild per this doc.'
 ---
 
 # Architecture Decision Document
 
-_Updated for PRD v4.0 — 30 downstream services, 30 Port Interfaces, 24 mock adapters._
+_Updated 2026-07-06: AUTH = BFF-owned better-auth (build new). 36 downstream services → 30 Port Interfaces, 24 mock adapters. 3-tier resilience Live→Cached→Queued from MVP. **App-only (2026-07-06):** customer touchpoint = App only (no Web Portal / Zalo OA as channels); Zalo kept as auth (login/OTP via ZNS). Multi-channel / cross-channel Context Preservation / `cskh` / Web-Portal / Zalo-OA-inbound references below are STALE pending narrative reframe; **code is App-only** (Zalo OA inbound + `cskh` port removed). Multi-channel NOTIFICATION dispatch (S32) remains valid._
 
 ## Project Positioning Summary
 
-> **Core Insight:** This project is a **BFF (Backend For Frontend) / API Gateway** — a Coordination & Resilience Layer. The architectural complexity lives in orchestrating 30 downstream services via Hexagonal Ports, circuit breaking, context preservation, and mock→live migration — not in domain business rules.
+> **Core Insight:** This project is a **BFF (Backend For Frontend) / API Gateway** — a Coordination & Resilience Layer. The architectural complexity lives in orchestrating 36 downstream services (30 via Hexagonal Ports), 3-tier resilience (Live→Cached→Queued), in-app session continuity (single-channel App), and mock→live migration — not in domain business rules (auth is owned by the BFF via a new better-auth build).
 
 | Criterion | Refined Value | Rationale |
 |-----------|--------------|-----------|
-| **Project Type** | BFF / API Gateway & Orchestrator Platform | Stateful sessions (Redis), smart routing, centralized Auth, multi-channel integration orchestration. Does NOT own business logic. |
+| **Project Type** | BFF / API Gateway & Orchestrator Platform | Stateful sessions (Redis), smart routing by customer-code scope (mã KH), single-channel (App) integration + multi-channel notification dispatch. Does NOT own business logic; **OWNS auth via a new better-auth build** (registration, login, OTP/social/Zalo, token issue + verify, auto-refresh 401, multi-provider linking). |
 | **Domain** | Utility (Sub: Govtech) | Direct interaction with physical infrastructure (SCADA, GIS, water meters) under strict government regulation for essential public services. |
-| **Complexity** | **High** — Port Orchestration & Resilience focus | Key risks: (1) Chain failure from 30 downstream APIs, (2) Multi-channel context preservation, (3) Zero-downtime Mock→Live migration across 24 services |
-| **Scale** | **30 Port Interfaces** → 14 MVP + 12 Phase 2 + 4 Phase 3 | Each port = interface + mock adapter + internal adapter + per-port circuit breaker + per-port cache tier |
+| **Complexity** | **High** — Port Orchestration & 3-Tier Resilience focus | Key risks: (1) Chain failure from 36 downstream APIs, (2) Multi-channel context preservation, (3) Zero-downtime Mock→Live migration across 24 services, (4) 0% total outage requiring Live→Cached→Queued from MVP |
+| **Scale** | **36 downstream services → 30 Port Interfaces** (14 MVP + 12 Phase 2 + 4 Phase 3; 6 unported: Revenue, Fraud, Forecast, Churn, Agent-Assist, SCADA) | Each port = interface + mock adapter + internal adapter + per-port circuit breaker + per-port cache tier + queue fallback |
 
 ### Risk Assessment
 
@@ -40,7 +42,7 @@ _Updated for PRD v4.0 — 30 downstream services, 30 Port Interfaces, 24 mock ad
 |-----------|--------|-------|
 | **Port Registry Complexity** | Managing 30 port adapters, each with mock/live switching, CB, cache | 🔴 High |
 | Integration Testing | Dependencies on 30 Backend APIs without control | 🔴 High |
-| Concurrent Channel Testing | Context Preservation requires simultaneous Zalo + Hotline testing | 🔴 High |
+| Session Continuity Testing | Session resume within the App (restart/re-login) requires dedicated testing | 🟡 Medium |
 | Resilience Testing | Circuit Breaker × 30 ports, cache fallback, queue handling | 🔴 High |
 | Migration Testing | Mock→Live config switching × 24 services, zero-downtime, schema accuracy | 🟡 Medium-High |
 | Aggregation Performance | Fan-out calls across 5-6 ports for dashboard/home screen | 🟡 Medium |
@@ -55,9 +57,9 @@ _Updated for PRD v4.0 — 30 downstream services, 30 Port Interfaces, 24 mock ad
 
 | Category | Count | Architectural Impact |
 |----------|-------|---------------------|
-| Customer Auth & Identity (S1) | 5 FRs | Auth module, better-auth, JWT lifecycle, multi-provider linking |
+| Customer Auth & Identity (S1) | 5 FRs | better-auth module (BFF-owned) — registration, login (OTP/social/Zalo), token issue + verify, auto-refresh 401, multi-provider linking |
 | Customer Profile 360° (S2) | 4 FRs | `ICustomerProfilePort`, timeline aggregation |
-| Hexagonal Adapter Layer | 6 FRs | Port Registry, 30 Port Interfaces, mock/live switching |
+| Hexagonal Adapter Layer | 6 FRs | Port Registry, 36 services → 30 Port Interfaces, mock/live switching |
 | Contract Management (S4) | 4 FRs | `IContractPort`, eContract integration |
 | Meter & Consumption (S5, S6) | 6 FRs | `IMeterPort`, `IMeterReadingPort`, chart data aggregation |
 | Tariff Display (S9) | 3 FRs | `ITariffPort`, bậc thang price breakdown |
@@ -69,7 +71,7 @@ _Updated for PRD v4.0 — 30 downstream services, 30 Port Interfaces, 24 mock ad
 | Proactive Communication (S22) | 4 FRs | `IProactiveNotificationPort`, GIS area-based alerts |
 | Notification (S32) | 4 FRs | `INotificationPort`, multi-channel dispatch, rate limiting |
 | Document Upload (S34) | 3 FRs | `IDocumentPort`, presigned URL, S3-compatible |
-| Context Preservation | 4 FRs | Redis session store + Event Sourcing |
+| Session Continuity | 4 FRs | Redis session store + Event Sourcing |
 | Resilience & Degradation | 4 FRs | Per-port Circuit Breaker, tiered cache |
 | Idempotency | 2 FRs | Inbound + Outbound idempotency |
 | Webhook Security | 2 FRs | HMAC (Zalo) + API key (internal) |
@@ -89,30 +91,30 @@ _Updated for PRD v4.0 — 30 downstream services, 30 Port Interfaces, 24 mock ad
 - Primary domain: BFF / API Gateway & Orchestrator Platform (Utility/Govtech)
 - Complexity level: **High** — Port Orchestration & Resilience focused
 - Estimated architectural components: **20+** (Port Registry, Auth Service, Session Store, 15 Domain Modules, Input Adapters, Notification Dispatcher, Resilience Layer, Config Manager, Document Service)
-- Downstream services: **30** (14 MVP + 12 Phase 2 + 4 Phase 3)
-- Mock adapters: **24** (6 internal-only services don't need mocks)
+- Downstream services: **36** (30 ported: 14 MVP + 12 Phase 2 + 4 Phase 3; 6 unported: Revenue, Fraud, Forecast, Churn, Agent-Assist, SCADA)
+- Mock adapters: **24** (6 internal-only ported services don't need mocks)
 
 ### Technical Constraints & Dependencies
 
 | Constraint | Source | Architectural Implication |
 |-----------|--------|--------------------------|
-| better-auth for centralized auth | Product Brief | Auth service owns User/Session DB. Must support multi-provider linking. |
-| Redis for session store | PRD (K1) | AOF persistence mandatory. TTL 24-48h. Event sourcing pattern. |
-| PostgreSQL for User/Session DB | PRD | Owned by CSKH module. RBAC data lives here. |
-| opossum for Circuit Breaker | Product Brief | Per-port circuit breaker instances. 30 CB instances total. |
+| Customer Auth — better-auth (BFF-owned, build new) | Pc decision 2026-07-06 | Auth owned by the BFF via a new better-auth build: registration, OTP/social/Zalo login, credential storage, token issuance + verification, auto-refresh 401, multi-provider linking. The BFF owns the Customer Auth DB (PostgreSQL). The `account` module resolves mã KH + links providers via better-auth. |
+| Redis for session store | PRD (K1) | AOF persistence mandatory. TTL 24-48h. Event sourcing pattern. Context (not auth) only. |
+| PostgreSQL for Customer Auth DB + local read-models | Existing codebase + better-auth | BFF OWNS the Customer Auth DB via better-auth (users, provider links, sessions, tokens) AND local read-model caches (ticket, payment records). RBAC enforced via better-auth session guard. |
+| opossum for Circuit Breaker | Product Brief | Per-port circuit breaker instances. 30 CB instances total (one per Port). |
 | OpenAPI/Swagger from Backend | PRD (DR-8) | Contract-first. Mock data generated from spec. CI/CD gate. |
 | Zalo OA REST API | PRD | Inbound/Outbound. Rate limiting: max 2 msg ZNS/KH/ticket/day |
-| BullMQ on Redis for Retry Queue | Product Brief | Exponential backoff. Dead Letter Queue. Phase 2. |
+| BullMQ on Redis for Queued tier | My-Cong-ty report §1 + NFR-R2 | 3-tier resilience Live→Cached→Queued from MVP. Exponential backoff + DLQ. Powers the "0% total outage" mandate. |
 | Nghị định 13/2023/NĐ-CP compliance | PRD (DR-1) | PII encryption, audit logging, data retention policies |
-| 30 downstream services via Ports | PRD v4.0 | Port Registry pattern. Per-port config, CB, cache, mock/live adapter |
+| 36 downstream services (30 via Ports) | PRD v4.0 + My-Cong-ty report | Port Registry pattern. Per-port config, CB, cache, queue, mock/live adapter. 6 services unported (Revenue, Fraud, Forecast, Churn, Agent-Assist, SCADA — accessed indirectly or deferred). |
 
 ### Cross-Cutting Concerns Identified
 
 1. **Port Registry** — Centralized management of 30 port adapters. Every module resolves ports through registry. Affects every downstream call.
 
-2. **Identity Propagation** — Every outbound request carries JWT. Token lifecycle spans Auth Layer + Port Adapters. Affects every adapter and every downstream call.
+2. **Identity Issuance & Propagation** — The BFF issues + verifies JWTs via better-auth (it owns auth). Every outbound request propagates the verified identity + mã KH scope. Affects every adapter and every downstream call.
 
-3. **Resilience Boundary** — Every outbound HTTP call wrapped in per-port Circuit Breaker + Cache fallback + Timeout. Not optional — NFR-R2 mandates 0% total outage.
+3. **Resilience Boundary** — Every outbound HTTP call wrapped in per-port Circuit Breaker + Cache fallback + Timeout + Queue fallback (Live→Cached→Queued). Not optional — NFR-R2 mandates 0% total outage from MVP.
 
 4. **Audit & Correlation** — Every request carries correlation ID (PT-12). Structured logging spans all layers. PII masking (NFR-S8) applied before any log write. 12-month retention (NFR-S7).
 
@@ -146,20 +148,22 @@ The project runs on a mature NestJS 11 + Fastify + TypeScript stack with:
 | HTTP Utilities | `libs/shared/http/` | ✅ Existing — Filters, interceptors, pipes |
 | Reference Modules | `modules/order/`, `modules/product/` | ✅ Existing — Full DDD/CQRS reference |
 
-### What Must Be Added for BFF (30 Services)
+### What Must Be Added for BFF (36 Services → 30 Ports)
 
 | # | Layer | Description | Priority |
 |---|-------|-------------|----------|
-| 1 | **Port Infrastructure** | `libs/shared/port/` — Port Registry, base adapter classes, per-port CB/cache wrapper | P0 |
-| 2 | **Auth Module** | `modules/auth/` — better-auth integration, JWT via jose | P0 |
-| 3 | **Endpoint Config** | `libs/shared/endpoint-config/` — Per-service mock/live config with hot-reload | P0 |
-| 4 | **Session Module** | `modules/session/` — Redis Hash + Sorted Set event sourcing | P0 |
-| 5 | **14 MVP Domain Modules** | customer, contract, meter, billing, payment, ticket, knowledge-base, communication, document + cross-cutting | P0-P1 |
-| 6 | **Input Adapters** | `modules/adapters/` — Zalo OA, Web/API adapters | P0 |
-| 7 | **Notification Dispatcher** | Rate-limited dispatch funnel | P0 |
-| 8 | **Mock Data** | `mocks/` — 24 JSON datasets for mock adapters | P0-P1 |
-| 9 | **12 Phase 2 Modules** | smart-meter, onboarding, feedback, reporting, chatbot, GIS, field-team, eContract, water-cutoff, call-center, segmentation, dashboard | P2 |
-| 10 | **4 Phase 3 Modules** | meter-anomaly, campaign, leakage-alert, water-quality | P3 |
+| 1 | **Port Infrastructure** | `libs/shared/port/` — Port Registry, base adapter classes, per-port CB/cache/queue wrapper | P0 |
+| 2 | **Auth Module (better-auth)** | `libs/shared/auth/` + `modules/auth/` — better-auth instance (registration, login, token issue + verify, auto-refresh 401), RBAC Guard, token propagation. BFF OWNS the Customer Auth DB (PostgreSQL). | P0 |
+| 3 | **Queue Infrastructure** | `libs/shared/queue/` — BullMQ on Redis, per-port Queued tier, DLQ, exponential backoff. Powers Live→Cached→Queued from MVP. | P0 |
+| 4 | **Endpoint Config** | `libs/shared/endpoint-config/` — Per-service mock/live config with hot-reload | P0 |
+| 5 | **Session Module** | `modules/session/` — Redis Hash + Sorted Set event sourcing (context only, not auth) | P0 |
+| 6 | **Account Module (Liên kết & hồ sơ)** | `modules/account/` — account linking (phone/provider → mã KH via better-auth) + Customer Profile 360° (`ICustomerProfilePort`). Extracted per My-Cong-ty report. **TARGET — not yet built** (current code: `modules/customer/`); planned after Queue (D11). | P0 |
+| 7 | **13 MVP Domain Modules** | contract, meter, billing, payment, ticket, knowledge-base, communication, document + cross-cutting | P0-P1 |
+| 8 | ~~**Input Adapters**~~ | App-only: the REST controllers ARE the single channel — no separate Zalo/Web adapters module needed (removed) | — |
+| 9 | **Notification Dispatcher** | Rate-limited dispatch funnel | P0 |
+| 10 | **Mock Data** | `mocks/` — 24 JSON datasets for mock adapters | P0-P1 |
+| 11 | **12 Phase 2 Modules** | smart-meter, onboarding, feedback, reporting, chatbot, GIS, field-team, eContract, water-cutoff, call-center, segmentation, dashboard | P2 |
+| 12 | **4 Phase 3 Modules** | meter-anomaly, campaign, leakage-alert, water-quality | P3 |
 
 ---
 
@@ -174,7 +178,7 @@ The project runs on a mature NestJS 11 + Fastify + TypeScript stack with:
 | ORM / Database | Drizzle ORM + PostgreSQL | Existing codebase |
 | Cache Layer | Redis | Existing codebase |
 | Logging | Pino + nestjs-pino | Existing codebase |
-| Auth Library | better-auth | PRD + Product Brief |
+| Auth Provider | better-auth (BFF-owned, build new) — issues + verifies tokens | Pc decision 2026-07-06 |
 | Circuit Breaker | opossum | Product Brief |
 | Architecture | Hexagonal Ports + DDD/CQRS | Existing codebase + PRD |
 | API Style | REST + OpenAPI/Swagger | PRD (PT-1) |
@@ -183,20 +187,23 @@ The project runs on a mature NestJS 11 + Fastify + TypeScript stack with:
 | Testing | Jest 30 + Supertest | Existing codebase |
 | Validation | Zod + class-validator | Existing codebase |
 | Resilience (state) | CircuitBreakerState + FallbackProvider | Existing codebase (`libs/shared/resilience/`) |
+| Queue / Queued tier | BullMQ on Redis (DLQ + exp backoff) — MVP | My-Cong-ty report §1 + NFR-R2 |
 
 ### Critical Decisions Made (This Step)
 
 | # | Decision | Choice | Rationale |
 |---|----------|--------|-----------|
-| D1 | **Port Registry Pattern** | **`PortRegistry` service** | Centralized management of 30 ports. Each port: interface + adapter (mock/live) + CB + cache config. Single point of control for routing, health monitoring, and switching. |
-| D2 | **JWT Signing Library** | **`jose`** | Modern Web Crypto API, native JWK rotation, Bun-compatible, no native deps |
-| D3 | **Mock Strategy** | **Static JSON per-port + Zod schema validation** | 24 JSON mock datasets, one per service. Zod schemas derived from OpenAPI spec. Contract gate at startup and CI/CD. |
-| D4 | **Session Event Storage** | **Redis Hash + Sorted Set** | O(1) full session read, O(log N) time-range queries, TTL per session key, compatible with existing `RedisCacheService` |
-| D5 | **Per-Service Config** | **YAML config file + chokidar hot-reload** | One `api-endpoints.yaml` with per-service settings (adapter, baseUrl, timeout, cacheTier). File watch → < 100ms reload. |
-| D6 | **Per-Port HTTP Client** | **`PortHttpClient` (native `fetch` + opossum + cache)** | Each port gets its own fetch wrapper with CB, timeout, JWT injection, and cache tier. Builds on existing `CircuitBreakerState`. |
+| D1 | **Port Registry Pattern** | **`PortRegistry` service** | Centralized management of 30 ports (of 36 downstream services). Each port: interface + adapter (mock/live) + CB + cache + queue config. Single point of control for routing by mã KH scope, health monitoring, and switching. |
+| D2 | **JWT Signing + Verification (better-auth)** | **better-auth session/JWT** | The BFF issues AND verifies tokens via better-auth (Bun-compatible). Signing key (`AUTH_SECRET`) stored as env var; rotation via env swap. Token issuance + auto-refresh live in the BFF — auth is owned by the BFF. |
+| D3 | **Mock Strategy** | **Static JSON per-port + Zod schema validation** | 24 JSON mock datasets, one per ported service. Zod schemas derived from OpenAPI spec. Contract gate at startup and CI/CD. |
+| D4 | **Session Event Storage** | **Redis Hash + Sorted Set** | O(1) full session read, O(log N) time-range queries, TTL per session key, compatible with existing `RedisCacheService`. Context only — NOT auth sessions. |
+| D5 | **Per-Service Config** | **YAML config file + chokidar hot-reload** | One `api-endpoints.yaml` with per-service settings (adapter, baseUrl, timeout, cacheTier, queuePolicy). File watch → < 100ms reload. |
+| D6 | **Per-Port HTTP Client** | **`PortHttpClient` (native `fetch` + opossum + cache + queue)** | Each port gets its own fetch wrapper with CB, timeout, JWT propagation, cache tier, and Queued-tier fallback. Builds on existing `CircuitBreakerState`. |
 | D7 | **Aggregation Pattern** | **`AggregationService` with Promise.all fan-out** | Dashboard/home screen calls 5-6 ports in parallel. AggregationService handles partial failures gracefully. |
-| D8 | **Module Grouping** | **Domain modules group related ports** | Each domain module (billing, payment, ticket, etc.) owns its port interfaces + adapters. Module exposes port tokens for DI. |
+| D8 | **Module Grouping** | **Domain modules group related ports** | Each domain module (account, billing, payment, ticket, etc.) owns its port interfaces + adapters. Module exposes port tokens for DI. `account` owns linking + profile (per My-Cong-ty report). |
 | D9 | **Dev Environment** | **Docker Compose (PostgreSQL + Redis) + native Bun** | Consistent stateful services, fastest hot-reload |
+| D10 | **Auth ownership → BFF (better-auth build new)** | **BFF owns auth** | The BFF builds a new better-auth integration: registration, login (OTP/social/Zalo), token issue + verify, auto-refresh 401, multi-provider linking. BFF owns the Customer Auth DB (PostgreSQL). Identity stays self-contained in the BFF. |
+| D11 | **Queued tier in MVP** | **BullMQ on Redis (Live→Cached→Queued day 1)** | Per My-Cong-ty report §1 + NFR-R2 (0% total outage). When CB OPEN and cache MISS, request is enqueued for retry with DLQ + exponential backoff, returning a queued/accepted response. |
 
 ### Deferred Decisions (Post-MVP)
 
@@ -205,9 +212,10 @@ The project runs on a mature NestJS 11 + Fastify + TypeScript stack with:
 | Redis pub/sub for config sync | Phase 2 (horizontal scaling) | Single-instance for MVP |
 | OpenAPI code generation for Backend client | Phase 2 | Schema may change frequently during MVP |
 | Kubernetes / container orchestration | Phase 3 | Docker Compose sufficient for MVP |
-| BullMQ retry queue | Phase 2 | DLQ + exponential backoff not needed until full Graceful Degradation |
 | Shadow Mode | When Backend ready | Only needed for billing-related API migration |
 | WebSocket for real-time (smart meter, field team) | Phase 2 | REST polling sufficient for MVP |
+
+> **Note:** BullMQ Queued tier was previously deferred to Phase 2; per My-Cong-ty report §1 + NFR-R2 it is now **MVP** (decision D11) to guarantee 0% total outage from day 1.
 
 ---
 
@@ -217,9 +225,11 @@ The project runs on a mature NestJS 11 + Fastify + TypeScript stack with:
 
 | Store | Technology | Purpose | Owner |
 |-------|-----------|---------|-------|
-| Primary DB | PostgreSQL (via Drizzle ORM) | User, Session, Auth data, Ticket cache | BFF (owned) |
-| Session Store | Redis (AOF persistence) | Active session events, context cache | BFF (owned) |
+| Customer Auth DB | PostgreSQL (via Drizzle ORM, better-auth) | Users, credentials, provider links, sessions, tokens (better-auth) | **BFF (owned)** |
+| Local Read-Model DB | PostgreSQL (same instance) | Local read-model caches (ticket, payment records) | BFF (owned) |
+| Session/Context Store | Redis (AOF persistence) | Active session/context events, context cache (NOT auth sessions) | BFF (owned) |
 | Port Response Cache | Redis (same instance, `cache:port:*` namespace) | Tiered cache per port: static 12-24h, dynamic 5-15min, transaction: NO CACHE | BFF (owned) |
+| Queued Tier / Retry | Redis (same instance, BullMQ) | Per-port retry queues + DLQ powering Live→Cached→Queued | BFF (owned) |
 | Mock Data | JSON files on disk (`mocks/`) | 24 mock datasets for mock adapters | BFF (owned) |
 
 ### Port Response Cache Strategy
@@ -280,19 +290,21 @@ const SESSION_APPEND_LUA = `
 
 ### Auth Architecture
 
+> **Auth ownership: BFF (better-auth, build new).** The BFF issues, verifies, stores, and rotates credentials via better-auth.
+
 | Layer | Technology | Responsibility |
 |-------|-----------|---------------|
-| Auth Service | better-auth (via `nestjs-better-auth`) | User registration, login, token management, multi-provider linking |
-| Token Signing | `jose` library | JWT issue with HS256/RS256, key rotation support |
-| Token Propagation | JWT in `Authorization: Bearer` header | Every BFF → downstream request carries signed identity |
-| RBAC Enforcement | NestJS Guards | Primary role: `customer` (BFF only serves end-users) |
+| Auth Provider (BFF-owned) | better-auth (build new) | User **registration**, login (OTP / social / Zalo), credential storage, token issuance + verification, refresh (auto-refresh 401), multi-provider linking. Exposed to the BFF via `IAuthPort`. |
+| Token Issuance + Verification | better-auth session/JWT (`AUTH_SECRET`) | BFF signs + verifies its own JWTs (signature, exp, aud, mã KH scope). Signing key on BFF (env var). |
+| Token Propagation | JWT in `Authorization: Bearer` header | Every BFF → downstream request carries the BFF-issued identity |
+| RBAC Enforcement | NestJS Guards (better-auth session) | Primary role: `customer` (BFF only serves end-users). Roles/permissions read from the better-auth session/claims. |
 
-### JWT Token Strategy
+### JWT Token Strategy (better-auth)
 
-| Token | TTL | Purpose |
+| Token | TTL (better-auth config) | BFF handling |
 |-------|-----|---------|
-| Access Token | 15 minutes | API authorization, carries identity + channel |
-| Refresh Token | 7 days | Silent token renewal, better-auth refresh flow |
+| Access Token | ~15 minutes (better-auth) | Issue + verify in BFF; on downstream 401 (expired) → **BFF auto-refreshes** via better-auth refresh token (disruption-free) |
+| Refresh Token | ~7 days (better-auth) | BFF handles refresh (better-auth); rotates as needed |
 
 ### Security Measures
 
@@ -314,7 +326,7 @@ const pinoOptions = {
 ```
 
 - Audit log: structured JSON, correlation ID on every entry, 12-month retention
-- Secret management: `JWT_SECRET` env var, rotation via `JWT_SECRET_OLD` + `JWT_SECRET_NEW`
+- Secret management: BFF holds the better-auth signing secret (`AUTH_SECRET`) + DB credentials in env vars. Key rotation = swap env var + redeploy.
 - TLS 1.3 for all transit, AES-256 at rest for PII fields
 
 ---
@@ -400,7 +412,7 @@ async execute(command: CreatePaymentCommand): Promise<PaymentResult> {
 | Outbound (→ any downstream) | `PortRegistry.execute()` | Resolves adapter (mock/live) → fetch + CB + JWT + timeout + cache |
 | Inbound (← Payment Service) | Webhook `POST /webhooks/payment/*` | Payment status updates (IPN) |
 | Inbound (← Ticketing Service) | Webhook `POST /webhooks/ticket/*` | Ticket status updates |
-| Inbound (← Zalo) | Webhook `POST /webhooks/zalo` | Zalo OA message callbacks |
+| Inbound (← Zalo OA) | ~~Webhook `POST /webhooks/zalo`~~ | **Removed (App-only)** — Zalo OA inbound + `cskh` port deleted; Zalo kept only as auth |
 | Inbound (← Notification Service) | Webhook `POST /webhooks/notification/*` | Delivery status callbacks |
 
 ### Mock → Live Switching Flow
@@ -496,12 +508,14 @@ export class PortRegistry {
 }
 ```
 
-### 30 Port Interface Catalog
+### 30 Port Interface Catalog (of 36 downstream services)
+
+> **36 downstream services → 30 Ports.** Six services are downstream but NOT exposed as Ports (accessed indirectly or deferred to future ports): **S11 Revenue, S26 AI Fraud, S27 AI Forecast, S28 AI Churn, S29 AI Agent Assist, S36 SCADA.**
 
 | # | Port Name | Interface | Module Owner | Methods | Cache Tier | Phase |
 |---|-----------|-----------|-------------|---------|-----------|-------|
-| 1 | `auth` | `IAuthPort` | auth | login, register, linkProvider, refreshToken, verifyToken | none | MVP |
-| 2 | `customer-profile` | `ICustomerProfilePort` | customer | getProfile, getProfileByPhone, getTimeline, getRelatedAccounts, updateProfile, getTags | static | MVP |
+| 1 | `auth` (better-auth, BFF-owned) | `IAuthPort` | auth | register, login, verifyToken, refreshToken, linkProvider, getSession | none | MVP |
+| 2 | `customer-profile` | `ICustomerProfilePort` | account | getProfile, getProfileByPhone, getTimeline, getRelatedAccounts, updateProfile, getTags | static | MVP |
 | 3 | `contract` | `IContractPort` | contract | getContracts, getContractDetail, getContractVersions, getContractPDF, signContract, checkRenewalAlerts | static | MVP |
 | 4 | `meter` | `IMeterPort` | meter | getMeterByCustomer, getMeterDetail, getMeterHistory, getCalibrationStatus | static | MVP |
 | 5 | `meter-reading` | `IMeterReadingPort` | meter | getReadings, getReadingDetail, getConsumptionChart, getComparison | dynamic | MVP |
@@ -514,7 +528,7 @@ export class PortRegistry {
 | 12 | `proactive-notification` | `IProactiveNotificationPort` | communication | getActiveAlerts, getAlertHistory, getMaintenanceSchedule, acknowledgeAlert | dynamic | MVP |
 | 13 | `notification` | `INotificationPort` | communication | dispatchNotification, getNotificationHistory, getNotificationPreferences, updateNotificationPreferences, getDeliveryStatus | dynamic | MVP |
 | 14 | `document` | `IDocumentPort` | document | getUploadUrl, getDownloadUrl, deleteFile, getFileInfo | **none** | MVP |
-| 15 | `segmentation` | `ISegmentationPort` | customer | getSegments, getSegmentHistory, checkEligibility | static | Phase 2 |
+| 15 | `segmentation` | `ISegmentationPort` | account | getSegments, getSegmentHistory, checkEligibility | static | Phase 2 |
 | 16 | `smart-meter` | `ISmartMeterPort` | meter | getRealtimeData, getHourlyData, getDailyData, getConnectionStatus, getBatteryStatus | dynamic | Phase 2 |
 | 17 | `water-cutoff` | `IWaterCutoffPort` | payment | getCutoffStatus, getCutoffHistory, getCutoffSchedule | dynamic | Phase 2 |
 | 18 | `call-center` | `ICallCenterPort` | communication | requestCallback, getCallbackStatus | dynamic | Phase 2 |
@@ -564,11 +578,12 @@ services:
 # config/api-endpoints.yaml
 services:
   # MVP Services (14)
-  auth:
-    adapter: mock
-    baseUrl: ${AUTH_SERVICE_URL:http://localhost:3010}
+  auth:                 # better-auth (BFF-owned, in-process) — NOT a downstream service
+    adapter: mock        # mock = fixture users/tokens; live = real better-auth instance (in-process)
+    # better-auth runs in-process (AUTH_SECRET + DATABASE_URL in .env) — no external service URL
     timeout: 3000
     cacheTier: none
+    queuePolicy: never            # auth failures must NOT be queued — return 401 immediately
     circuitBreaker:
       errorThreshold: 50
       resetTimeout: 10000
@@ -622,6 +637,7 @@ services:
     adapter: mock
     timeout: 3000
     cacheTier: none   # NO CACHE for transactions
+    queuePolicy: always            # write ops MUST queue on failure (no cache to fall back to) → 0% data loss
     circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
 
   debt:
@@ -706,6 +722,7 @@ services:
 | Circuit Breaker state | `cb:{portName}` | `cb:payment` |
 | Idempotency | `idempotency:{hash}` | `idempotency:f4e3d2` |
 | Config hash | `config:endpoints` | `config:endpoints` |
+| Queued tier (BullMQ) | `bull:{portName}:queue` / `bull:{portName}:dlq` | `bull:payment:queue` |
 
 **Port & Adapter Naming — NEW:**
 
@@ -797,15 +814,16 @@ PortRegistry.execute(portName, method, params)
   ├── Check cache → HIT → return cached (skip downstream)
   ├── Resolve adapter (mock/live from config)
   ├── Adapter.execute(method, params)
-  │   ├── Live: fetch + JWT + timeout
+  │   ├── Live: fetch + propagate JWT + timeout
   │   │   ├── Success (2xx) → cache result → return
-  │   │   ├── 401 → auto-refresh token → retry once
+  │   │   ├── 401 → BFF auto-refreshes via better-auth refresh token → retry (disruption-free)
   │   │   ├── 403 → throw ForbiddenException (no retry)
   │   │   ├── 404 → throw NotFoundException
-  │   │   ├── 5xx / Timeout → CB counts failure → fallback
-  │   │   └── CB OPEN → return cached + log warning
+  │   │   ├── 5xx / Timeout → CB counts failure → fallback chain
+  │   │   └── CB OPEN → Cached HIT? return cached + warn
+  │   │                Cached MISS? → enqueue (Queued tier, BullMQ) → return 202 accepted
   │   └── Mock: read JSON file → Zod validate → return
-  └── Fallback: cached data or graceful message
+  └── Fallback chain: Cached → Queued (202 + retry/DLQ) → graceful message
 ```
 
 **Idempotency — Two Boundaries:**
@@ -955,12 +973,19 @@ IOC_Customer/
 │   │       │
 │   │       ├── port/                        # NEW — Port Infrastructure
 │   │       │   ├── port.interface.ts                  # IPort, IPortAdapter, PortConfig
-│   │       │   ├── port-registry.service.ts           # Central registry for 30 ports
-│   │       │   ├── port-http-client.service.ts        # fetch + CB + JWT + timeout + cache
+│   │       │   ├── port-registry.service.ts           # Central registry for 30 ports (of 36 services)
+│   │       │   ├── port-http-client.service.ts        # fetch + CB + JWT + timeout + cache + queue
 │   │       │   ├── mock-adapter.base.ts               # Base class: reads JSON + Zod validate
 │   │       │   ├── internal-adapter.base.ts           # Base class: HTTP call via PortHttpClient
 │   │       │   ├── aggregation.service.ts             # Fan-out + Promise.allSettled wrapper
 │   │       │   ├── port.module.ts                     # NestJS global module
+│   │       │   └── index.ts
+│   │       │
+│   │       ├── queue/                       # NEW — Queued tier (BullMQ) — MVP per D11
+│   │       │   ├── queue.service.ts                   # BullMQ producer/consumer, per-port queues
+│   │       │   ├── queue-policy.ts                    # never | on-cache-miss | always
+│   │       │   ├── dead-letter.service.ts             # DLQ handling
+│   │       │   ├── queue.module.ts
 │   │       │   └── index.ts
 │   │       │
 │   │       ├── endpoint-config/             # NEW — Per-service config
@@ -969,45 +994,45 @@ IOC_Customer/
 │   │       │   ├── endpoint-config.module.ts
 │   │       │   └── index.ts
 │   │       │
-│   │       └── auth-propagation/            # NEW — JWT signing
-│   │           ├── jwt-signer.service.ts              # jose JWT issue
-│   │           ├── auth-propagation.middleware.ts
-│   │           ├── auth-propagation.module.ts
+│   │       └── auth/                        # NEW — better-auth (BFF-owned): issue + verify + session
+│   │           ├── auth.config.ts                     # better-auth instance (AUTH_SECRET, DB, providers)
+│   │           ├── session-auth.guard.ts              # verify better-auth session/JWT + mã KH scope
+│   │           ├── auth.module.ts
 │   │           └── index.ts
 │   │
 │   └── modules/
 │       ├── order/                           # EXISTING — Reference (unchanged)
 │       ├── product/                         # EXISTING — Reference (unchanged)
 │       │
-│       ├── auth/                            # NEW — S1: Customer Auth
+│       ├── auth/                            # NEW — better-auth (BFF-owned): registration, login, token issue/verify, refresh, linking
 │       │   ├── domain/
-│       │   │   ├── entities/user.entity.ts
-│       │   │   └── value-objects/user-role.value-object.ts
+│       │   │   └── entities/user.entity.ts            # User aggregate (better-auth user record)
 │       │   ├── application/
-│       │   │   ├── commands/                          # login, register, link-provider
-│       │   │   ├── queries/                           # get-user-by-phone, get-user-by-provider
-│       │   │   └── dtos/
+│       │   │   ├── commands/                          # register, login, refresh-token, link-provider
+│       │   │   └── queries/                           # get-session, get-user-info
 │       │   ├── infrastructure/
-│       │   │   ├── http/auth.controller.ts
-│       │   │   ├── persistence/drizzle/schema/user.schema.ts
-│       │   │   ├── persistence/write/user.repository.ts
-│       │   │   ├── persistence/read/user-read-dao.ts
-│       │   │   ├── better-auth/better-auth.setup.ts
+│       │   │   ├── http/auth.controller.ts            # register/login/refresh endpoints (better-auth)
+│       │   │   ├── persistence/                       # better-auth tables (Drizzle) in Customer Auth DB
+│       │   │   ├── guards/session-auth.guard.ts       # verify better-auth session/JWT
+│       │   │   ├── guards/role.guard.ts               # RBAC from better-auth session claims
 │       │   │   └── ports/auth.port.ts                 # IAuthPort + MockAuthAdapter
 │       │   ├── constants/tokens.ts
 │       │   └── auth.module.ts
+│       │   # NOTE: BFF OWNS auth — better-auth + User/Auth DB (PostgreSQL).
 │       │
-│       ├── customer/                        # NEW — S2, S3: Customer Profile & Segmentation
+│       ├── account/                         # NEW — "Liên kết & hồ sơ": linking + profile + segmentation
 │       │   ├── domain/
+│       │   │   └── value-objects/customer-code.vo.ts  # mã KH scope (white-label routing)
 │       │   ├── application/
-│       │   │   ├── commands/                          # update-profile
-│       │   │   └── queries/                           # get-profile, get-timeline, get-related
+│       │   │   ├── commands/                          # link-provider, unlink-provider, update-profile
+│       │   │   └── queries/                           # get-profile, get-timeline, get-related, resolve-by-phone
 │       │   ├── infrastructure/
-│       │   │   ├── http/customer.controller.ts
+│       │   │   ├── http/account.controller.ts
 │       │   │   └── ports/
-│       │   │       ├── customer-profile.port.ts       # ICustomerProfilePort
-│       │   │       └── segmentation.port.ts           # ISegmentationPort (Phase 2)
-│       │   └── customer.module.ts
+│       │   │       ├── customer-profile.port.ts       # ICustomerProfilePort (S2)
+│       │   │       └── segmentation.port.ts           # ISegmentationPort (S3, Phase 2)
+│       │   │   # linking orchestrated via IAuthPort (better-auth) — no extra port, keeps 30-Port total
+│       │   └── account.module.ts
 │       │
 │       ├── contract/                        # NEW — S4, S33: Contract & eContract
 │       │   ├── domain/
@@ -1206,9 +1231,9 @@ IOC_Customer/
 │          └────────┬─────────┘                       │                 │
 │                  ▼                                  │                 │
 │  ┌──────────────────────────────────────────────────┴──────────────┐ │
-│  │              Auth Layer (better-auth + jose)                     │ │
-│  │         • User/Session DB (PostgreSQL — owned)                  │ │
-│  │         • RBAC Guard: customer role                              │ │
+│  │       Auth (better-auth, BFF-owned): issue + verify JWT          │ │
+│  │         • OWNS Customer Auth DB (PostgreSQL) — users/tokens      │ │
+│  │         • RBAC Guard: customer role (from better-auth session)   │ │
 │  └───────────────────────────┬─────────────────────────────────────┘ │
 │                              ▼                                       │
 │  ┌───────────────────────────────────────────────────────────────┐   │
@@ -1228,12 +1253,15 @@ IOC_Customer/
 │  └───────────────────────────┬────────────────────────────────────┘ │
 │                              ▼                                       │
 │  ┌───────────────────────────────────────────────────────────────┐   │
-│  │                   PORT REGISTRY (30 Ports)                     │   │
+│  │           PORT REGISTRY (30 Ports · Live→Cached→Queued)        │   │
 │  │  ┌─────────────┐  ┌──────────────┐  ┌────────────────────┐   │   │
 │  │  │Endpoint Config│  │Per-Port CB   │  │Per-Port Cache      │   │   │
 │  │  │(chokidar)     │  │(opossum ×30) │  │(static/dynamic/    │   │   │
 │  │  │              │  │              │  │ transaction)        │   │   │
 │  │  └─────────────┘  └──────────────┘  └────────────────────┘   │   │
+│  │  ┌──────────────────────────────────────────────────────┐    │   │
+│  │  │ Queued tier (BullMQ + DLQ) — fallback when CB OPEN    │    │   │
+│  │  └──────────────────────────────────────────────────────┘    │   │
 │  │                                                                │   │
 │  │  14 MVP Ports    │ 12 Phase 2 Ports    │ 4 Phase 3 Ports      │   │
 │  │  auth, customer, │ smart-meter, onb-   │ meter-anomaly,       │   │
@@ -1267,13 +1295,12 @@ DATABASE_URL=postgresql://cskh:password@localhost:5432/cskh_dev
 # Redis
 REDIS_URL=redis://localhost:6379
 
-# Auth (better-auth)
-BETTER_AUTH_SECRET=<random-secret>
-BETTER_AUTH_URL=http://localhost:3000
+# Auth — better-auth (BFF-owned, build new). BFF issues + verifies tokens.
+AUTH_SECRET=<generate-with-openssl-rand-base64-32>   # better-auth signing key
+# better-auth stores users/sessions/tokens in DATABASE_URL (PostgreSQL) — no separate auth DB URL.
 
-# JWT Propagation (shared with downstream services)
-JWT_SECRET=<shared-secret>
-JWT_SECRET_OLD=
+# Queued tier (BullMQ) — reuses REDIS_URL
+QUEUE_CONCURRENCY=4
 
 # Zalo OA
 ZALOA_ACCESS_TOKEN=<token>
@@ -1287,7 +1314,7 @@ INTER_SERVICE_API_KEY=<shared-static-key>
 MOCK_MODE=true
 
 # Individual service URLs (used when adapter=live)
-AUTH_SERVICE_URL=http://localhost:3010
+# (auth = better-auth, in-process — see AUTH_SECRET above; no separate auth service URL)
 CUSTOMER_PROFILE_SERVICE_URL=http://localhost:3011
 CONTRACT_SERVICE_URL=http://localhost:3012
 METER_SERVICE_URL=http://localhost:3013
@@ -1321,19 +1348,22 @@ LOG_LEVEL=info
    ├── port.interface.ts (IPort, IPortAdapter, PortConfig)
    ├── port-registry.service.ts (central registry)
    ├── mock-adapter.base.ts (JSON file reader + Zod)
-   ├── internal-adapter.base.ts (fetch + CB + JWT)
+   ├── internal-adapter.base.ts (fetch + CB + JWT + cache + queue)
    └── aggregation.service.ts (Promise.allSettled wrapper)
-3. Endpoint Config Module (libs/shared/endpoint-config/)  ← Enables mock/live switching
-4. Auth Propagation Module (libs/shared/auth-propagation/)← JWT signing
-5. Mock Data Files (mocks/) — 14 MVP services            ← Enables testing without Backend
+3. Queue Infrastructure (libs/shared/queue/)              ← Queued tier (BullMQ + DLQ) — MVP per D11
+4. Endpoint Config Module (libs/shared/endpoint-config/)  ← Enables mock/live switching
+5. Auth Module (libs/shared/auth/)← better-auth instance + session guard (issue + verify JWT)
+6. Mock Data Files (mocks/) — 14 MVP services            ← Enables testing without Backend
 ```
 
 ### Phase 2: MVP Domain Modules (Week 3-6)
 
 ```
-6.  Auth Module (modules/auth/)                           ← Blocks everything
-    ├── better-auth setup, user entity, JWT lifecycle
+6.  Auth Module (modules/auth/) — better-auth (BFF-owned)  ← Blocks everything
+    ├── register/login/refresh/link + User/Auth DB (PostgreSQL)
+    ├── session-auth guard (verify better-auth JWT), RBAC from session claims
     └── IAuthPort + MockAuthAdapter
+    # BFF OWNS auth — better-auth + User/Auth DB.
 7.  Session Module (modules/session/)                     ← Context Preservation
     ├── Redis Hash + Sorted Set + Lua script
     └── Session events recording
@@ -1341,8 +1371,9 @@ LOG_LEVEL=info
     ├── core/ (IInputAdapter, NormalizedRequest)
     ├── zalo/ (webhook controller, HMAC guard, intent resolver)
     └── api/ (standard REST input adapter)
-9.  Customer Module (modules/customer/)                   ← Profile 360°
-    └── ICustomerProfilePort + MockCustomerProfileAdapter
+9.  Account Module (modules/account/) — "Liên kết & hồ sơ" ← Linking + Profile 360°
+    ├── ICustomerProfilePort + MockCustomerProfileAdapter
+    └── account linking via IAuthPort (better-auth)
 10. Contract Module (modules/contract/)                   ← Contract management
     └── IContractPort + MockContractAdapter
 11. Meter Module (modules/meter/)                         ← Meter & consumption
@@ -1367,7 +1398,7 @@ LOG_LEVEL=info
 
 ```
 17. Webhook Integration — connect real webhook handlers
-18. Context Preservation E2E test — cross-channel flow
+18. Session Continuity E2E test — resume within App
 19. Port Registry E2E test — mock→live switching
 20. Circuit Breaker E2E test — kill downstream → verify fallback
 21. Aggregation E2E test — home screen loads with partial failures
@@ -1410,7 +1441,7 @@ LOG_LEVEL=info
 | FR Category | FRs | Module(s) | Port(s) | Status |
 |------------|-----|-----------|---------|--------|
 | Auth & Identity (FR1-FR5) | 5 | `modules/auth/` | `auth` | ✅ |
-| Customer Profile (FR6-FR9) | 4 | `modules/customer/` | `customer-profile` | ✅ |
+| Customer Profile (FR6-FR9) | 4 | `modules/account/` | `customer-profile` | ✅ |
 | Hexagonal Ports (FR10-FR15) | 6 | `libs/shared/port/` | all 30 | ✅ |
 | Contract (FR16-FR19) | 4 | `modules/contract/` | `contract` | ✅ |
 | Meter Info (FR20-FR22) | 3 | `modules/meter/` | `meter` | ✅ |
@@ -1434,8 +1465,8 @@ LOG_LEVEL=info
 | NFR Dimension | Count | Architectural Support | Status |
 |--------------|-------|----------------------|--------|
 | Performance (P1-P6) | 6 | PortRegistry < 200ms, Auth < 500ms, Aggregation < 500ms, 500 sessions | ✅ |
-| Security (S1-S8) | 8 | jose JWT, TLS 1.3, AES-256, PII masking, 15-min TTL, audit logs | ✅ |
-| Reliability (R1-R4) | 4 | Per-port CB < 10s, Redis AOF, 0% outage via cache fallback | ✅ |
+| Security (S1-S8) | 8 | better-auth JWT, TLS 1.3, AES-256, PII masking, 15-min TTL, audit logs | ✅ |
+| Reliability (R1-R4) | 4 | Per-port CB < 10s, Redis AOF, 0% outage via Live→Cached→Queued | ✅ |
 | Scalability (SC1-SC3) | 3 | Horizontal, new port = 0 core change, mock→live < 5% delta | ✅ |
 | Integration (I1-I5) | 5 | OpenAPI gate, Zalo OA, webhook HMAC, 100% MockAdapter coverage | ✅ |
 
@@ -1445,11 +1476,15 @@ LOG_LEVEL=info
 
 **Key Strengths:**
 1. **Brownfield leverage** — 60-70% infrastructure already built (CQRS, Drizzle, Redis, CB, Fallback)
-2. **Port Registry pattern** — scales to 30+ services without modifying core
-3. **Resilience-first** — Per-port Circuit Breaker + cache fallback from day one
+2. **Port Registry pattern** — scales across 36 services / 30 Ports without modifying core
+3. **Resilience-first (3-tier)** — Per-port Circuit Breaker + cache fallback + Queued tier (Live→Cached→Queued) from day one
 4. **Contract-driven** — OpenAPI schema gate per port, Zod validation on every mock response
 5. **Aggregation-ready** — Promise.allSettled pattern handles partial failures gracefully
 6. **Phase-aware** — 14 MVP → +12 Phase 2 → +4 Phase 3, each phase adds ports without breaking existing
+7. **Self-contained auth** — BFF owns auth via a new better-auth build (registration, login, token issue/verify, refresh, linking); cleaner standalone deployment
+
+**Key External Dependency:**
+- **Customer Profile Service (S2) must be reachable for profile / mã KH resolution** at registration & login. Since the BFF owns auth (better-auth), login/token issuance have NO external dependency; only profile enrichment reads S2. Mitigation: short cache of profile data + S2 health check in the readiness probe.
 
 ---
 

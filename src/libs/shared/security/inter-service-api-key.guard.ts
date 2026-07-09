@@ -5,7 +5,7 @@
  * Used by: Payment webhook, Ticket webhook, Notification webhook.
  *
  * This is a STATIC shared secret — NOT JWT (per FR72).
- * Zalo webhooks use HMAC SHA-256 via ZaloSignatureGuard (different guard).
+ * (App-only: the Zalo OA HMAC webhook guard was removed; Zalo is used only as an auth provider.)
  */
 
 import { CanActivate, ExecutionContext, Injectable, Logger, ForbiddenException } from '@nestjs/common';

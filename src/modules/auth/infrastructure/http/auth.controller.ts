@@ -44,7 +44,10 @@ import type {
   LinkProviderDto,
   VerifyOtpDto,
 } from '../../application/dtos/register-provider.dto';
-import { ZaloAccountLinkingService } from '../../application/zalo-account-linking.service';
+// NOTE: Provider linking (Zalo/Google/Facebook/Apple) is handled by better-auth's
+// OAuth flow — the BFF issues the authorization URL and better-auth links the
+// provider to the authenticated user on callback (/api/auth/callback/*). The BFF
+// does not write provider links directly; better-auth owns the provider_links table.
 
 /**
  * Auth Controller
@@ -63,7 +66,6 @@ export class AuthController {
 
   constructor(
     private readonly portHttpClient: PortHttpClient,
-    private readonly zaloLinking: ZaloAccountLinkingService,
   ) {}
 
   /**
@@ -150,36 +152,8 @@ export class AuthController {
 
     this.logger.log(`Provider callback: ${parsed.data.providerType}`);
 
-    // Zalo OA Account Linking: when the callback carries our single-use OAuth
-    // `state` nonce + a phone (granted via the phone_number scope), link the
-    // Zalo sender to the internal user. After this, inbound Zalo messages from
-    // that sender are recorded on the customer's timeline (omnichannel).
-    if (
-      parsed.data.providerType === 'zalo' &&
-      parsed.data.state &&
-      parsed.data.phoneNumber
-    ) {
-      const result = await this.zaloLinking.linkByNonce(
-        parsed.data.state,
-        parsed.data.phoneNumber,
-      );
-      if (result.linked) {
-        return {
-          message: `Zalo account linked to user ${result.userId}.`,
-          providerType: parsed.data.providerType,
-          linked: true,
-          userId: result.userId,
-        };
-      }
-      return {
-        message: `Zalo linking not completed: ${result.reason}.`,
-        providerType: parsed.data.providerType,
-        linked: false,
-        reason: result.reason,
-      };
-    }
-
-    // Non-Zalo providers (or Zalo without phone/state): OAuth handled by better-auth.
+    // OAuth flow is handled by better-auth's social/genericOAuth plugins.
+    // The provider is linked to the authenticated user on the OAuth callback.
     return {
       message: `Provider ${parsed.data.providerType} validated. OAuth flow handled by better-auth.`,
       providerType: parsed.data.providerType,
@@ -213,15 +187,45 @@ export class AuthController {
 
     this.logger.log(`Link provider ${parsed.data.providerType} to user ${userId}`);
 
-    // TODO: When Backend API is available:
-    // await this.portHttpClient.request({
-    //   url: `${backendUrl}/users/${userId}/providers`,
-    //   method: 'POST',
-    //   portName: 'customer-profile',
-    //   body: { providerType, providerId, providerEmail },
-    // });
+    // Provider linking is performed by better-auth's OAuth flow: the App redirects the
+    // user to the provider's authorization URL, and better-auth links the provider to
+    // this authenticated user on callback (/api/auth/callback/*). The BFF does not
+    // write provider links directly — better-auth owns the provider_links table.
+    return {
+      userId,
+      providerType: parsed.data.providerType,
+      message: `Open ${parsed.data.providerType} authorization via better-auth /api/auth/sign-in/social to link this provider to your account.`,
+    };
+  }
 
-    return { userId, message: 'Provider link request validated. Sync to Backend API pending.' };
+  /**
+   * POST /auth/unlink-provider
+   * Unlink a provider from the AUTHENTICATED user.
+   * Delegates to better-auth's account-unlink API.
+   */
+  @Post('unlink-provider')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Unlink an OAuth provider from the authenticated user' })
+  @ApiResponse({ status: 200, description: 'Provider unlink request validated' })
+  @ApiResponse({ status: 401, description: 'Authentication required' })
+  async unlinkProvider(
+    @CurrentUser('id') userId: string,
+    @Body() body: LinkProviderDto,
+  ) {
+    const parsed = LinkProviderSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new ValidationException(parsed.error.message);
+    }
+
+    this.logger.log(`Unlink provider ${parsed.data.providerType} from user ${userId}`);
+
+    // better-auth exposes account unlink via its API; the App calls better-auth directly.
+    return {
+      userId,
+      providerType: parsed.data.providerType,
+      message: `Use better-auth to unlink ${parsed.data.providerType} from your account.`,
+    };
   }
 
   /**

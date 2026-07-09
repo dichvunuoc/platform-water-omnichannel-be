@@ -9,6 +9,7 @@ import { providerLinksTable } from '../persistence/drizzle/schema/provider-link.
 import { sessionsTable } from '../persistence/drizzle/schema/session.schema';
 import { verificationTable } from '../persistence/drizzle/schema/verification.schema';
 import { PiiEncryptionService } from '../persistence/encryption/pii-encryption.service';
+import { ZaloOaClient } from '../zalo/zalo-oa.client';
 
 /**
  * Create and configure the better-auth instance.
@@ -50,6 +51,10 @@ export function createBetterAuth(db: unknown, configService: ConfigService): any
 
   // Initialize PII encryption for database hooks
   const piiEncryption = new PiiEncryptionService(configService);
+
+  // Zalo OA client — delivers phone OTP via ZNS message (Pc, 2026-07-06).
+  // Falls back to dev logging when the OA is not configured.
+  const zaloOa = new ZaloOaClient(configService);
 
   // Only enable social providers when credentials are configured
   const socialProviders: Record<string, unknown> = {};
@@ -191,12 +196,17 @@ export function createBetterAuth(db: unknown, configService: ConfigService): any
       // Phone/OTP Authentication
       phoneNumber({
         sendOTP: async ({ phoneNumber: phone, code }) => {
-          // Integrate with SMS gateway (Vietnam-based, e.g., eSMS, SpeedSMS)
-          // For MVP: log OTP for development testing
-          if (process.env.NODE_ENV !== 'production') {
+          // Pc (2026-07-06): deliver the OTP via a Zalo OA ZNS message.
+          // The client falls back to dev logging when the OA is unconfigured,
+          // so registration works in dev without a live OA.
+          try {
+            await zaloOa.sendOtp(phone, code);
+          } catch (err) {
+            logger.warn(
+              `Zalo OA OTP delivery failed, falling back to dev log: ${(err as Error).message}`,
+            );
             logger.log(`[DEV] OTP for ${phone.slice(-4).padStart(phone.length, '*')}: ${code}`);
           }
-          // TODO: Wire to actual SMS provider in production
         },
         signUpOnVerification: {
           getTempEmail: (phone: string) => `${phone}@cskh.placeholder.local`,

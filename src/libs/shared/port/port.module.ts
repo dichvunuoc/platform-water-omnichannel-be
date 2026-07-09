@@ -17,6 +17,7 @@ import { AggregationService } from './aggregation.service';
 import { InboundIdempotencyService } from './inbound-idempotency.service';
 import { EndpointConfigModule } from '../endpoint-config/endpoint-config.module';
 import { AuthPropagationModule } from '../auth-propagation/auth-propagation.module';
+import { QueueModule } from '../queue';
 import { StructuredLogger } from '../observability/structured-logger.service';
 import { FallbackProvider } from '../resilience/fallback.provider';
 import { ContextModule } from '../context/context.module';
@@ -27,7 +28,7 @@ import { MemoryCacheService } from '../caching/memory-cache.service';
 
 @Global()
 @Module({
-  imports: [EndpointConfigModule, ContextModule, AuthPropagationModule],
+  imports: [EndpointConfigModule, ContextModule, AuthPropagationModule, QueueModule],
   providers: [
     // Port infrastructure
     PortRegistry,

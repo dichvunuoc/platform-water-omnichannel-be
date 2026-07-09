@@ -1,0 +1,6 @@
+{
+  "customerId": "USR-12345",
+  "campaignId": "CAMP-2026-1",
+  "eligible": true,
+  "reasons": ["value_segment_VIP", "no_outstanding_debt"]
+}

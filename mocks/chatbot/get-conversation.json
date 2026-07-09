@@ -1,0 +1,7 @@
+{
+  "conversationId": "CONV-2026-0008",
+  "messages": [
+    { "role": "user", "content": "Hóa đơn tháng này của tôi cao bất thường", "at": "2026-07-07T09:00:00Z" },
+    { "role": "bot", "content": "Tôi sẽ kiểm tra hóa đơn gần nhất của bạn. Bạn cho biết mã hóa đơn được không?", "at": "2026-07-07T09:00:02Z" }
+  ]
+}

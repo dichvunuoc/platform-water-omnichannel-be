@@ -56,7 +56,7 @@ export class HandleTicketWebhookHandler implements ICommandHandler<HandleTicketW
         new RecordSessionEventCommand({
           userId: customerId,
           eventType: 'ticket_status_changed',
-          channel: 'web',
+          channel: 'app',
           content: { ticketId, trackingId, oldStatus, newStatus },
         }),
       );
@@ -71,6 +71,7 @@ export class HandleTicketWebhookHandler implements ICommandHandler<HandleTicketW
           customerId,
           type: 'ticket_status_changed',
           isCritical: false,
+          channel: 'sms', // Pc (2026-07-06): incident notifications via SMS first, not Zalo
           ticketId,
           trackingId,
           oldStatus,

@@ -20,6 +20,7 @@ import {
   PortDownstreamException,
   PortTimeoutException,
   PortNotRegisteredException,
+  PortQueuedException,
 } from 'src/libs/shared/port/port-exceptions';
 
 /**
@@ -38,6 +39,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // Handle NestJS HttpException
     if (exception instanceof HttpException) {
       return this.handleHttpException(exception, response, request);
+    }
+
+    // Queued tier → HTTP 202 Accepted (request enqueued for replay)
+    if (exception instanceof PortQueuedException) {
+      return response.status(HttpStatus.ACCEPTED).send({
+        success: true,
+        statusCode: HttpStatus.ACCEPTED,
+        queued: true,
+        jobId: exception.jobId,
+        portName: exception.portName,
+        timestamp: new Date().toISOString(),
+        message: 'Request accepted and queued for retry (downstream temporarily unavailable)',
+      });
     }
 
     // Handle custom domain exceptions

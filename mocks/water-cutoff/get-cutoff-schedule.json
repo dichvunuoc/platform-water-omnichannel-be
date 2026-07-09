@@ -1,0 +1,6 @@
+{
+  "areaId": "CP-DMA-1",
+  "schedules": [
+    { "from": "2026-07-10T08:00:00Z", "to": "2026-07-10T12:00:00Z", "reason": "Bảo trì đường ống" }
+  ]
+}

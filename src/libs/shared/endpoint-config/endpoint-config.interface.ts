@@ -14,6 +14,16 @@
 export type CacheTier = 'static' | 'dynamic' | 'transaction';
 
 /**
+ * Queue fallback policy for the Queued resilience tier (Live→Cached→Queued).
+ * Orthogonal to cacheTier — controls behaviour when the circuit breaker is OPEN
+ * or the adapter call fails.
+ * - `never`: no queue; fall back to cache then PortFallbackException (5xx). [auth, sensitive reads]
+ * - `on-cache-miss`: serve stale cache if available (+ background refresh); else enqueue + 202. [most reads]
+ * - `always`: enqueue every failure + 202 (writes have no cache to fall back to). [payment/ticket/document writes]
+ */
+export type QueuePolicy = 'never' | 'on-cache-miss' | 'always';
+
+/**
  * Circuit breaker configuration per port.
  * Maps to existing CircuitBreakerOptions in resilience module.
  */
@@ -37,6 +47,8 @@ export interface PortEndpointConfig {
   cacheTier: CacheTier;
   /** Cache TTL in seconds (default by tier: static=43200, dynamic=900, transaction=0) */
   cacheTtl?: number;
+  /** Queue fallback policy (Queued tier). Default by tier: transaction→'always', else 'on-cache-miss'. */
+  queuePolicy?: QueuePolicy;
   /** Circuit breaker configuration for this port */
   circuitBreaker?: PortCircuitBreakerConfig;
   /** Human-readable description */

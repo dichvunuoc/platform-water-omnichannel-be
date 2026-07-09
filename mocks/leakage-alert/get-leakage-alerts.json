@@ -1,0 +1,13 @@
+{
+  "customerId": "USR-12345",
+  "alerts": [
+    {
+      "alertId": "LEAK-2026-0007",
+      "customerId": "USR-12345",
+      "suspectedLocation": "12 Nguyen Van Cu, Cẩm Phả",
+      "confidence": 0.86,
+      "status": "investigating",
+      "detectedAt": "2026-07-05T03:20:00Z"
+    }
+  ]
+}

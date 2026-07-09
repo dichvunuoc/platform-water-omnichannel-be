@@ -7,7 +7,7 @@
  * AC: #1 (Port Registry), #4 (Zero-Core-Change Addition)
  */
 
-import type { CacheTier, PortCircuitBreakerConfig } from '../endpoint-config/endpoint-config.interface';
+import type { CacheTier, PortCircuitBreakerConfig, QueuePolicy } from '../endpoint-config/endpoint-config.interface';
 import type { CircuitBreakerOptions } from '../resilience/circuit-breaker.decorator';
 
 /**
@@ -36,6 +36,8 @@ export interface PortConfig {
   cacheTtl: number;
   /** Per-service timeout in ms */
   timeout: number;
+  /** Queue fallback policy (Queued tier) */
+  queuePolicy: QueuePolicy;
   /** Circuit breaker options (mapped to existing CircuitBreakerOptions) */
   circuitBreaker: CircuitBreakerOptions;
   /** Whether this port is currently active */
@@ -71,6 +73,10 @@ export interface PortResultMetadata {
   message?: string;
   /** True when the response was served from inbound idempotency cache */
   fromIdempotency?: boolean;
+  /** True when the request was enqueued for retry (Queued tier) instead of served synchronously */
+  queued?: boolean;
+  /** BullMQ job id when queued === true */
+  jobId?: string;
 }
 
 /**

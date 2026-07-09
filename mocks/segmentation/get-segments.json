@@ -1,0 +1,9 @@
+{
+  "customerId": "USR-12345",
+  "segment": {
+    "customerType": "sinh_hoat",
+    "valueSegment": "VIP",
+    "area": "CP-DMA-1",
+    "behaviorTags": ["loyal", "high_usage", "auto_pay"]
+  }
+}

@@ -75,7 +75,7 @@ describe('HandleTicketWebhookHandler', () => {
       expect(cmd).toBeInstanceOf(RecordSessionEventCommand);
       expect(cmd.payload.userId).toBe('USR-001');
       expect(cmd.payload.eventType).toBe('ticket_status_changed');
-      expect(cmd.payload.channel).toBe('web');
+      expect(cmd.payload.channel).toBe('app');
       expect(cmd.payload.content).toEqual(
         expect.objectContaining({ ticketId: 'TICK-001', trackingId: 'TK-2026-002' }),
       );

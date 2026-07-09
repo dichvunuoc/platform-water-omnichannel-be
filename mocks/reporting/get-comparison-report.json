@@ -1,0 +1,7 @@
+{
+  "customerId": "USR-12345",
+  "comparisonType": "previous_period",
+  "current": 18,
+  "previous": 20.5,
+  "changePercent": -12.2
+}

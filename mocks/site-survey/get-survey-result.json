@@ -1,0 +1,7 @@
+{
+  "surveyId": "SVY-2026-0017",
+  "customerId": "USR-12345",
+  "status": "completed",
+  "scheduledAt": "2026-07-05T08:00:00Z",
+  "result": { "feasible": true, "notes": "Khu vực có mạng ống, có thể đấu nối." }
+}

@@ -20,7 +20,7 @@ export interface JwtPayload {
   sub: string;
   /** User roles — default ['customer'] */
   roles: string[];
-  /** Auth channel — 'zalo' | 'hotline' | 'counter' | 'web' */
+  /** Auth channel — 'app' (default) | 'zalo' | 'hotline' | 'counter' | 'web' */
   provider: string;
   /** better-auth session ID */
   sessionId: string;

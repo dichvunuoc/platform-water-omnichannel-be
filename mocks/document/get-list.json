@@ -1,0 +1,19 @@
+{
+  "documents": [
+    {
+      "fileKey": "tmp/doc-2026-001",
+      "fileName": "hop-dong-2026.pdf",
+      "fileType": "application/pdf",
+      "sizeBytes": 204800,
+      "uploadedAt": "2026-06-01T08:15:00Z"
+    },
+    {
+      "fileKey": "tmp/inc-2026-photo-001",
+      "fileName": "ro-ri-1.jpg",
+      "fileType": "image/jpeg",
+      "sizeBytes": 51200,
+      "uploadedAt": "2026-06-05T14:22:00Z"
+    }
+  ],
+  "total": 2
+}

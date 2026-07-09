@@ -153,7 +153,7 @@ describe('AuthPropagationMiddleware', () => {
       );
     });
 
-    it('should default provider to "web" when no session provider and no header', async () => {
+    it('should default provider to "app" when no session provider and no header', async () => {
       const req = createMockRequest({
         id: 'session-xyz',
         user: { id: 'user-123' },
@@ -163,7 +163,7 @@ describe('AuthPropagationMiddleware', () => {
 
       expect(mockContextProvider.createFull).toHaveBeenCalledWith(
         expect.objectContaining({
-          metadata: expect.objectContaining({ provider: 'web' }),
+          metadata: expect.objectContaining({ provider: 'app' }),
         }),
       );
     });

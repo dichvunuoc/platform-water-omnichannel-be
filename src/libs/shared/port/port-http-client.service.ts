@@ -98,7 +98,7 @@ export class PortHttpClient {
       const jwt = cachedJwt ?? await this.jwtSigner.sign({
         sub: context.userId,
         roles: (context.metadata?.roles as string[]) ?? ['customer'],
-        provider: (context.metadata?.provider as string) ?? 'web',
+        provider: (context.metadata?.provider as string) ?? 'app',
         sessionId: (context.metadata?.sessionId as string) ?? '',
         xiNghiep: context.tenantId,
       });
@@ -158,7 +158,7 @@ export class PortHttpClient {
           const newJwt = await this.jwtSigner.sign({
             sub: newContext.userId,
             roles: (newContext.metadata?.roles as string[]) ?? ['customer'],
-            provider: (newContext.metadata?.provider as string) ?? 'web',
+            provider: (newContext.metadata?.provider as string) ?? 'app',
             sessionId: (newContext.metadata?.sessionId as string) ?? '',
             xiNghiep: newContext.tenantId,
           });

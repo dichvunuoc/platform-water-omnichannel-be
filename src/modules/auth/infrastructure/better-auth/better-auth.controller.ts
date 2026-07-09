@@ -33,14 +33,17 @@ export class BetterAuthController {
   ) {}
 
   /**
-   * Catch-all handler for better-auth routes.
-   * Delegates to the better-auth handler for:
-   * - POST /api/auth/sign-in/phone — Phone/OTP login
-   * - POST /api/auth/verify-phone — OTP verification
-   * - GET /api/auth/sign-in/social — Social OAuth redirect
-   * - GET /api/auth/callback/social — Social OAuth callback
+   * Catch-all handler for better-auth routes (better-auth v1.6 paths — verified E2E):
+   * - POST /api/auth/phone-number/send-otp — Send phone OTP (passwordless login)
+   * - POST /api/auth/phone-number/verify — Verify OTP → session (signUpOnVerification creates the user)
+   * - GET  /api/auth/sign-in/social — Social OAuth redirect
+   * - GET  /api/auth/callback/social — Social OAuth callback
    * - POST /api/auth/sign-out — Sign out
-   * - GET /api/auth/session — Get current session
+   * - GET  /api/auth/get-session — Current session (null when logged out)
+   * - GET  /api/auth/ok — better-auth health ({"ok":true})
+   *
+   * NOTE: `/sign-in/phone-number` (phone+password credential login) also exists but is
+   * NOT used — FR1 is passwordless phone/OTP, Zalo, and Social only.
    */
   @All('*')
   @ApiExcludeEndpoint()

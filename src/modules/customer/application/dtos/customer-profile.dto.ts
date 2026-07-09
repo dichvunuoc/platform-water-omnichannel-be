@@ -36,7 +36,7 @@ export const TimelineEntrySchema = z.object({
   eventType: z.string(),
   timestamp: z.string(),
   summary: z.string(),
-  channel: z.enum(['zalo', 'hotline', 'counter', 'web']).nullable(),
+  channel: z.enum(['app', 'zalo', 'hotline', 'counter', 'web']).nullable(),
   referenceId: z.string().nullable(),
 });
 

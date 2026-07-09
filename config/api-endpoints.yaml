@@ -18,6 +18,7 @@ services:
       errorThreshold: 50
       resetTimeout: 10000
       minRequests: 5
+    queuePolicy: never
     description: "Authentication & token management"
     methods: ["login", "register", "refresh", "logout", "verify"]
 
@@ -110,6 +111,7 @@ services:
       errorThreshold: 30
       resetTimeout: 30000
       minRequests: 3
+    queuePolicy: always
     description: "Payment initiation & QR generation"
     methods: ["initiate", "confirm", "get-status", "generate-qr"]
 
@@ -249,55 +251,6 @@ services:
     description: "Cross-channel session continuation"
     methods: ["transfer", "get-context", "resume"]
 
-  # --- Resilient Communication (Epic 1, Story 1.2) ---
-  zalo-adapter:
-    adapter: mock
-    baseUrl: ${BACKEND_BASE_URL}/zalo
-    timeout: 5000
-    cacheTier: transaction
-    circuitBreaker:
-      errorThreshold: 40
-      resetTimeout: 15000
-      minRequests: 3
-    description: "Zalo OA webhook adapter"
-    methods: ["send-message", "send-template", "get-user-info"]
-
-  hotline-adapter:
-    adapter: mock
-    baseUrl: ${BACKEND_BASE_URL}/hotline
-    timeout: 5000
-    cacheTier: transaction
-    circuitBreaker:
-      errorThreshold: 40
-      resetTimeout: 15000
-      minRequests: 3
-    description: "Hotline IVR adapter"
-    methods: ["initiate-call", "get-call-status", "hang-up"]
-
-  counter-adapter:
-    adapter: mock
-    baseUrl: ${BACKEND_BASE_URL}/counter
-    timeout: 3000
-    cacheTier: transaction
-    circuitBreaker:
-      errorThreshold: 40
-      resetTimeout: 15000
-      minRequests: 3
-    description: "Counter/branch adapter"
-    methods: ["check-in", "get-queue", "complete"]
-
-  web-adapter:
-    adapter: mock
-    baseUrl: ${BACKEND_BASE_URL}/web
-    timeout: 3000
-    cacheTier: transaction
-    circuitBreaker:
-      errorThreshold: 40
-      resetTimeout: 15000
-      minRequests: 3
-    description: "Web portal adapter"
-    methods: ["track-event", "get-session"]
-
   # --- Document Management ---
   document:
     adapter: mock
@@ -308,6 +261,7 @@ services:
       errorThreshold: 30
       resetTimeout: 30000
       minRequests: 3
+    queuePolicy: always
     description: "Document upload & download"
     methods: ["upload", "download", "get-list"]
 
@@ -382,6 +336,131 @@ services:
     methods: ["check"]
 
   # --- Feedback & CSAT ---
+  # --- Customer Segmentation (Phase 2, S3) ---
+  segmentation:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/segmentation
+    timeout: 3000
+    cacheTier: static
+    cacheTtl: 43200
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  # --- GIS (Phase 2, S30) ---
+  gis:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/gis
+    timeout: 3000
+    cacheTier: static
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  # --- Reporting (Phase 2, S23) ---
+  reporting:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/reporting
+    timeout: 5000
+    cacheTier: dynamic
+    cacheTtl: 900
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  # --- Water Cutoff (Phase 2, S17) ---
+  water-cutoff:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/water-cutoff
+    timeout: 3000
+    cacheTier: static
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  # --- Smart Meter (Phase 2, S18) — transaction tier (real-time, no cache) ---
+  smart-meter:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/smart-meter
+    timeout: 3000
+    cacheTier: transaction
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  # --- Field Team (Phase 2, S31) — transaction tier (live tracking) ---
+  field-team:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/field-team
+    timeout: 3000
+    cacheTier: transaction
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  # --- Call Center (Phase 2, S29) — click-to-call is a write → queue always ---
+  call-center:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/call-center
+    timeout: 5000
+    cacheTier: transaction
+    queuePolicy: always
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  # --- e-Contract (Phase 2, S15) — sign is a write → queue always ---
+  econtract:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/econtract
+    timeout: 5000
+    cacheTier: dynamic
+    cacheTtl: 900
+    queuePolicy: always
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  # --- Site Survey (Phase 2, onboarding) — create is a write → queue always ---
+  site-survey:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/site-survey
+    timeout: 5000
+    cacheTier: transaction
+    queuePolicy: always
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  # --- Onboarding (Phase 2, S5) — create is a write → queue always ---
+  onboarding:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/onboarding
+    timeout: 5000
+    cacheTier: transaction
+    queuePolicy: always
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  # --- Chatbot / AI (Phase 2/3, S24) — transaction tier, no cache ---
+  chatbot:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/chatbot
+    timeout: 10000
+    cacheTier: transaction
+    queuePolicy: always
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  # --- Phase 3 ports (4) ---
+  meter-anomaly:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/meter-anomaly
+    timeout: 3000
+    cacheTier: dynamic
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  campaign:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/campaign
+    timeout: 3000
+    cacheTier: static
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  leakage-alert:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/leakage-alert
+    timeout: 3000
+    cacheTier: dynamic
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
+  water-quality:
+    adapter: mock
+    baseUrl: ${BACKEND_BASE_URL}/water-quality
+    timeout: 3000
+    cacheTier: dynamic
+    circuitBreaker: { errorThreshold: 50, resetTimeout: 10000, minRequests: 5 }
+
   feedback:
     adapter: mock
     baseUrl: ${BACKEND_BASE_URL}/feedback

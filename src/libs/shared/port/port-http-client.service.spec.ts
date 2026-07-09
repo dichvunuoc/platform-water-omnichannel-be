@@ -330,7 +330,7 @@ describe('PortHttpClient', () => {
       expect(mockJwtSigner.sign).toHaveBeenCalledWith({
         sub: 'user-456',
         roles: ['customer'],
-        provider: 'web',
+        provider: 'app',
         sessionId: '',
         xiNghiep: undefined,
       });

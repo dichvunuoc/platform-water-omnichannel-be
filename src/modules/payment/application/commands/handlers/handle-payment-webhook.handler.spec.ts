@@ -94,7 +94,7 @@ describe('HandlePaymentWebhookHandler', () => {
       expect(cmd).toBeInstanceOf(RecordSessionEventCommand);
       expect(cmd.payload.userId).toBe('USR-001');
       expect(cmd.payload.eventType).toBe('payment_completed');
-      expect(cmd.payload.channel).toBe('web');
+      expect(cmd.payload.channel).toBe('app');
     });
 
     // AC#5: Dispatch notification on success (Story 6.2)

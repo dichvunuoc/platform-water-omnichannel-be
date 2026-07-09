@@ -124,13 +124,13 @@ export class AuthPropagationMiddleware implements NestMiddleware {
   }
 
   /**
-   * Extract provider — prefers session data, falls back to x-auth-provider header, then 'web'.
+   * Extract provider — prefers session data, falls back to x-auth-provider header, then 'app'.
    */
   private extractProvider(session: BetterAuthSession, req: FastifyRequest): string {
     if (session.user?.provider) {
       return session.user.provider;
     }
-    return (req.headers['x-auth-provider'] as string) ?? 'web';
+    return (req.headers['x-auth-provider'] as string) ?? 'app';
   }
 
   /**

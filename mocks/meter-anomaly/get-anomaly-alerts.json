@@ -1,0 +1,12 @@
+{
+  "customerId": "USR-12345",
+  "alerts": [
+    {
+      "alertId": "ANM-2026-0003",
+      "meterId": "MTR-2024-0001",
+      "type": "continuous_flow",
+      "severity": "high",
+      "detectedAt": "2026-07-06T02:14:00Z"
+    }
+  ]
+}

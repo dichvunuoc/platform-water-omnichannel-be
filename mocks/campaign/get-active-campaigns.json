@@ -1,0 +1,12 @@
+{
+  "customerId": "USR-12345",
+  "campaigns": [
+    {
+      "campaignId": "CAMP-2026-1",
+      "title": "Tiết kiệm nước mùa khô",
+      "audience": "all_residential",
+      "startsAt": "2026-06-01T00:00:00Z",
+      "endsAt": "2026-08-31T23:59:59Z"
+    }
+  ]
+}

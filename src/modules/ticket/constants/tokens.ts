@@ -9,5 +9,4 @@
 // Port Tokens
 // =============================================================================
 export const TICKET_PORT_TOKEN = Symbol('ITicketPort');
-export const DOCUMENT_PORT_TOKEN = Symbol('IDocumentPort');
 export const KNOWLEDGE_BASE_PORT_TOKEN = Symbol('IKnowledgeBasePort');

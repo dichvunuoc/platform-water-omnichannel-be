@@ -62,7 +62,7 @@ export class HandlePaymentWebhookHandler implements ICommandHandler<HandlePaymen
           new RecordSessionEventCommand({
             userId: customerId,
             eventType: 'payment_completed',
-            channel: 'web',
+            channel: 'app',
             content: { invoiceId },
           }),
         );

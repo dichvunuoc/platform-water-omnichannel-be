@@ -108,7 +108,7 @@ export class JwtSignerService {
     return {
       sub: payload.sub as string,
       roles: (payload.roles as string[]) ?? ['customer'],
-      provider: (payload.provider as string) ?? 'web',
+      provider: (payload.provider as string) ?? 'app',
       sessionId: (payload.session_id as string) ?? '',
       xiNghiep: payload.xi_nghiep as string | undefined,
     };

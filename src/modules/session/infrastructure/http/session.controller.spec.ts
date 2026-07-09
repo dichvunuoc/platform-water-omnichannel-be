@@ -32,13 +32,13 @@ describe('SessionController', () => {
       expect(result).toEqual(mockDetail);
     });
 
-    it('should default channel to web when not provided', async () => {
+    it('should default channel to app when not provided', async () => {
       queryBus.execute.mockResolvedValue({ session: null, recentEvents: [] });
 
       await controller.getSessionDetail('USR-001');
 
       const cmd = commandBus.execute.mock.calls[0][0];
-      expect(cmd.channel).toBe('web');
+      expect(cmd.channel).toBe('app');
     });
 
     it('should throw ValidationException for invalid channel', async () => {

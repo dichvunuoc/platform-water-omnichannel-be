@@ -1,10 +1,11 @@
 ---
-stepsCompleted: [v3-rewrite]
+stepsCompleted: [v3-rewrite, v5-target-realign]
 inputDocuments:
   - product-brief-IOC-Customer-2026-06-02.md
   - docs/Mota_Tinh_Nang_KinhDoanh_KhachHang (AutoRecovered).docx
+  - My-Cong-ty_Bao-cao-Ke-hoach.docx (2026-07-02 — architecture realignment)
 workflowType: 'prd'
-version: '4.0'
+version: '5.0'
 classification:
   projectType: bff_customer_portal
   domain: utility
@@ -12,14 +13,28 @@ classification:
   complexity: high
   projectContext: brownfield
   authScope: customer_only
+  authOwner: bff_better_auth  # BFF sở hữu auth qua better-auth (BUILD MỚI)
   ticketOwner: ticketing_service
+revisionNote: '2026-07-06 — Realign sang TARGET (khớp sơ đồ tổng thể): (1) Auth = BFF-owned better-auth BUILD MỚI — BFF sở hữu Customer Auth DB (PostgreSQL), đăng ký tài khoản + đăng nhập, issue/verify token, auto-refresh 401. (2) 36 downstream services → 30 Ports (6 unported: Revenue, Fraud, Forecast, Churn, Agent-Assist, SCADA). (3) Queued tier promoted to MVP — Live→Cached→Queued từ day 1 (BullMQ + DLQ). (4) account module extracted (linking + Profile 360°).'
 ---
 
 # Product Requirements Document — Module CSKH (BFF - Customer Portal)
 
 **Author:** Pc
-**Date:** 2026-06-03
-**Version:** 4.0 (Cập nhật toàn diện theo Mô tả Tính năng Kinh doanh & Khách hàng)
+**Date:** 2026-07-06
+**Version:** 5.0 (Realign TARGET theo sơ đồ tổng thể + architecture.md v2, 2026-07-02)
+
+---
+
+> ✅ **BẢN NÀY = TARGET (v5.0, 2026-07-06).** PRD đã được **realign** để khớp với **sơ đồ tổng thể** + [`architecture.md`](./architecture.md) + [`epics.md`](./epics.md).
+>
+> **4 điểm cốt lõi của TARGET (v5.0):**
+> 1. **Auth = BFF-owned better-auth BUILD MỚI**: BFF sở hữu Customer Auth DB (PostgreSQL), **đăng ký tài khoản** + đăng nhập (SĐT/OTP, Zalo, Social), issue/verify token qua better-auth, auto-refresh 401.
+> 2. **36 downstream services → 30 Ports** (6 unported: Revenue S11, Fraud S26, Forecast S27, Churn S28, Agent-Assist S29, SCADA S36 — truy cập gián tiếp/deferred).
+> 3. **Queued tier = MVP**: resilience **3 tầng Live→Cached→Queued** từ day 1 (BullMQ + DLQ trên Redis) → NFR-R2 "0% total outage".
+> 4. **`account` module** extracted: linking (phone/provider → mã KH) + Customer Profile 360°.
+>
+> **📱 App-only (2026-07-06):** Kênh khách hàng duy nhất = **App** (REST API). KHÔNG có Web Portal hay Zalo OA như kênh dịch vụ. **Zalo được GIỮ như phương thức xác thực** (đăng nhập / OTP qua ZNS message). Các phần "Mobile App + Web Portal + Zalo OA", "cross-channel Context Preservation", "báo sự cố qua Zalo OA", `cskh`/omnichannel dưới đây là **STALE — chờ reframe narrative**; **code đã App-only** (Zalo OA inbound + `cskh` port đã gỡ). Multi-channel NOTIFICATION dispatch (S32: push/SMS/Zalo/email) vẫn hợp lệ — đó là kênh gửi thông báo, không phải kênh khách hàng.
 
 ---
 
@@ -27,11 +42,11 @@ classification:
 
 ### Tuyên ngôn Sản phẩm
 
-Module CSKH được định vị là một **Backend For Frontend (BFF) / API Gateway** chuyên biệt phục vụ cho **điểm chạm của Khách hàng cuối (End-users)** thông qua ứng dụng **My Công ty** (Mobile App, Web Portal, Zalo OA).
+Module CSKH được định vị là một **Backend For Frontend (BFF) / API Gateway** chuyên biệt phục vụ cho **điểm chạm của Khách hàng cuối (End-users)** thông qua ứng dụng **My Công ty** (**App** — kênh duy nhất; Zalo được dùng như phương thức xác thực, không phải kênh dịch vụ).
 
 **Triết lý cốt lõi: "0% Nghiệp vụ - 100% Trải nghiệm"**
 
-- Mọi nhu cầu của Khách hàng (Mobile App, Web Portal, Zalo) đều đi qua cổng này.
+- Mọi nhu cầu của Khách hàng đều đi qua cổng này (kênh duy nhất: **App**).
 - Không xử lý bất kỳ logic nghiệp vụ cụ thể nào. Module đóng vai trò là **"Lớp vỏ" (Shell)**, tiếp nhận yêu cầu và gọi (route) sang các Microservices nghiệp vụ tương ứng.
 - SaaS White-labeling: Thiết kế Hexagonal Architecture cho phép đem bán giải pháp App CSKH cho nhà máy nước khác — chỉ cần viết ExternalAdapter mới, không đập code core.
 
@@ -52,7 +67,7 @@ BFF không sở hữu data nghiệp vụ. BFF không tính cước, không gán 
 
 3. **Auth tập trung cho KH** — Centralized customer auth cho mọi kênh. Đăng nhập 1 lần (SĐT/OTP, Zalo, Social) → truy cập mọi dịch vụ. Internal staff auth → do Identity Service riêng, không phải việc BFF.
 
-4. **Context Preservation xuyên kênh** — KH chat Zalo buổi sáng → mở Web chiều → toàn bộ lịch sử còn nguyên. CRM phổ biến không hỗ trợ cross-channel context native.
+4. **Session Continuity trong App** — phiên + lịch sử tương tác (hóa đơn, ticket, thanh toán...) lưu liên tục qua Redis session store; KH mở lại App vẫn thấy nguyên ngữ cảnh đang dở. *(App-only: cross-channel Zalo/Web đã bỏ — chỉ còn session continuity trong cùng App.)*
 
 5. **SaaS White-labeling** — Khi đem bán cho nhà máy nước khác (đã có phần mềm kế toán bên thứ 3), chỉ cần viết ExternalAdapter cắm vào hệ thống cũ. Toàn bộ App/Web vẫn hoạt động bình thường.
 
@@ -83,19 +98,29 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 
 ### Chi tiết từng Downstream Service cần Mock
 
-#### S1: Customer Identity & Auth Service
+#### S1: Customer Identity & Auth Service (better-auth — BUILD MỚI)
 
 | Thuộc tính | Chi tiết |
 |---|---|
 | **Nhóm Mota_Tinh_Nang** | N1 (Customer 360°, liên kết KH), N7 (Đăng ký tài khoản) |
 | **Domain** | Xác thực & định danh khách hàng |
-| **Responsibility** | Đăng ký/đăng nhập KH qua SĐT/OTP, Zalo ID, Social login (Google, Facebook, Apple). Liên kết 1 KH với nhiều Provider (SĐT, Zalo, Email). Issue & verify JWT/Access token, refresh token. Quản lý Customer Auth DB. |
-| **BFF gọi khi nào** | Mỗi request cần xác thực KH. Login flow. Token refresh. Provider linking. |
-| **Protocol** | REST + JWT |
+| **Auth provider** | **better-auth (build mới trong BFF)**. BFF owns Customer Auth DB (PostgreSQL). |
+| **Responsibility** | **Đăng ký tài khoản** + đăng nhập KH qua SĐT/OTP, Zalo ID, Social login (Google, Facebook, Apple). Liên kết 1 KH với nhiều Provider (SĐT, Zalo, Email). Issue & verify JWT/Access token, refresh token (auto-refresh 401). Quản lý Customer Auth DB (user credentials, provider links, sessions, tokens). |
+| **BFF gọi khi nào** | Mỗi request cần xác thực KH. **Registration flow.** Login flow. Token refresh. Provider linking. |
+| **Protocol** | REST + JWT (better-auth session) |
 | **Mock priority** | **P0 — Bắt buộc MVP** — Không thể test bất kỳ flow nào không có auth |
 | **Mock data cần thiết** | Customer profiles (5+ personas), provider links, tokens |
+| **Port Interface** | `IAuthPort` (better-auth) |
 
-#### S2: Customer Profile Service (Customer 360°)
+**Port Methods:**
+- `register(identifier, method, otp)` → Đăng ký tài khoản mới, tạo Customer identity + gắn Mã KH
+- `login(identifier, method, otp/credential)` → Đăng nhập, issue session + access/refresh token
+- `verifyToken(token)` → Verify access token
+- `refreshToken(refreshToken)` → Refresh access token (tự động khi downstream trả 401)
+- `linkProvider(customerId, provider, providerId)` → Liên kết thêm provider
+- `getSession(customerId)` → Thông tin session hiện tại
+
+#### S2: Customer Profile Service (Customer 360°) — `account` module
 
 | Thuộc tính | Chi tiết |
 |---|---|
@@ -106,6 +131,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | **Protocol** | REST |
 | **Mock priority** | **P0 — Bắt buộc MVP** |
 | **Port Interface** | `ICustomerProfilePort` |
+| **Module owner** | `modules/account/` — Profile 360° + mã KH resolution + account linking (qua better-auth). Sau registration (S1, better-auth issue identity) → account module tạo/link profile với Mã KH. |
 
 **Port Methods:**
 - `getProfile(customerId)` → Customer 360° data
@@ -701,7 +727,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | 7 | S32 | Notification Service (Đa kênh) | `INotificationPort` | MVP |
 | 8 | S34 | Document / Storage Service | `IDocumentPort` | MVP |
 
-#### P1 — MVP mở rộng (5 services)
+#### P1 — MVP mở rộng (6 services)
 
 | # | Service ID | Service Name | Port Interface | Phase |
 |---|---|---|---|---|
@@ -712,7 +738,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | 13 | S18 | Knowledge Base Service | `IKnowledgeBasePort` | MVP |
 | 14 | S22 | Proactive Communication Service | `IProactiveNotificationPort` | MVP |
 
-#### P2 — Phase 2 (9 services)
+#### P2 — Phase 2 (12 services)
 
 | # | Service ID | Service Name | Port Interface | Phase |
 |---|---|---|---|---|
@@ -729,7 +755,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | 25 | S31 | Field Team Tracking Service | `IFieldTeamPort` | Phase 2 |
 | 26 | S33 | eContract Service | `IeContractPort` | Phase 2 |
 
-#### P3 — Phase 3 (3 services)
+#### P3 — Phase 3 (4 services)
 
 | # | Service ID | Service Name | Port Interface | Phase |
 |---|---|---|---|---|
@@ -756,8 +782,8 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | **MVP (P0 + P1)** | **14 services** | **14 Port Interfaces** |
 | **Phase 2 (P2)** | **+12 services** | **+12 Port Interfaces** |
 | **Phase 3 (P3)** | **+4 services** | **+4 Port Interfaces** |
-| **Không mock** | 6 services | — |
-| **Tổng cộng** | **30 services** | **30 Port Interfaces** |
+| **Không cần Port (unported)** | 6 services (S11, S26, S27, S28, S29, S36) | — |
+| **Tổng cộng** | **36 downstream → 30 Ports** (30 mock adapters) | **30 Port Interfaces** |
 
 ---
 
@@ -768,7 +794,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 #### Persona 1: Khách hàng sinh hoạt — "Cô Nguyễn"
 
 - **Vai trò:** Người dân sử dụng dịch vụ cấp nước sinh hoạt
-- **Công cụ:** Mobile App, Zalo OA
+- **Công cụ:** App (Zalo dùng để xác thực, không phải kênh dịch vụ)
 - **Hành vi:** Tra cứu hóa đơn hàng tháng, thanh toán online, báo sự cố (mất nước, rò rỉ), xem tiêu thụ. Không rành công nghệ.
 - **Vấn đề hiện tại:** Phải đến trực tiếp quầy giao dịch hoặc gọi Hotline chờ đợi lâu, không biết tiến độ xử lý sự cố.
 - **Trải nghiệm mới:** Mở App → xem hóa đơn → thanh toán QR → nhận thông báo kết quả. Báo sự cố qua Zalo → nhận tracking ID → nhận notification khi xử lý xong.
@@ -777,7 +803,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 #### Persona 2: Khách hàng công nghệ — "Anh Tuấn"
 
 - **Vai trò:** Người dân 35 tuổi, sử dụng thành thạo smartphone
-- **Công cụ:** Mobile App (chính), Web Portal, Zalo OA
+- **Công cụ:** App
 - **Hành vi:** Theo dõi biểu đồ tiêu thụ nước hàng tháng, so sánh kỳ trước, nhận thông báo hóa đơn mới, thanh toán online, báo sự cố kèm ảnh.
 - **Vấn đề hiện tại:** Không có kênh digital chính thức, phải gọi điện hoặc đến quầy.
 - **Trải nghiệm mới:** Push notification hóa đơn mới → mở App xem chi tiết → thanh toán → nhận biên lai điện tử. Xem biểu đồ tiêu thụ + so sánh.
@@ -786,14 +812,14 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 #### Persona 3: Khách hàng doanh nghiệp — "KCN Cẩm Phả"
 
 - **Vai trò:** Tổ chức có hợp đồng đặc thù, sản lượng lớn
-- **Công cụ:** Web Portal (chính), Mobile App
+- **Công cụ:** App (giao diện doanh nghiệp)
 - **Hành vi:** Tra cứu hóa đơn hàng loạt, xem chi tiết chỉ số đồng hồ, báo sự cố ưu tiên, liên hệ qua kênh riêng.
 - **Đặc thù:** Cần tra cứu nhiều hợp đồng, xem báo cáo tiêu thụ tổng hợp, thanh toán tập trung.
 
 #### Persona 4: Khách hàng cao tuổi — "Bà Lan"
 
 - **Vai trò:** Người dân > 65 tuổi, hạn chế sử dụng smartphone
-- **Công cụ:** Mobile App (phiên bản senior), Zalo OA, gọi Hotline
+- **Công cụ:** App (senior mode), gọi Hotline
 - **Hành vi:** Xem hóa đơn (font lớn), gọi tổng đài viên từ App (click-to-call), nhận SMS thông báo.
 - **Đặc thụ:** Giao diện đơn giản, font lớn, nút "Gọi tổng đài viên" lớn rõ ràng. Phiên bản App dành riêng cho người cao tuổi.
 
@@ -842,16 +868,16 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 
 ### MVP Definition (Phase 1)
 
-**Mục tiêu MVP:** Chứng minh kiến trúc BFF hoạt động — KH tra cứu hóa đơn, thanh toán, báo sự cố qua App/Web/Zalo. Đặc biệt **Context Preservation** (KH chuyển kênh giữa chừng không mất ngữ cảnh).
+**Mục tiêu MVP:** Chứng minh kiến trúc BFF hoạt động — KH tra cứu hóa đơn, thanh toán, báo sự cố qua **App**. Phiên + lịch sử tương tác liên tục qua Redis (session continuity trong App).
 
-**MVP phải có ít nhất 2 kênh** để demo Context Preservation.
+*(App-only: kênh khách hàng duy nhất là App — không còn yêu cầu "2 kênh" để demo cross-channel.)*
 
 ### MVP Core Features
 
 | # | Feature | Chi tiết | Downstream Services (ID) |
 |---|---------|----------|------------------------|
-| M1 | **Customer Auth** | Đăng nhập KH qua SĐT/OTP, Zalo ID, Social. Liên kết tài khoản với Mã KH. BFF owns User/Token DB. | S1: Identity & Auth Service |
-| M2 | **Customer Profile** | Xem hồ sơ KH 360°, thông tin định danh, timeline tương tác. | S2: Customer Profile Service |
+| M1 | **Customer Auth** | **Đăng ký tài khoản** + đăng nhập qua **better-auth (build mới)** — SĐT/OTP, Zalo ID, Social. Liên kết tài khoản với Mã KH. BFF owns User/Token/Auth DB (PostgreSQL). | S1: Identity & Auth Service |
+| M2 | **Customer Profile** (`account` module) | Xem hồ sơ KH 360°, thông tin định danh, timeline tương tác. Resolve Mã KH + account linking (qua better-auth). | S2: Customer Profile Service |
 | M3 | **Contract Lookup** | Xem thông tin hợp đồng, điều khoản, trạng thái, lịch sử phiên bản. | S4: Contract Service |
 | M4 | **Meter Info** | Xem thông tin đồng hồ, trạng thái kiểm định. | S5: Meter Service |
 | M5 | **Consumption History** | Xem biểu đồ tiêu thụ, so sánh kỳ, chi tiết chỉ số. | S6: Meter Reading Service |
@@ -864,7 +890,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | M12 | **FAQ & Knowledge Base** | Tìm kiếm FAQ, xem bài hướng dẫn. | S18: Knowledge Base Service |
 | M13 | **Proactive Alerts** | Nhận thông báo sự cố khu vực, bảo dưỡng, mất nước. | S22: Proactive Communication Service |
 | M14 | **Notifications** | Push/Zalo notification: hóa đơn mới, thanh toán thành công, sự cố cập nhật. Rate limiting. | S32: Notification Service |
-| M15 | **Context Preservation** | Redis session store. KH chat Zalo sáng → mở Web chiều → history intact. | Internal (Redis) |
+| M15 | **Session Continuity** | Redis session store. KH mở lại App → phiên + history nguyên vẹn. | Internal (Redis) |
 | M16 | **File Upload** | Upload ảnh sự cố, giấy tờ. Presigned URL. | S34: Document Service |
 | M17 | **Hexagonal Adapter Layer** | 14 Port interfaces + Mock Adapters cho MVP services. | Infrastructure |
 
@@ -933,7 +959,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | # | Criteria | Cách đo |
 |---|----------|---------|
 | MC-1 | 2 kênh hoạt động: App + Zalo (hoặc Web + Zalo) | Demo end-to-end |
-| MC-2 | Context Preservation: KH chat Zalo → mở Web → history intact | Test case |
+| MC-2 | Session Continuity: KH mở lại App → history/phiên nguyên vẹn | Test case |
 | MC-3 | Customer Auth: KH đăng nhập SĐT/OTP → xem data mình | Auth test |
 | MC-4 | 14 Ports hoạt động với Mock Adapters | API integration test |
 | MC-5 | Graceful Degradation: tắt downstream mock → cached response → KH vẫn nhận | Kill service test |
@@ -954,8 +980,8 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | G9 | GIS coverage check | S30: GIS Service |
 | G10 | Field team ETA tracking | S31: Field Team Service |
 | G11 | eContract digital signing | S33: eContract Service |
-| G12 | Full Graceful Degradation (3 tầng) | Infrastructure |
-| G13 | DLQ + Queue retry | Infrastructure |
+| G12 | ~~Full Graceful Degradation (3 tầng)~~ → **promoted to MVP** (Live→Cached→Queued) | Infrastructure |
+| G13 | ~~DLQ + Queue retry~~ → **promoted to MVP** (BullMQ + DLQ) | Infrastructure |
 | G14 | Rich push notification + deeplink | S32: Notification Service |
 
 ### Vision (Phase 3)
@@ -989,29 +1015,29 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 6. Push notification qua `INotificationPort`: "Thanh toán thành công! Biên lai điện tử đã sẵn sàng."
 7. Session event: `{ type: "payment_completed", invoiceId: "INV-2026-06", amount: 150000 }`
 
-### Journey 2: KH báo sự cố qua Zalo OA (Alternative Channel)
+### Journey 2: KH báo sự cố qua App (Ticket)
 
 **Persona:** Anh Tuấn (tiếp tục).
-**Services gọi:** S1 (Auth), S16 (Ticketing), S34 (Document), S32 (Notification)
+**Services gọi:** S1 (Auth), S16 (Ticketing), S34 (Document), S32 (Notification — SMS-first)
 
-1. Anh nhắn "Nhà tôi mất nước" qua Zalo OA
-2. Zalo Adapter tiếp nhận → Auth layer xác thực Zalo ID → UserID `USR-12345`
-3. BFF nhận dạng intent "báo sự cố" → hiển thị form chọn loại sự cố + upload ảnh
-4. Anh gửi ảnh rò rỉ + mô tả → BFF gọi `IDocumentPort.getUploadUrl()` → upload ảnh → `ITicketPort.createTicket()` → push data sang Ticketing Service
-5. Ticketing Service trả về tracking ID `TK-2026-002` → BFF trả về cho KH qua Zalo
-6. Session event: `{ type: "incident_submitted", ticketId: "TK-2026-002", channel: "zalo" }`
+1. Anh mở App → chọn "Báo sự cố" → Auth layer (better-auth) xác thực → UserID `USR-12345`
+2. Anh chọn loại sự cố + upload ảnh rò rỉ + mô tả qua form App
+3. BFF gọi `IDocumentPort.getUploadUrl()` → upload ảnh → `ITicketPort.createTicket()` → push data sang Ticketing Service
+4. Ticketing Service trả về tracking ID `TK-2026-002` → App hiển thị
+5. Khi trạng thái ticket đổi → Ticketing Service webhook → BFF dispatch notification **qua SMS (SĐT) trước** (không Zalo)
+6. Session event: `{ type: "incident_submitted", ticketId: "TK-2026-002", channel: "app" }`
 
-### Journey 3: Cross-Channel Context Preservation (Key Differentiator)
+### Journey 3: Session Continuity trong App (KH mở lại App)
 
 **Persona:** Anh Tuấn (tiếp tục từ Journey 2).
 **Services gọi:** S1 (Auth), S16 (Ticketing), S2 (Profile)
 
-1. Anh đã chat Zalo lúc 9h sáng báo mất nước → nhận tracking ID `TK-2026-002`
-2. 2 giờ chiều → anh mở Web Portal → login cùng SĐT → cùng UserID `USR-12345`
+1. Anh báo mất nước lúc 9h sáng qua App → nhận tracking ID `TK-2026-002`
+2. 2 giờ chiều → anh mở lại App → better-auth session còn active → cùng UserID `USR-12345`
 3. BFF query session `session:USR-12345` → tìm session còn active
-4. Web Portal hiện đầy đủ: Zalo chat lúc 9h + tracking ID `TK-2026-002` + trạng thái "Đang xử lý"
+4. App hiện đầy đủ: ticket `TK-2026-002` vừa tạo + trạng thái "Đang xử lý"
 5. Anh nhấn "Xem chi tiết" → BFF gọi `ITicketPort.getTicketStatus("TK-2026-002")` → hiện tiến độ
-6. Anh không phải nhập lại **bất kỳ thông tin nào**
+6. Anh không phải nhập lại **bất kỳ thông tin nào** (App-only: session continuity trong cùng App)
 
 ### Journey 4: KH tra cứu tiêu thụ và xem biểu giá (Data Visualization)
 
@@ -1090,6 +1116,24 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 4. 17:30 → notification: "Đã có nước trở lại. Xin lỗi vì sự bất tiện!"
 5. Lịch sử thông báo lưu vào Customer 360
 
+### Journey 11: KH đăng ký tài khoản mới (Registration — Entry Point)
+
+**Persona:** Người dân mới chưa có tài khoản My Công ty (vd: Anh Minh, 30 tuổi, mới chuyển đến khu vực).
+**Services gọi:** S1 (better-auth), S2 (`account` module), S32 (Notification — gửi OTP)
+
+1. Anh mở My Công ty App → chọn **"Đăng ký tài khoản"**
+2. Nhập SĐT → BFF gọi `IAuthPort.register(phone, method=otp)` → better-auth gửi OTP qua SMS (qua `INotificationPort`)
+3. Anh nhập OTP → better-auth verify OTP → **tạo Customer identity** (user credential + phone provider link) trong Customer Auth DB (PostgreSQL)
+4. BFF gọi `ICustomerProfilePort` (`account` module) → **resolve Mã KH** từ SĐT:
+   - SĐT đã thuộc KH nội bộ → **link tự động** profile với identity mới
+   - SĐT chưa có → tạo profile mới, yêu cầu bổ sung thông tin định danh
+5. better-auth **issue session + access/refresh token** → KH đăng nhập luôn (không cần đăng nhập lại)
+6. (Tuỳ chọn) Anh link thêm provider (Zalo, Google) qua `IAuthPort.linkProvider()` để dùng nhiều provider xác thực
+7. Session event: `{ type: "registration_completed", customerId, channel: "app", linkedProviders: ["phone"] }`
+
+**Kênh thay thế:** Đăng ký qua **Zalo OA** (Zalo ID) hoặc **Social login** (Google/Facebook/Apple) — cùng flow, chỉ khác provider.
+**Key Ports:** `IAuthPort` (register, linkProvider), `ICustomerProfilePort` (resolve Mã KH, create/link profile), `INotificationPort` (OTP SMS).
+
 ### Journey Requirements Summary
 
 | Journey | Downstream Services (ID) | Key Ports |
@@ -1104,6 +1148,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | J8: Cảnh báo rò rỉ AI | S16, S25, S32 | ILeakageAlertPort, ITicketPort, INotificationPort |
 | J9: AI Chatbot | S10, S16, S24 | IChatbotPort, IInvoicePort, ITicketPort |
 | J10: Thông báo sự cố | S22, S32 | IProactiveNotificationPort, INotificationPort |
+| J11: Đăng ký tài khoản | S1, S2, S32 | IAuthPort, ICustomerProfilePort, INotificationPort |
 
 ---
 
@@ -1176,10 +1221,10 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | Risk | Mitigation |
 |------|-----------|
 | Downstream chưa sẵn sàng → luồng bị block | **14 Mock Adapters sẵn sàng** cho MVP. Adapter fallback: Live → Mock → cached → graceful message |
-| Downstream down đột ngột | Circuit Breaker per-service + Cache fallback + Queue retry (Phase 2) |
+| Downstream down đột ngột | Circuit Breaker per-service + Cache fallback + **Queue retry (MVP — BullMQ + DLQ)**. 3 tầng Live→Cached→Queued. |
 | Schemas khác nhau giữa services | Port interface chuẩn hóa response format. Adapter transform upstream schema → Port schema. |
 | Zalo rate limit (2 tin ZNS/KH/ngày) | Notification Module funnel: rate limiting + batching |
-| 30 services quá nhiều để quản lý | Hexagonal Architecture: mỗi Port độc lập. Thêm service = thêm Port + Adapter, không ảnh hưởng BFF core. |
+| 36 services / 30 Ports quá nhiều để quản lý | Hexagonal Architecture: mỗi Port độc lập. Thêm service = thêm Port + Adapter, không ảnh hưởng BFF core. 6 services unported (internal-only) không cần Port. |
 | Mock data không phản ánh thực tế | Tạo mock data từ 5+ personas (Cô Nguyễn, Anh Tuấn, KCN Cẩm Phả, Bà Lan, KH DN vừa). Mỗi persona có full data chain: profile → contract → meter → readings → invoices → payments → tickets. |
 
 ---
@@ -1190,8 +1235,8 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 
 | # | Innovation | Chi tiết |
 |---|-----------|---------|
-| IN-1 | **BFF + Hexagonal Ports (30 Ports) for Utility SaaS** | Khác CRM phổ biến (sở hữu data), BFF chỉ aggregate + transform. 30 Port Interfaces cho 30 downstream services. Hexagonal Ports cho phép swap downstream service khi bán SaaS cho nhà máy nước khác. |
-| IN-2 | **Context Preservation cross-channel cho KH** | Session store + event sourcing cho phép KH chuyển kênh (Zalo → Web → App) mà không mất ngữ cảnh. CRM phổ biến không hỗ trợ native. |
+| IN-1 | **BFF + Hexagonal Ports (30 Ports / 36 services) for Utility SaaS** | Khác CRM phổ biến (sở hữu data), BFF chỉ aggregate + transform. **36 downstream services → 30 Port Interfaces** (6 unported: Revenue, Fraud, Forecast, Churn, Agent-Assist, SCADA). Hexagonal Ports cho phép swap downstream service khi bán SaaS cho nhà máy nước khác. |
+| IN-2 | **Session Continuity trong App** | Session store + event sourcing cho phép KH mở lại App mà không mất ngữ cảnh (phiên + lịch sử tương tác nguyên vẹn). |
 | IN-3 | **Circuit Breaker per-service với Graceful Degradation 3 tầng** | Live → Cached → Queue+Notify. KH luôn nhận response kể cả khi tất cả downstream down. Resilience-first cho hệ thống mission-critical. |
 | IN-4 | **Adapter Swappability (SaaS White-labeling)** | Khi bán cho nhà máy nước khác → chỉ cần viết ExternalAdapter (implements cùng Port interface) → App/Web hoạt động bình thường. |
 | IN-5 | **AI Leakage Alert — WOW Moment** | AI phát hiện rò rỉ trong nhà KH chỉ qua phân tích tiêu thụ → chủ động báo cho KH → tiết kiệm hàng trăm m³ nước. Tạo ấn tượng vượt kỳ vọng. |
@@ -1201,7 +1246,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | Innovation | Cách validate |
 |-----------|---------------|
 | BFF + Hexagonal Ports | MVP demo: 14 Ports hoạt động với MockAdapters |
-| Context Preservation | Test case: chat Zalo → mở Web → verify context intact |
+| Session Continuity | Test case: mở lại App → verify session/history nguyên |
 | Graceful Degradation | Kill downstream service → verify Circuit Breaker fallback |
 | Adapter Swappability | Code review: Port interface không reference downstream specifics |
 | AI Leakage Alert | Phase 3: A/B test notification với KH có/nhận cảnh báo |
@@ -1224,7 +1269,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 |---|-------------|---------|
 | PT-4 | Customer-only auth | BFF chỉ quản lý auth cho KH cuối. SĐT/OTP, Zalo ID, Social login. Internal staff → Identity Service riêng. |
 | PT-5 | Token payload | Access token chứa: customer identity, linked providers, session reference. Không chứa internal roles. |
-| PT-6 | Multi-provider linking | 1 KH liên kết nhiều Provider (SĐT, Zalo ID, Email) để cross-channel identification. |
+| PT-6 | Multi-provider linking | 1 KH liên kết nhiều Provider (SĐT, Zalo ID, Email) để cross-provider identification. |
 | PT-7 | Token lifecycle | Access token: 15 phút. Refresh token: 7 ngày. Auto-refresh khi downstream trả 401. |
 
 ### Resilience Capability Requirements
@@ -1233,7 +1278,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 |---|-----------|-------------|
 | PT-8 | Circuit Breaker per-service | opossum: per downstream service. Failure > 50% in 10s → open → fallback. |
 | PT-9 | Cache TTL phân tầng | Static (hợp đồng): 12-24h. Dynamic (hóa đơn): 5-15 min. Transaction (thanh toán): NO CACHE |
-| PT-10 | Retry Queue (Phase 2) | BullMQ exponential backoff. Dead Letter Queue. |
+| PT-10 | Retry Queue **(MVP — promoted from Phase 2)** | BullMQ trên Redis, exponential backoff, Dead Letter Queue. Khi CB OPEN + cache MISS → enqueue, trả 202 accepted → retry/DLQ. Powers Live→Cached→Queued (NFR-R2). |
 | PT-11 | Webhook security | HMAC signature verification (Zalo). Static API key (internal webhooks from Payment/Ticketing). |
 | PT-12 | Structured logging | Correlation ID on every request. PII redaction mandatory. |
 | PT-13 | Environment-based config | Secrets, connection strings, downstream URLs → env var. |
@@ -1243,15 +1288,17 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 
 ## Functional Requirements
 
-### Customer Authentication & Identity (S1)
+### Customer Authentication & Identity (S1) — via better-auth (BUILD MỚI)
 
-- **FR1:** Khách hàng xác thực danh tính qua SĐT/OTP, Zalo ID, hoặc Social login (Google, Facebook, Apple) — không cần username/password
-- **FR2:** Hệ thống liên kết 1 Customer với nhiều Provider (SĐT, Zalo ID, Email) để cross-channel identification
-- **FR3:** Hệ thống issue authenticated token chứa customer identity, linked providers, session reference cho mọi authenticated KH
-- **FR4:** Hệ thống tự động refresh access token khi nhận 401 từ downstream — KH không thấy gián đoạn
-- **FR5:** BFF owns Customer Auth DB (PostgreSQL) — lưu customer profiles, provider links, tokens
+> **Auth provider:** BFF sở hữu auth qua **better-auth (build mới trong BFF)**. BFF owns Customer Auth DB (PostgreSQL): user credentials, provider links, sessions, tokens.
 
-### Customer Profile 360° (S2)
+- **FR1:** Khách hàng **đăng ký tài khoản mới (registration)** và **xác thực** qua **better-auth (build mới)** — đăng ký/đăng nhập bằng SĐT/OTP, Email, Zalo ID, hoặc Social login (Google, Facebook, Apple). Tạo Customer identity + gắn Mã KH tại đăng ký; không cần username/password truyền thống.
+- **FR2:** Hệ thống liên kết 1 Customer với nhiều Provider (SĐT, Zalo ID, Email) để cross-provider identification — linking qua better-auth account-linking.
+- **FR3:** Hệ thống issue authenticated token (better-auth) chứa customer identity, linked providers, session reference cho mọi authenticated KH.
+- **FR4:** Hệ thống tự động refresh access token khi nhận 401 từ downstream — KH không thấy gián đoạn.
+- **FR5:** BFF owns Customer Auth DB (PostgreSQL) qua better-auth — lưu user credentials, provider links, sessions, tokens.
+
+### Customer Profile 360° (S2) — `account` module
 
 - **FR6:** KH xem hồ sơ 360°: mã KH, thông tin định danh, phân loại sử dụng, địa chỉ, thông tin liên hệ
 - **FR7:** KH xem timeline tương tác 360°: hợp đồng → đồng hồ → chỉ số → hóa đơn → thanh toán → khiếu nại → tương tác đa kênh, sắp xếp theo trục thời gian
@@ -1260,7 +1307,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 
 ### Hexagonal Adapter Layer (30 Ports)
 
-- **FR10:** Mỗi downstream Microservice giao tiếp qua Port interface (30 Port Interfaces tổng cộng: 14 MVP + 12 Phase 2 + 4 Phase 3)
+- **FR10:** **36 downstream Microservices → 30 Port Interfaces** (14 MVP + 12 Phase 2 + 4 Phase 3). 6 services unported (Revenue S11, Fraud S26, Forecast S27, Churn S28, Agent-Assist S29, SCADA S36 — truy cập gián tiếp/deferred, không cần Port). Mỗi Port giao tiếp qua interface thuần.
 - **FR11:** Adapter implementation injectable — MockAdapter cho development, InternalAdapter cho production, ExternalAdapter cho SaaS
 - **FR12:** Frontend chỉ biết Port schema — không bao giờ tiếp xúc với downstream raw schema
 - **FR13:** Thêm downstream service mới = thêm Port + Adapter — không sửa BFF core
@@ -1348,17 +1395,17 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 - **FR59:** KH upload giấy tờ (onboarding — Phase 2)
 - **FR60:** Hệ thống tạo presigned URL cho upload → không expose storage credentials cho frontend
 
-### Context Preservation (Cross-Channel)
+### Session Continuity (trong App)
 
 - **FR61:** Hệ thống lưu mọi tương tác KH vào session store với event type, timestamp, content — 100% tương tác ghi nhận < 1 giây
-- **FR62:** Hệ thống tự động nối tiếp session khi KH chuyển kênh — dựa trên Customer ID, không dựa kênh
+- **FR62:** Hệ thống tự động nối tiếp session khi KH mở lại App — dựa trên Customer ID (App-only: không còn "chuyển kênh")
 - **FR63:** Session có TTL 24-48h. Redis AOF persistence bắt buộc — session survive restart.
 - **FR64:** Session writes MUST be atomic — sử dụng Redis Lua script
 
 ### Resilience & Graceful Degradation
 
 - **FR65:** Hệ thống phát hiện downstream service down qua Circuit Breaker (per-service, per-Port) → tự động fallback sang cached data
-- **FR66:** Hệ thống luôn trả response cho KH — kể cả khi downstream down (cached hoặc queued message)
+- **FR66:** Hệ thống **luôn trả response cho KH** — kể cả khi downstream down — qua 3 tầng **Live → Cached → Queued** (MVP): live → nếu Circuit Breaker OPEN, fallback cached → nếu cache MISS, enqueue (BullMQ) trả 202 accepted + retry/DLQ. 0% total outage.
 - **FR67:** Hệ thống cache dữ liệu với TTL phân tầng: static 12-24h, dynamic 5-15 phút, transaction không cache
 - **FR68:** Hệ thống ghi log cảnh báo khi Circuit Breaker mở hoặc fallback kích hoạt
 
@@ -1405,7 +1452,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | ID | Requirement | Metric | Measurement |
 |----|-------------|--------|-------------|
 | NFR-R1 | Multi-channel uptime (App + Web + Zalo) | ≥ 99.5% | Uptime monitoring |
-| NFR-R2 | Total outage | 0% — KH luôn nhận response | Incident tracking |
+| NFR-R2 | Total outage | 0% — KH luôn nhận response (Live→Cached→Queued, BullMQ + DLQ từ MVP) | Incident tracking |
 | NFR-R3 | Circuit Breaker detection latency | < 10 giây | Failover testing |
 | NFR-R4 | Session survive Redis restart | 100% session preserved | Restart test (AOF enabled) |
 
@@ -1489,7 +1536,7 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | Proactive Communication | CS-4 | FR50-FR53 |
 | Notification | BS-4 | FR54-FR57 |
 | Document Upload | — | FR58-FR60 |
-| Context Preservation | CS-2, TS-5 | FR61-FR64 |
+| Session Continuity | CS-2, TS-5 | FR61-FR64 |
 | Resilience & Graceful Degradation | TS-6, NFR-R2 | FR65-FR68 |
 | Idempotency | NFR-R2 | FR69-FR70 |
 | Webhook Security | NFR-S3, NFR-I4 | FR71-FR72 |
@@ -1508,3 +1555,4 @@ Phân hệ Kinh doanh & Khách hàng gồm 10 nhóm tính năng (29 tính năng)
 | J8: Cảnh báo rò rỉ AI | S16, S25, S32 | FR41, FR54 |
 | J9: AI Chatbot | S10, S16, S24 | FR29, FR41, FR47 |
 | J10: Thông báo sự cố | S22, S32 | FR50-FR53, FR54-FR57 |
+| J11: Đăng ký tài khoản | S1, S2, S32 | FR1, FR2 |

@@ -1,0 +1,7 @@
+{
+  "customerId": "USR-12345",
+  "meterId": "MTR-2024-0001",
+  "currentFlowM3h": 0.12,
+  "todayM3": 0.32,
+  "lastReadingAt": "2026-07-07T07:50:00Z"
+}

@@ -1,0 +1,7 @@
+{
+  "conversationId": "CONV-1",
+  "messageId": "MSG-100",
+  "reply": "Tôi có thể giúp gì cho bạn về hóa đơn hoặc sự cố nước?",
+  "intent": "general",
+  "confidence": 0.9
+}

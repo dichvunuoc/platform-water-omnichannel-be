@@ -34,7 +34,8 @@ export class DispatchNotificationHandler
     const { customerId, type, isCritical, channel } = command.payload;
 
     // Determine target channel(s)
-    const targetChannel = channel ?? 'zns'; // Default to ZNS
+    // Pc (2026-07-06): SMS-first — Zalo OA not yet available; incidents prefer SMS.
+    const targetChannel = channel ?? 'sms';
     const fallbackChain = isCritical
       ? this.rateLimiterService.getFallbackChain()
       : [targetChannel];
@@ -66,7 +67,7 @@ export class DispatchNotificationHandler
             new RecordSessionEventCommand({
               userId: customerId,
               eventType: 'notification_sent',
-              channel: ch === 'zns' ? 'zalo' : ch === 'in_app' ? 'web' : ch === 'sms' ? 'hotline' : ch === 'push' ? 'web' : 'web',
+              channel: 'app', // App-only — every notification originates in the App touchpoint
               content: { channel: ch, notificationType: type },
             }),
           );

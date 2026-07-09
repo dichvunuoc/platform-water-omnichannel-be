@@ -12,6 +12,11 @@ import { z } from 'zod';
 export const CacheTierSchema = z.enum(['static', 'dynamic', 'transaction']);
 
 /**
+ * Queue fallback policy enum schema (Queued resilience tier)
+ */
+export const QueuePolicySchema = z.enum(['never', 'on-cache-miss', 'always']);
+
+/**
  * Circuit breaker configuration schema per port
  */
 export const PortCircuitBreakerConfigSchema = z.object({
@@ -29,6 +34,7 @@ export const PortEndpointConfigSchema = z.object({
   timeout: z.number().int().positive().default(3000),
   cacheTier: CacheTierSchema,
   cacheTtl: z.number().int().nonnegative().optional(),
+  queuePolicy: QueuePolicySchema.optional(),
   circuitBreaker: PortCircuitBreakerConfigSchema.optional(),
   description: z.string().optional(),
   methods: z.array(z.string()).optional(),

@@ -16,5 +16,5 @@ export const SessionEventTypeSchema = z.enum([
 ]);
 export type SessionEventType = z.infer<typeof SessionEventTypeSchema>;
 
-export const ChannelTypeSchema = z.enum(['zalo', 'web', 'hotline', 'counter']);
+export const ChannelTypeSchema = z.enum(['app', 'zalo', 'web', 'hotline', 'counter']);
 export type ChannelType = z.infer<typeof ChannelTypeSchema>;
