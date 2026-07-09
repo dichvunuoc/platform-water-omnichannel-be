@@ -5,6 +5,7 @@ import { SEGMENTATION_PORT_TOKEN } from './constants/tokens';
 import { PortRegistry } from '@shared/port';
 import { GetSegmentsHandler } from './application/queries/handlers/get-segments.handler';
 import { CheckEligibilityHandler } from './application/queries/handlers/check-eligibility.handler';
+import { GetSegmentHistoryHandler } from './application/queries/handlers/get-segment-history.handler';
 
 @Module({
   controllers: [SegmentationController],
@@ -13,6 +14,7 @@ import { CheckEligibilityHandler } from './application/queries/handlers/check-el
     { provide: SEGMENTATION_PORT_TOKEN, useExisting: MockSegmentationAdapter },
     GetSegmentsHandler,
     CheckEligibilityHandler,
+    GetSegmentHistoryHandler,
   ],
   exports: [SEGMENTATION_PORT_TOKEN],
 })

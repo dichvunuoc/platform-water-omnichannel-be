@@ -1,0 +1,9 @@
+{
+  "customerId": "USR-12345",
+  "history": [
+    { "period": "2025-07", "valueSegment": "medium" },
+    { "period": "2025-10", "valueSegment": "large" },
+    { "period": "2026-01", "valueSegment": "VIP" },
+    { "period": "2026-04", "valueSegment": "VIP" }
+  ]
+}

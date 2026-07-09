@@ -1,0 +1,19 @@
+{
+  "customerId": "USR-12345",
+  "tips": [
+    {
+      "id": "tip-leak-night",
+      "title": "Kiểm tra rò rỉ ban đêm",
+      "description": "Đọc đồng hồ trước khi ngủ và lúc dậy — số nhảy là có rò rỉ.",
+      "potentialSavingM3": 4,
+      "potentialSavingVnd": 34000
+    },
+    {
+      "id": "tip-faucet",
+      "title": "Lắp vòi tiết kiệm",
+      "description": "Giảm 20–30% lượng nước ở vòi rửa và vòi sen.",
+      "potentialSavingM3": 3,
+      "potentialSavingVnd": 25500
+    }
+  ]
+}

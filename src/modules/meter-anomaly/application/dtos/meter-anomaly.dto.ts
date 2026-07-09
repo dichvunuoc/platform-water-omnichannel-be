@@ -27,3 +27,10 @@ export const AnomalyDetailSchema = z.object({
   recommendedAction: z.string(),
 });
 export type AnomalyDetail = z.infer<typeof AnomalyDetailSchema>;
+
+export const ReportAnomalyStatusResultSchema = z.object({
+  alertId: z.string(),
+  status: z.enum(['acknowledged', 'false_alarm', 'resolved']),
+  updatedAt: z.string(),
+});
+export type ReportAnomalyStatusResult = z.infer<typeof ReportAnomalyStatusResultSchema>;

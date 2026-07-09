@@ -1,0 +1,5 @@
+{
+  "customerId": "USR-12345",
+  "channels": { "push": true, "email": true, "sms": false, "zalo": false },
+  "updatedAt": "2026-07-08T09:00:00Z"
+}

@@ -5,6 +5,7 @@ import { GIS_PORT_TOKEN } from './constants/tokens';
 import { PortRegistry } from '@shared/port';
 import { CheckCoverageHandler } from './application/queries/handlers/check-coverage.handler';
 import { GetCustomerLocationHandler } from './application/queries/handlers/get-customer-location.handler';
+import { GetNearbyIncidentsHandler } from './application/queries/handlers/get-nearby-incidents.handler';
 
 @Module({
   controllers: [GisController],
@@ -13,6 +14,7 @@ import { GetCustomerLocationHandler } from './application/queries/handlers/get-c
     { provide: GIS_PORT_TOKEN, useExisting: MockGisAdapter },
     CheckCoverageHandler,
     GetCustomerLocationHandler,
+    GetNearbyIncidentsHandler,
   ],
   exports: [GIS_PORT_TOKEN],
 })

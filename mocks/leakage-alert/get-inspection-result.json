@@ -1,0 +1,8 @@
+{
+  "inspectionId": "INS-2026-0031",
+  "alertId": "LEAK-2026-0007",
+  "status": "completed",
+  "findings": "Rò rỉ nhỏ tại van nối đồng hồ. Đã siết lại van + thay gioăng.",
+  "confirmedLeak": true,
+  "resolvedAt": "2026-07-09T09:45:00Z"
+}

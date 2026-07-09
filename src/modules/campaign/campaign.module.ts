@@ -5,6 +5,8 @@ import { CAMPAIGN_PORT_TOKEN } from './constants/tokens';
 import { PortRegistry } from '@shared/port';
 import { GetActiveCampaignsHandler } from './application/queries/handlers/get-active-campaigns.handler';
 import { GetCampaignDetailHandler } from './application/queries/handlers/get-campaign-detail.handler';
+import { GetMarketingMessagesHandler } from './application/queries/handlers/get-marketing-messages.handler';
+import { UpdateMarketingPreferenceHandler } from './application/commands/handlers/update-marketing-preference.handler';
 
 @Module({
   controllers: [CampaignController],
@@ -13,6 +15,8 @@ import { GetCampaignDetailHandler } from './application/queries/handlers/get-cam
     { provide: CAMPAIGN_PORT_TOKEN, useExisting: MockCampaignAdapter },
     GetActiveCampaignsHandler,
     GetCampaignDetailHandler,
+    GetMarketingMessagesHandler,
+    UpdateMarketingPreferenceHandler,
   ],
   exports: [CAMPAIGN_PORT_TOKEN],
 })

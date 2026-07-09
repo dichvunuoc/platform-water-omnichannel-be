@@ -5,6 +5,7 @@ import type { IQueryBus } from '@core/application';
 import { CurrentUser } from '@modules/auth/infrastructure/decorators/current-user.decorator';
 import { GetSegmentsQuery } from '../../application/queries/get-segments.query';
 import { CheckEligibilityQuery } from '../../application/queries/check-eligibility.query';
+import { GetSegmentHistoryQuery } from '../../application/queries/get-segment-history.query';
 
 @ApiTags('Segmentation')
 @ApiBearerAuth('JWT-auth')
@@ -17,6 +18,13 @@ export class SegmentationController {
   @ApiResponse({ status: 200, description: 'Customer segment' })
   async getSegments(@CurrentUser('id') userId: string) {
     return this.queryBus.execute(new GetSegmentsQuery(userId));
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: 'Customer segment history over time' })
+  @ApiResponse({ status: 200, description: 'Segment history' })
+  async getHistory(@CurrentUser('id') userId: string) {
+    return this.queryBus.execute(new GetSegmentHistoryQuery(userId));
   }
 
   @Get('eligibility/:campaignId')

@@ -5,6 +5,7 @@ import { METER_ANOMALY_PORT_TOKEN } from './constants/tokens';
 import { PortRegistry } from '@shared/port';
 import { GetAnomalyAlertsHandler } from './application/queries/handlers/get-anomaly-alerts.handler';
 import { GetAnomalyDetailHandler } from './application/queries/handlers/get-anomaly-detail.handler';
+import { ReportAnomalyStatusHandler } from './application/commands/handlers/report-anomaly-status.handler';
 
 @Module({
   controllers: [MeterAnomalyController],
@@ -13,6 +14,7 @@ import { GetAnomalyDetailHandler } from './application/queries/handlers/get-anom
     { provide: METER_ANOMALY_PORT_TOKEN, useExisting: MockMeterAnomalyAdapter },
     GetAnomalyAlertsHandler,
     GetAnomalyDetailHandler,
+    ReportAnomalyStatusHandler,
   ],
   exports: [METER_ANOMALY_PORT_TOKEN],
 })

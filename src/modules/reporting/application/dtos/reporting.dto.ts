@@ -17,3 +17,25 @@ export const ComparisonReportSchema = z.object({
   changePercent: z.number(),
 });
 export type ComparisonReport = z.infer<typeof ComparisonReportSchema>;
+
+export const SavingsTipSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  potentialSavingM3: z.number(),
+  potentialSavingVnd: z.number(),
+});
+export type SavingsTip = z.infer<typeof SavingsTipSchema>;
+
+export const GetSavingsTipsResponseSchema = z.object({
+  customerId: z.string(),
+  tips: z.array(SavingsTipSchema),
+});
+export type GetSavingsTipsResponse = z.infer<typeof GetSavingsTipsResponseSchema>;
+
+export const DownloadReportResultSchema = z.object({
+  downloadUrl: z.string(),
+  format: z.string(),
+  expiresAt: z.string(),
+});
+export type DownloadReportResult = z.infer<typeof DownloadReportResultSchema>;

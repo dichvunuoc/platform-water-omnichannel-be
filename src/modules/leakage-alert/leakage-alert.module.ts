@@ -5,6 +5,8 @@ import { LEAKAGE_ALERT_PORT_TOKEN } from './constants/tokens';
 import { PortRegistry } from '@shared/port';
 import { GetLeakageAlertsHandler } from './application/queries/handlers/get-leakage-alerts.handler';
 import { GetLeakageDetailHandler } from './application/queries/handlers/get-leakage-detail.handler';
+import { GetInspectionResultHandler } from './application/queries/handlers/get-inspection-result.handler';
+import { ScheduleInspectionHandler } from './application/commands/handlers/schedule-inspection.handler';
 
 @Module({
   controllers: [LeakageAlertController],
@@ -13,6 +15,8 @@ import { GetLeakageDetailHandler } from './application/queries/handlers/get-leak
     { provide: LEAKAGE_ALERT_PORT_TOKEN, useExisting: MockLeakageAlertAdapter },
     GetLeakageAlertsHandler,
     GetLeakageDetailHandler,
+    GetInspectionResultHandler,
+    ScheduleInspectionHandler,
   ],
   exports: [LEAKAGE_ALERT_PORT_TOKEN],
 })

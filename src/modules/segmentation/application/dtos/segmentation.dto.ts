@@ -21,3 +21,15 @@ export const CheckEligibilityResponseSchema = z.object({
   reasons: z.array(z.string()),
 });
 export type CheckEligibilityResponse = z.infer<typeof CheckEligibilityResponseSchema>;
+
+export const SegmentHistoryEntrySchema = z.object({
+  period: z.string(),
+  valueSegment: z.enum(['VIP', 'large', 'medium', 'small']),
+});
+export type SegmentHistoryEntry = z.infer<typeof SegmentHistoryEntrySchema>;
+
+export const GetSegmentHistoryResponseSchema = z.object({
+  customerId: z.string(),
+  history: z.array(SegmentHistoryEntrySchema),
+});
+export type GetSegmentHistoryResponse = z.infer<typeof GetSegmentHistoryResponseSchema>;

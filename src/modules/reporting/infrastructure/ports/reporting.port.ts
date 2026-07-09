@@ -4,6 +4,8 @@ import { IPortAdapter } from '@shared/port/port.interface';
 import {
   ConsumptionReportSchema,
   ComparisonReportSchema,
+  GetSavingsTipsResponseSchema,
+  DownloadReportResultSchema,
 } from '../../application/dtos/reporting.dto';
 
 /**
@@ -22,6 +24,8 @@ export class MockReportingAdapter extends MockAdapterBase implements IReportingP
       {
         'get-consumption-report': ConsumptionReportSchema,
         'get-comparison-report': ComparisonReportSchema,
+        'get-savings-tips': GetSavingsTipsResponseSchema,
+        'download-report': DownloadReportResultSchema,
       },
       new Logger('reporting-mock-adapter'),
     );

@@ -28,3 +28,21 @@ export const LeakageDetailSchema = z.object({
   estimatedLossM3: z.number(),
 });
 export type LeakageDetail = z.infer<typeof LeakageDetailSchema>;
+
+export const ScheduleInspectionResultSchema = z.object({
+  alertId: z.string(),
+  inspectionId: z.string(),
+  teamId: z.string(),
+  scheduledAt: z.string(),
+});
+export type ScheduleInspectionResult = z.infer<typeof ScheduleInspectionResultSchema>;
+
+export const InspectionResultSchema = z.object({
+  inspectionId: z.string(),
+  alertId: z.string(),
+  status: z.enum(['scheduled', 'in_progress', 'completed', 'cancelled']),
+  findings: z.string(),
+  confirmedLeak: z.boolean(),
+  resolvedAt: z.string().nullable(),
+});
+export type InspectionResult = z.infer<typeof InspectionResultSchema>;

@@ -4,6 +4,7 @@ import { MockOnboardingAdapter } from './infrastructure/ports/onboarding.port';
 import { ONBOARDING_PORT_TOKEN } from './constants/tokens';
 import { PortRegistry } from '@shared/port';
 import { CreateOnboardingRequestHandler } from './application/commands/handlers/create-onboarding-request.handler';
+import { SubmitDocumentsHandler } from './application/commands/handlers/submit-documents.handler';
 import { GetOnboardingStatusHandler } from './application/queries/handlers/get-onboarding-status.handler';
 
 @Module({
@@ -12,6 +13,7 @@ import { GetOnboardingStatusHandler } from './application/queries/handlers/get-o
     MockOnboardingAdapter,
     { provide: ONBOARDING_PORT_TOKEN, useExisting: MockOnboardingAdapter },
     CreateOnboardingRequestHandler,
+    SubmitDocumentsHandler,
     GetOnboardingStatusHandler,
   ],
   exports: [ONBOARDING_PORT_TOKEN],

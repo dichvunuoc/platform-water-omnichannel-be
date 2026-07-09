@@ -4,6 +4,7 @@ import { IPortAdapter } from '@shared/port/port.interface';
 import {
   GetSegmentsResponseSchema,
   CheckEligibilityResponseSchema,
+  GetSegmentHistoryResponseSchema,
 } from '../../application/dtos/segmentation.dto';
 
 /**
@@ -22,6 +23,7 @@ export class MockSegmentationAdapter extends MockAdapterBase implements ISegment
       {
         'get-segments': GetSegmentsResponseSchema,
         'check-eligibility': CheckEligibilityResponseSchema,
+        'get-segment-history': GetSegmentHistoryResponseSchema,
       },
       new Logger('segmentation-mock-adapter'),
     );

@@ -4,6 +4,7 @@ import { COMMAND_BUS_TOKEN, QUERY_BUS_TOKEN } from '@core/constants/tokens';
 import type { ICommandBus, IQueryBus } from '@core/application';
 import { CurrentUser } from '@modules/auth/infrastructure/decorators/current-user.decorator';
 import { CreateOnboardingRequestCommand } from '../../application/commands/create-onboarding-request.command';
+import { SubmitDocumentsCommand } from '../../application/commands/submit-documents.command';
 import { GetOnboardingStatusQuery } from '../../application/queries/get-onboarding-status.query';
 
 @ApiTags('Onboarding')
@@ -26,5 +27,16 @@ export class OnboardingController {
   @Get(':requestId')
   async status(@Param('requestId') requestId: string) {
     return this.queryBus.execute(new GetOnboardingStatusQuery(requestId));
+  }
+
+  @Post(':requestId/documents')
+  async submitDocuments(
+    @CurrentUser('id') userId: string,
+    @Param('requestId') requestId: string,
+    @Body() body: { documents: string[] },
+  ) {
+    return this.commandBus.execute(
+      new SubmitDocumentsCommand(requestId, userId, body.documents ?? []),
+    );
   }
 }

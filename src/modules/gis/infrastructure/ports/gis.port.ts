@@ -4,6 +4,7 @@ import { IPortAdapter } from '@shared/port/port.interface';
 import {
   CoverageResultSchema,
   GetCustomerLocationResponseSchema,
+  GetNearbyIncidentsResponseSchema,
 } from '../../application/dtos/gis.dto';
 
 /**
@@ -22,6 +23,7 @@ export class MockGisAdapter extends MockAdapterBase implements IGISPort {
       {
         'check-coverage': CoverageResultSchema,
         'get-customer-location': GetCustomerLocationResponseSchema,
+        'get-nearby-incidents': GetNearbyIncidentsResponseSchema,
       },
       new Logger('gis-mock-adapter'),
     );

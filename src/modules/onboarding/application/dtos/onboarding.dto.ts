@@ -25,3 +25,11 @@ export const CreateOnboardingResultSchema = z.object({
   createdAt: z.string(),
 });
 export type CreateOnboardingResult = z.infer<typeof CreateOnboardingResultSchema>;
+
+export const SubmitDocumentsResultSchema = z.object({
+  requestId: z.string(),
+  stage: z.enum(['site_survey', 'contract']),
+  uploadedDocumentKeys: z.array(z.string()),
+  updatedAt: z.string(),
+});
+export type SubmitDocumentsResult = z.infer<typeof SubmitDocumentsResultSchema>;

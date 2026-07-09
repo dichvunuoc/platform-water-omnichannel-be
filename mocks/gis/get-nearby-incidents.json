@@ -1,0 +1,22 @@
+{
+  "latitude": 20.9667,
+  "longitude": 107.3167,
+  "incidents": [
+    {
+      "id": "INC-2026-0091",
+      "type": "ống vỡ",
+      "address": "Ngõ 5 Trần Phú, Cẩm Phả",
+      "status": "in_progress",
+      "distanceMeters": 320,
+      "updatedAt": "2026-07-08T07:20:00Z"
+    },
+    {
+      "id": "INC-2026-0088",
+      "type": "bảo trì định kỳ",
+      "address": "Tổ 9 Cẩm Đông",
+      "status": "reported",
+      "distanceMeters": 1100,
+      "updatedAt": "2026-07-08T06:00:00Z"
+    }
+  ]
+}

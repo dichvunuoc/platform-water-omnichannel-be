@@ -1,0 +1,19 @@
+{
+  "customerId": "USR-12345",
+  "messages": [
+    {
+      "id": "MSG-001",
+      "title": "Tiết kiệm nước mùa khô",
+      "body": "Hạn chế tưới vườn 10–16h để giữ áp lực nước khu vực.",
+      "sentAt": "2026-07-05T08:00:00Z",
+      "read": false
+    },
+    {
+      "id": "MSG-002",
+      "title": "Ưu đãi thanh toán VietQR",
+      "body": "Giảm 5% hóa đơn khi thanh toán qua VietQR trong tháng 7.",
+      "sentAt": "2026-07-01T08:00:00Z",
+      "read": true
+    }
+  ]
+}
