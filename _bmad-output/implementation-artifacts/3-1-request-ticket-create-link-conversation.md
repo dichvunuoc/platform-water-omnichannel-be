@@ -8,9 +8,9 @@ Status: done
 
 As an agent,
 I want to request ticket creation from a conversation with one click,
-so that the Ticketing service creates the ticket and my conversation links to it — without me leaving the inbox (FR19).
+so that the Ticketing module creates the ticket and my conversation links to it — without me leaving the inbox (FR19).
 
-> **SCOPE CLARITY:** OmniCare **calls the Ticketing service (stub/real)** + links the conversation. The actual ticket creation (FR21-23: assign ID, classify type/priority, apply SLA policy) is the **Ticketing & SLA service's** responsibility (`[TKT-SVC]`). We do NOT build ticket logic here.
+> **SCOPE CLARITY (v1.3):** OmniCare **calls the in-project Ticketing module** (in-process, via command bus / `IEventBus`) + links the conversation. The actual ticket creation (FR21-23: assign ID, classify type/priority, apply SLA policy) lives in the **Ticketing module** `[TKT]` (built in-project — see the T-stories). The Omnichannel module does not own ticket logic; it just requests + links.
 
 ## Acceptance Criteria
 
@@ -90,7 +90,7 @@ Ticketing stub/real service (wave-2):
 
 ## References
 - **PRD:** FR19 `[MVP·OMNI]` — [prd.md §3a](../../_bmad-output/planning-artifacts/prd.md)
-- **PRD (NOT our scope):** FR21-23 `[TKT-SVC]` — Ticketing service
+- **PRD (Ticketing module scope, v1.3):** FR21-23 `[TKT]` — built in-project via the T-stories
 - **Architecture:** §5 contract — [architecture.md](../../_bmad-output/planning-artifacts/architecture.md)
 - **Contract file:** `domain/contracts/ticketing-contract.ts` (wave-2 safe — stub can be removed)
 

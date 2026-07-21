@@ -11,6 +11,20 @@ export interface ApiResponse<T = any> {
   method?: string;
   data?: T;
   message?: string;
+  /**
+   * Mã lỗi nghiệp vụ cho FE branch logic — khớp FE Zod `apiErrorSchema` ({code, detail}).
+   * null khi thành công. (D3/P1-D1 — CSKH FE contract)
+   */
+  error?: ApiErrorDetail | null;
+}
+
+/**
+ * Error detail — code nghiệp vụ + mô tả (P1-D1/R0: object, không phải string).
+ * FE đọc `error.code` để branch logic, `message` ở envelope để toast.
+ */
+export interface ApiErrorDetail {
+  code: string;
+  detail?: string | null;
 }
 
 /**
@@ -24,6 +38,7 @@ export class SuccessResponseDto<T = any> implements ApiResponse<T> {
   method?: string;
   data?: T;
   message?: string;
+  error: ApiErrorDetail | null = null;
 
   constructor(
     data?: T,

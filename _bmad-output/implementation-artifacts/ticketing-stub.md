@@ -1,6 +1,6 @@
 # Story: Wave-1 Ticketing Stub (Contract-Conformant)
 
-Status: ready-for-dev
+Status: shipped-as-fallback (v1.3) — superseded by the real ticketing module; retained as an in-memory local-dev/demo toggle
 
 ## Story
 
@@ -39,8 +39,8 @@ so that Epics 3, 6, and 8 can demo end-to-end BEFORE the real Ticketing service 
 
 ## Dev Notes
 
-### Why a stub, not the real service?
-The real Ticketing & SLA service is wave-2 (separate PRD, separate microservice, own PostgreSQL). The stub lets us demo J1/J2/J3 end-to-end NOW — without waiting for that service. The contract (events + HTTP reads) is defined here and honored identically in wave-2.
+### Why a stub? (v1.3 status)
+Per PRD v1.3, Ticketing & SLA is built **in-project** (`src/modules/ticketing`, see the T-stories) — the real module ships from wave-1. **This stub is now a fallback only:** an in-memory, no-DB toggle retained for local-dev/demo convenience and for environments without PostgreSQL. The contract (commands/events + HTTP reads) is honored identically by the real module, so switching stub↔real is a config swap.
 
 ### Contract (Architecture §5)
 - **OmniCare → Stub (commands):** `TicketCreateRequested`, `TicketStateChanged`, `TicketReassignRequested`

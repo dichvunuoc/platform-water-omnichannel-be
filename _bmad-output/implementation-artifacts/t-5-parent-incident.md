@@ -32,4 +32,4 @@ modules/ticketing/
 ```
 
 ## References
-- **PRD:** §2.3, FR-T6
+- **PRD:** FR61 — [prd.md §9.3](../planning-artifacts/prd.md) (v1.3)

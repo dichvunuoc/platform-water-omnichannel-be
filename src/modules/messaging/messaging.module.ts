@@ -4,6 +4,7 @@ import { IdempotencyService } from 'src/libs/shared/cqrs';
 import { TicketingStubModule } from '../ticketing-stub/ticketing-stub.module';
 import { InboundWebhookController } from './infrastructure/http';
 import { BffController } from './infrastructure/http/bff.controller';
+import { CskhController } from './infrastructure/http/cskh.controller';
 import { MessagingGateway } from './infrastructure/realtime';
 import { ConversationRepository } from './infrastructure/persistence/write';
 import { ConversationReadDao } from './infrastructure/persistence/read';
@@ -38,7 +39,7 @@ import { ChannelEnum } from './domain';
  */
 @Module({
   imports: [SharedCqrsModule, TicketingStubModule],
-  controllers: [InboundWebhookController, BffController],
+  controllers: [InboundWebhookController, BffController, CskhController],
   providers: [
     // Write side
     ConversationRepository,

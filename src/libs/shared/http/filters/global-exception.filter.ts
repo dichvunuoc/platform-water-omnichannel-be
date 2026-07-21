@@ -51,6 +51,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   ) {
     const status = exception.getStatus();
     const exceptionResponse = exception.getResponse();
+    const isString = typeof exceptionResponse === 'string';
+    const respObj = isString ? null : (exceptionResponse as any);
+    const message = isString
+      ? (exceptionResponse as string)
+      : Array.isArray(respObj?.message)
+        ? respObj.message.join(', ')
+        : respObj?.message || exception.message;
 
     const errorResponse = {
       success: false,
@@ -58,14 +65,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
-      error:
-        typeof exceptionResponse === 'string'
-          ? exceptionResponse
-          : (exceptionResponse as any).message || exception.message,
-      details:
-        typeof exceptionResponse === 'object' && 'error' in exceptionResponse
-          ? exceptionResponse
-          : undefined,
+      // P1-D1 (R0): error là object {code, detail} khớp FE Zod apiErrorSchema
+      error: {
+        code: respObj?.code || this.statusToCode(status),
+        detail: null,
+      },
+      message,
     };
 
     response.status(status).send(errorResponse);
@@ -83,12 +88,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
+      // P1-D1 (R0): error object {code, detail}; code = BaseException.code
       error: {
-        name: exception.name,
         code: exception.code,
-        message: exception.message,
-        details: exception.details,
+        detail: exception.details ? JSON.stringify(exception.details) : null,
       },
+      message: exception.message,
     };
 
     response.status(status).send(errorResponse);
@@ -109,12 +114,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
+      // P1-D1 (R0): error object {code, detail}
       error: {
-        name: 'InternalServerError',
         code: 'INTERNAL_SERVER_ERROR',
-        message: isDevelopment ? error.message : 'An unexpected error occurred',
-        ...(isDevelopment && { stack: error.stack }),
+        detail: isDevelopment ? error.stack ?? null : null,
       },
+      message: isDevelopment ? error.message : 'An unexpected error occurred',
     };
 
     if (!isDevelopment) {
@@ -122,6 +127,31 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).send(errorResponse);
+  }
+
+  /**
+   * Map HTTP status → mã lỗi nghiệp vụ chuẩn cho FE (P1-D1).
+   * Dùng khi exception là NestJS HttpException (không có domain code).
+   */
+  private statusToCode(status: number): string {
+    switch (status) {
+      case HttpStatus.BAD_REQUEST:
+        return 'BAD_REQUEST';
+      case HttpStatus.UNAUTHORIZED:
+        return 'UNAUTHORIZED';
+      case HttpStatus.FORBIDDEN:
+        return 'FORBIDDEN';
+      case HttpStatus.NOT_FOUND:
+        return 'NOT_FOUND';
+      case HttpStatus.CONFLICT:
+        return 'INVALID_TRANSITION';
+      case HttpStatus.UNPROCESSABLE_ENTITY:
+        return 'VALIDATION_ERROR';
+      case HttpStatus.TOO_MANY_REQUESTS:
+        return 'RATE_LIMITED';
+      default:
+        return status >= 500 ? 'INTERNAL_SERVER_ERROR' : 'HTTP_ERROR';
+    }
   }
 
   private getHttpStatus(exception: BaseException): number {

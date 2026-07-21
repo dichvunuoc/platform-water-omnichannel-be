@@ -27,4 +27,4 @@ modules/ticketing/
 ```
 
 ## References
-- **PRD:** §2.5, FR-T5
+- **PRD:** FR27 — [prd.md §9.3](../planning-artifacts/prd.md) (v1.3)

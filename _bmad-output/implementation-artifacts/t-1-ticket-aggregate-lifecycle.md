@@ -4,9 +4,9 @@ Status: ready-for-dev
 
 ## Story
 
-As a Ticketing service,
+As the Ticketing module (in-project, v1.3),
 I want to create tickets with unique IDs, classify them, and enforce a strict lifecycle state machine,
-so that OmniCare can request ticket creation + advance stages, and the service maintains domain invariants (FR21-24, FR20).
+so that OmniCare can request ticket creation + advance stages, and the module maintains domain invariants (FR21-24, FR20).
 
 ## Acceptance Criteria
 
@@ -120,7 +120,7 @@ export const ticketsTable = pgTable('tickets', {
 ```
 
 ## References
-- **PRD:** FR-T1, FR-T2 — [prd-ticketing-sla-service.md](../../_bmad-output/planning-artifacts/prd-ticketing-sla-service.md)
+- **PRD:** FR20, FR21, FR22, FR23 — [prd.md §9.3](../planning-artifacts/prd.md) (v1.3)
 - **Pattern:** `modules/messaging/domain/entities/conversation.entity.ts` (mirror exactly)
 - **@core:** `AggregateRoot`, `DomainException`, `ICommandHandler`, `IAggregateRepository`
 - **@shared:** `SharedCqrsModule`, `CommandHandler` decorator, `BaseAggregateRepository`

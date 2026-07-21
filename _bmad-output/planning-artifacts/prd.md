@@ -1,24 +1,24 @@
 ---
-title: "OmniCare — Product Requirements Document"
+title: "OmniCare — Tài liệu Yêu cầu Sản phẩm (PRD)"
 project_name: "nestjs-project-example"
 product_name: "OmniCare"
 document_type: "Product Requirements Document (PRD)"
 workflowType: "prd"
-version: "1.2 — Backend-only scope (Omnichannel service + BFF; frontend already delivered)"
-status: "Revised — PRD v1.2"
-date: "2026-06-22"
-revision_note: "v1.2 drops frontend from build scope. The agent workspace SPA is already delivered (5 screens). This PRD now specifies ONLY the backend — the Omnichannel service + BFF — that exposes the APIs, broker events, and WebSocket pushes the existing frontend consumes. v1.1 split Ticketing & SLA into its own microservice (consumed via contract/broker), unchanged here."
+version: "1.3 — Phạm vi backend (backend OmniCare bao gồm module Ticketing trong-project + BFF; frontend đã bàn giao)"
+status: "Đã sửa đổi — PRD v1.3"
+date: "2026-07-01"
+revision_note: "v1.3 gộp năng lực Ticketing & SLA VÀO project này: được xây dựng như một bounded-context module trong-project (schema riêng, ngôn ngữ ubiquitous riêng), cùng deploy trong backend OmniCare — KHÔNG còn là microservice riêng. Điều này đảo ngược quyết định tách (split) của v1.1. 7 FR trước đây gắn tag [TKT-SVC] (contract tiêu thụ) nay thuộc phạm vi build, đổi tag thành [TKT] (module Ticketing trong-project). Omnichannel ↔ Ticketing giao tiếp trong-process qua port IEventBus (có thể lắp broker thật sau qua cùng port); outbox giao dịch + idempotency vẫn đảm bảo không mất tin nhắn khi crash. Phạm vi v1.2 (chỉ backend; frontend đã bàn giao) không đổi. Tài liệu chuyển sang tiếng Việt để dễ hiểu."
 author: "Pc"
-communication_language: "English"
-document_output_language: "English"
+communication_language: "Vietnamese"
+document_output_language: "Vietnamese"
 
-# Workflow state
+# Trạng thái workflow
 workflow: "prd (create mode)"
 stepsCompleted: ["step-01-init", "step-02-discovery", "step-03-success", "step-04-journeys", "step-05-domain", "step-06-innovation", "step-07-project-type", "step-08-scoping", "step-09-functional", "step-10-nonfunctional", "step-11-polish", "step-12-complete"]
 currentStep: "complete"
 outputFile: "_bmad-output/planning-artifacts/prd.md"
 
-# Input documents
+# Tài liệu đầu vào
 inputDocuments:
   primary: "product-brief-omnicare-2026-06-20.md"
   supplementary: "backend-build-plan-omnicare-2026-06-20.md"
@@ -29,464 +29,495 @@ documentCounts:
   projectDocsCount: 4
 
 classification:
-  projectType: "backend services — Omnichannel domain service + BFF (REST/gRPC + broker events + WebSocket gateway). Platform characteristics (RBAC, integrations, compliance). Frontend SPA already delivered (out of scope)."
-  domain: "govtech (public-sector utility / civic customer service)"
-  complexity: "high"
-  projectContext: "brownfield (existing NestJS backend extended with greenfield OmniCare)"
-  buildScope: "Backend only: Omnichannel service + BFF. Frontend SPA already delivered — not built here; backend exposes the APIs/events/WebSocket it consumes. Ticketing & SLA = separate microservice (own PRD/bounded context), integrated not built here."
-  open_clarifications: "resolved (Step 5) — SOE operator; on-prem/VN-cloud residency; IVR consent; WCAG/Decree-13 as best-practice guidelines"
+  projectType: "dịch vụ backend — backend OmniCare (module Omnichannel + module Ticketing trong-project + lớp BFF) dưới dạng một deployable duy nhất (REST + WebSocket gateway, event bus trong-process). Đặc tính nền tảng (RBAC, tích hợp, tuân thủ). Frontend SPA đã bàn giao (ngoài phạm vi)."
+  domain: "govtech (dịch vụ khách hàng công nghiệp / tiện ích công khu vực)"
+  complexity: "cao"
+  projectContext: "brownfield (backend NestJS có sẵn, mở rộng thêm OmniCare greenfield)"
+  buildScope: "Chỉ backend: backend OmniCare (một deployable) chứa module bounded-context Omnichannel, module bounded-context Ticketing & SLA (cùng deploy, schema riêng) và lớp BFF. Frontend SPA đã bàn giao — không build ở đây; backend cung cấp các API/event/WebSocket mà frontend tiêu thụ. Ticketing & SLA nay được BUILD TRONG-PROJECT (v1.3) — không còn là microservice riêng."
+  open_clarifications: "đã giải quyết (Bước 5) — nhà vận hành là SOE; triển khai on-prem/cloud trong nước; đồng ý IVR; WCAG/Nghị định-13 dùng như hướng dẫn best-practice"
 ---
 
-# Product Requirements Document — OmniCare
+# Tài liệu Yêu cầu Sản phẩm — OmniCare
 
-**Author:** Pc
-**Date:** 2026-06-22
+**Tác giả:** Pc
+**Ngày:** 2026-07-01
 
-> PRD for **OmniCare — Omnichannel Customer Service Platform**. Derived from the Product Brief + Backend Build Plan + Chapter 5 business spec.
-> **Status:** Revised v1.2 — capability contract. Build sequencing (omnichannel-first waves) is governed by `execution-plan-omnicare.md`.
+> PRD cho **OmniCare — Nền tảng Chăm sóc Khách hàng Đa kênh (Omnichannel)**. Dựa trên Product Brief + Backend Build Plan + đặc tả nghiệp vụ Chương 5.
+> **Trạng thái:** Đã sửa đổi v1.3 — contract năng lực. Thứ tự build (các wave ưu tiên omnichannel) được quản lý bởi `execution-plan-omnicare.md`.
 >
-> **Scope (v1.2 — backend only):** The agent workspace **frontend is already delivered** (the 5 screens). This PRD specifies **only the backend** — the **Omnichannel service + BFF** — i.e., the APIs, broker events, and WebSocket pushes that the existing frontend consumes. UI build, styling, browser/responsive/SEO concerns are **out of scope**. **Ticketing & SLA** remains a separate microservice (own bounded context), consumed via contract/broker — same status as Customer 360. FRs belonging to the Ticketing & SLA service are kept as an **integration contract** (tagged `[TKT-SVC]`), not build scope.
+> **Phạm vi (v1.3 — chỉ backend):** **Frontend** workspace agent **đã được bàn giao** (5 màn hình). PRD này chỉ đặc tả **backend** — **backend OmniCare** (module Omnichannel + lớp BFF + **module Ticketing trong-project**) — tức các API, event, và luồng WebSocket mà frontend hiện tại tiêu thụ. Việc build UI, styling, browser/responsive/SEO **nằm ngoài phạm vi**. **Ticketing & SLA được build trong-project như một bounded-context module riêng** (cùng deploy, schema riêng, ngôn ngữ ubiquitous riêng) — v1.3 đảo ngược quyết định "microservice riêng" của v1.1. Các FR của nó gắn tag `[TKT]` (module Ticketing trong-project), được build tại đây. Customer 360 / AI / Field-team vẫn là **port external**.
 
 ---
 
-## Table of Contents
+## Mục lục
 
-1. Executive Summary
-2. Service Boundaries (Bounded Contexts)
-3. Success Criteria
-4. Product Scope
-5. User Journeys
-6. Domain-Specific Requirements
-7. Innovation & Novel Patterns
-8. Backend Surface, BFF & Real-time Requirements
-9. Functional Requirements
-10. Non-Functional Requirements
-
----
-
-## Executive Summary
-
-**OmniCare** is an omnichannel customer-service platform for a city water utility (state-owned enterprise), unifying Zalo OA, the customer mobile app, Facebook, email, and the VoIP/1900 call center into a single real-time agent workspace. It binds every inbound interaction to a ticket with enforceable SLA accountability, presents a 360° customer view alongside each conversation, and measures satisfaction (CSAT/NPS) to drive continuous improvement.
-
-**Differentiator:** unlike generic helpdesks, OmniCare is purpose-built for utility operations — a resilient ingress that never drops a customer message, a unified agent experience, Customer 360 integration (contract / debt / consumption), and a novel **geo-clustered mass-outage triage** that merges thousands of simultaneous burst-pipe reports into a single parent incident. AI is a pluggable, externalized capability — called and displayed, never owned.
-
-**Target users:** contact-center agents (tổng đài viên), shift supervisors, and customers (via App / Zalo / Web / VoIP).
-
-**Build scope of this PRD (backend only):** the **Omnichannel service** (multi-channel ingestion, normalization, identity, real-time delivery, agent-workspace data, telephony events, broadcast, knowledge base, CSAT capture, field-incident intake) plus a **Backend-for-Frontend (BFF)** that the already-delivered React SPA talks to. This PRD specifies the **server-side contract** — APIs, broker events, and the WebSocket gateway — that powers the existing screens; **frontend/UI is not built here**. The BFF aggregates and fronts the sibling services. **Ticketing & SLA is a separate microservice** (own bounded context) that this scope **integrates with via the broker + contract** — the backend creates tickets in it, serves ticket state and SLA countdowns sourced from it, and relays the `SlaWarning` events it emits, but does **not** own the ticket lifecycle, SLA policy engine, or breach worker. Other sibling services consumed the same way: Customer 360, Field-team App, AI services.
+1. Tổng quan (Executive Summary)
+2. Ranh giới dịch vụ (Bounded Contexts)
+3. Tiêu chí thành công
+4. Phạm vi sản phẩm
+5. Hành trình người dùng
+6. Yêu cầu đặc thù lĩnh vực
+7. Đổi mới & Mẫu mới
+8. Bề mặt backend, BFF & Realtime
+9. Yêu cầu chức năng (Functional Requirements)
+10. Yêu cầu phi chức năng (Non-Functional Requirements)
 
 ---
 
-## Service Boundaries (Bounded Contexts)
+## 1. Tổng quan
 
-> The agent-workspace **frontend is already delivered** (one SPA — see the 5 screens) and is **out of this PRD's build scope**. The sidebar modules (Điều hành CSKH, Inbox hợp nhất, Tổng đài 1900, Sự cố hiện trường, Ticket & SLA, KB, Thông báo chủ động, Khảo sát hài lòng) are served by **one BFF**. This table defines *which backend service owns the data/operations behind each module* — i.e., what this PRD builds. "Built in this PRD?" = built on the **backend** (Omnichannel service or BFF); the frontend that renders it already exists.
+**OmniCare** là nền tảng chăm sóc khách hàng đa kênh cho một công ty cấp nước đô thị (doanh nghiệp nhà nước — SOE), thống nhất Zalo OA, ứng dụng di động của khách hàng, Facebook, email và tổng đài VoIP/1900 vào một workspace agent thời gian thực duy nhất. Hệ thống ràng buộc mọi tương tác đến vào một ticket với cơ chế chịu trách nhiệm SLA có thể thực thi, trình bày góc nhìn khách hàng 360° bên cạnh mỗi hội thoại, và đo lường sự hài lòng (CSAT/NPS) để thúc đẩy cải tiến liên tục.
 
-| Concern (backend) | Owner | Built in this PRD? |
+**Điểm khác biệt:** không giống các helpdesk dùng chung, OmniCare được thiết kế riêng cho vận hành tiện ích — một ingress chịu lỗi không bao giờ đánh rơi tin nhắn khách hàng, một trải nghiệm agent thống nhất, tích hợp Customer 360 (hợp đồng / công nợ / tiêu thụ), và một **cơ chế phân cụm sự cố diện rộng (mass-outage triage)** mới lạ, gộp hàng ngàn báo cáo vỡ ống đồng thời vào một parent incident duy nhất. AI là một năng lực cắm-được, external hóa — được gọi và hiển thị, không bao giờ tự sở hữu.
+
+**Người dùng mục tiêu:** tổng đài viên (agent), trưởng ca (supervisor) và khách hàng (qua App / Zalo / Web / VoIP).
+
+**Phạm vi build của PRD này (chỉ backend):** **module domain Omnichannel** (ingestion đa kênh, chuẩn hóa, định danh, giao thời gian thực, dữ liệu workspace agent, sự kiện telephony, broadcast, knowledge base, thu CSAT, tiếp nhận sự cố hiện trường) cộng **module Ticketing & SLA** (vòng đời ticket, engine SLA, breach worker, escalation, reopen, parent-incident — cùng deploy, schema riêng) và một **Backend-for-Frontend (BFF)** mà SPA React đã bàn giao giao tiếp tới. PRD này đặc tả **contract phía server** — API, event, và WebSocket gateway — cấp nguồn cho các màn hình hiện có; **frontend/UI không build ở đây**. BFF tổng hợp và đứng trước các port external. Các dịch vụ thực sự external được tiêu thụ cùng cách: Customer 360, Field-team App, AI services.
+
+---
+
+## 2. Ranh giới dịch vụ (Bounded Contexts)
+
+> **Frontend** workspace agent **đã được bàn giao** (một SPA — xem 5 màn hình) và **nằm ngoài phạm vi build** của PRD này. Các module thanh bên (Điều hành CSKH, Inbox hợp nhất, Tổng đài 1900, Sự cố hiện trường, Ticket & SLA, KB, Thông báo chủ động, Khảo sát hài lòng) được phục vụ bởi **một BFF**. Bảng dưới định nghĩa *module backend nào sở hữu dữ liệu/thao tác phía sau mỗi module* — tức cái mà PRD này build. "Built in this PRD?" = được build ở **backend** (module Omnichannel, module Ticketing, hoặc BFF); frontend render nó đã tồn tại.
+
+| Concern (backend) | Sở hữu | Build trong PRD này? |
 |---|---|---|
-| Multi-channel ingestion, 200-OK, idempotency, normalization | **Omnichannel service** | ✅ Yes |
-| Unified-inbox data + conversation thread + real-time push gateway | **Omnichannel service** | ✅ Yes |
-| Telephony events / softphone screen-pop data (Tổng đài 1900) | **Omnichannel service** (consumes VoIP/ACD) | ✅ Yes |
-| Field-incident intake + AI-tag relay + GIS-pin data + FSM dispatch trigger (Sự cố hiện trường) | **Omnichannel service** | ✅ Yes |
-| Knowledge Base / FAQ CMS + Vietnamese search | **Omnichannel service** | ✅ Yes |
-| Proactive broadcast (Thông báo chủ động) | **Omnichannel service** | ✅ Yes |
-| CSAT/NPS/CES capture + survey delivery (Khảo sát hài lòng) | **Omnichannel service** | ✅ Yes |
-| Operations dashboard data (Điều hành CSKH) — aggregation | **BFF** (aggregates omnichannel + ticketing + CSAT) | ✅ Yes |
-| BFF — single read/write gateway for the SPA, aggregation, fan-out | **BFF** | ✅ Yes |
-| **Ticket lifecycle, ID/owner, type/priority** | **Ticketing & SLA service** | ❌ Consumed (separate microservice) |
-| **SLA policy engine, breach worker, `SlaWarning` emit, escalation, auto-reopen** | **Ticketing & SLA service** | ❌ Consumed (separate microservice) |
-| Ticket & SLA Kanban data + SLA countdown for the Inbox (serve to FE) | **BFF** → Ticketing service; data relayed to delivered FE | ✅ Yes (serve only; UI exists) |
-| Mass-outage **detection / clustering** (geo radius + time window + type similarity) — *pre-ticket triage* | **Omnichannel service** | ✅ Yes |
-| **Parent Incident as a grouping of child tickets** (attach / detach / split tickets under one parent) | **Ticketing & SLA service** | ❌ Consumed (separate microservice) |
-| Affected-report / affected-customer data for a parent incident (serve to FE) | **BFF** (omnichannel reports + Ticketing grouping) | ✅ Yes (serve only; UI exists) |
-| Identity resolution / Customer 360 | Customer 360 service | ❌ Consumed |
-| AI vision classification, NLP intent, speech-to-text, chatbot | External AI services | ❌ Consumed |
-| **Agent-workspace SPA / any UI rendering, styling, browser/responsive/SEO** | **Frontend (already delivered)** | ⛔ Out of scope |
+| Ingestion đa kênh, 200-OK, idempotency, chuẩn hóa | **Module Omnichannel** | ✅ Có |
+| Dữ liệu unified-inbox + chuỗi hội thoại + gateway push thời gian thực | **Module Omnichannel** | ✅ Có |
+| Sự kiện telephony / dữ liệu screen-pop softphone (Tổng đài 1900) | **Module Omnichannel** (tiêu thụ VoIP/ACD) | ✅ Có |
+| Tiếp nhận sự cố hiện trường + relay AI-tag + dữ liệu GIS-pin + trigger dispatch FSM (Sự cố hiện trường) | **Module Omnichannel** | ✅ Có |
+| Knowledge Base / FAQ CMS + tìm kiếm tiếng Việt | **Module Omnichannel** | ✅ Có |
+| Thông báo chủ động (Broadcast) | **Module Omnichannel** | ✅ Có |
+| Thu CSAT/NPS/CES + gửi khảo sát (Khảo sát hài lòng) | **Module Omnichannel** | ✅ Có |
+| Dữ liệu dashboard vận hành (Điều hành CSKH) — tổng hợp | **BFF** (tổng hợp omnichannel + ticketing + CSAT) | ✅ Có |
+| BFF — gateway đọc/ghi duy nhất cho SPA, tổng hợp, fan-out | **BFF** | ✅ Có |
+| **Vòng đời ticket, ID/owner, type/priority** | **Module Ticketing `[TKT]`** (trong-project) | ✅ Có |
+| **Engine chính sách SLA, breach worker, phát `SlaWarning`, escalation, auto-reopen** | **Module Ticketing `[TKT]`** (trong-project) | ✅ Có |
+| Dữ liệu Kanban Ticket & SLA + đếm ngược SLA cho Inbox (serve tới FE) | **BFF** → module Ticketing; dữ liệu relay tới FE đã bàn giao | ✅ Có (chỉ serve; UI đã có) |
+| **Phát hiện / phân cụm** mass-outage (bán kính địa lý + cửa thời gian + độ tương tự loại sự cố) — *triage trước-ticket* | **Module Omnichannel** | ✅ Có |
+| **Parent Incident như một nhóm các child ticket** (attach / detach / split ticket dưới một parent) | **Module Ticketing `[TKT]`** (trong-project) | ✅ Có |
+| Dữ liệu affected-report / affected-customer cho parent incident (serve tới FE) | **BFF** (báo cáo omnichannel + grouping của Ticketing) | ✅ Có (chỉ serve; UI đã có) |
+| Định danh / Customer 360 | Dịch vụ Customer 360 (external) | ❌ Tiêu thụ |
+| Phân loại AI vision, NLP intent, speech-to-text, chatbot | Dịch vụ AI external | ❌ Tiêu thụ |
+| **SPA workspace agent / mọi render UI, styling, browser/responsive/SEO** | **Frontend (đã bàn giao)** | ⛔ Ngoài phạm vi |
 
-**Integration style:** the Omnichannel service and the Ticketing & SLA service communicate **asynchronously over the message broker** (events: `MessageReceived`, `TicketCreateRequested`, `TicketStateChanged`, `SlaWarning`, `TicketClosed`, `CsatSubmitted`). The BFF performs **synchronous read aggregation** (e.g., to render a conversation it joins omnichannel thread + Customer 360 card + the ticket/SLA state from the Ticketing service). No frontend call ever reaches a backend service directly — everything goes through the BFF.
+**Kiểu tích hợp:** module Omnichannel và module Ticketing **chạy cùng process** và giao tiếp qua **`IEventBus` trong-process** (các event: `MessageReceived`, `TicketCreateRequested`, `TicketStateChanged`, `SlaWarning`, `TicketClosed`, `CsatSubmitted`) — một broker thật (RabbitMQ) có thể được lắp vào sau qua cùng port mà không phải viết lại module nào. BFF thực hiện **tổng hợp đọc đồng bộ** (ví dụ: để render một hội thoại, nó join chuỗi omnichannel + thẻ Customer 360 + trạng thái ticket/SLA từ module Ticketing). Không có lời gọi frontend nào chạm trực tiếp module backend — mọi thứ đi qua BFF.
 
 ---
 
-## Success Criteria
+## 3. Tiêu chí thành công
 
-### User Success
-- **Agents** open any conversation and view full customer context (contract, debt, consumption) within 3 seconds; advance or resolve a ticket within 5 clicks.
-- **Agents never lose a message**: 100% of inbound interactions (Zalo, App, Facebook, VoIP) surface in the unified inbox.
-- **Supervisors** see SLA-at-risk tickets before they breach via real-time Kanban timers.
-- **Customers** receive a first response on their chosen channel within SLA and rate the experience at least 4.4/5.
+### Thành công của người dùng
+- **Agent** mở bất kỳ hội thoại nào và xem đầy đủ ngữ cảnh khách hàng (hợp đồng, công nợ, tiêu thụ) trong vòng 3 giây; đẩy lên hoặc giải quyết ticket trong 5 cú click.
+- **Agent không bao giờ mất tin nhắn**: 100% tương tác đến (Zalo, App, Facebook, VoIP) xuất hiện trong inbox hợp nhất.
+- **Supervisor** thấy các ticket sắp vi phạm SLA trước khi trễ hạn qua bộ đếm Kanban thời gian thực.
+- **Khách hàng** nhận phản hồi đầu tiên trên kênh đã chọn trong SLA và đánh giá trải nghiệm tối thiểu 4.4/5.
 
-### Business Success
-- SLA compliance sustained at or above 94.2% (Phase-1 target; floor 92%).
-- CSAT at or above 4.4/5 and NPS at or above +58.
-- Deflection rate at or above 30% — automated resolution of invoice-lookup and water-cut-schedule queries, freeing agents for complex complaints (Growth-phase measured target).
-- Average handle time reduced versus the pre-OmniCare baseline.
-- 100% of interactions traceable end-to-end (GovTech auditability).
+### Thành công kinh doanh
+- Tuân thủ SLA duy trì từ 94.2% trở lên (mục tiêu Phase-1; sàn 92%).
+- CSAT từ 4.4/5 trở lên và NPS từ +58 trở lên.
+- Tỷ lệ deflection từ 30% trở lên — tự động giải quyết truy vấn tra cứu hóa đơn và lịch cắt nước, giải phóng agent cho khiếu nại phức tạp (mục tiêu đo ở Growth-phase).
+- Thời gian xử lý trung bình giảm so với baseline trước OmniCare.
+- 100% tương tác truy vết end-to-end (khả năng kiểm toán GovTech).
 
-### Technical Success
-- Ingestion resilience: 100% of partner webhooks acknowledged within partner timeout, with zero blocked ingestion — including at peak.
-- Real-time delivery: a new inbound reflects on the agent screen within 2 seconds at the 95th percentile.
-- Peak concurrency: sustain at least 1,000 concurrent users across the ingress and real-time layers with zero dropped messages, during meter-reading day and widespread-incident peaks.
-- Idempotency: zero duplicate messages from network retries.
-- Availability: 99.9% during business hours (the concern is no dropped messages and a live agent screen, not abstract uptime).
-- AI insight display: AI-derived tags and transcripts surface within 3 seconds of upload (display SLA only; inference is external).
+### Thành công kỹ thuật
+- Ingress chịu lỗi: 100% webhook đối tác được xác nhận trong timeout của đối tác, với không bị nghẽn ingestion — kể cả lúc peak.
+- Giao thời gian thực: một tin đến mới hiển thị trên màn agent trong vòng 2 giây ở phân vị 95.
+- Đồng thời peak: duy trì tối thiểu 1.000 người dùng đồng thời (CCU) qua lớp ingress và realtime, không rớt tin nhắn, trong ngày chỉ số nước và peak sự cố diện rộng.
+- Idempotency: không trùng tin nhắn do retry mạng.
+- Khả dụng: 99.9% trong giờ hành chính (mục tiêu là không rớt tin và màn agent luôn sống, không phải uptime trừu tượng).
+- Hiển thị AI insight: tag và transcript do AI tạo xuất hiện trong 3 giây sau upload (chỉ SLA hiển thị; inference là external).
 
-### Measurable Outcomes
+### Kết quả đo lường được
 
-| Metric | Target | Measurement |
+| Chỉ số | Mục tiêu | Cách đo |
 |---|---|---|
-| VoIP answer speed (80/20) | 80% of calls answered ≤ 20s | VoIP/ACD statistics |
-| Chat auto-greeting first response | ≤ 3 min | Messaging timestamps |
-| Chat live-agent reply | ≤ 5 min | Ticket assignment-to-reply time |
-| Email / web-form response | ≤ 4 working hours | Ticket timestamps |
-| SLA compliance | ≥ 94.2% (Phase-1 target; floor 92%) | Ticketing service SLA engine |
-| CSAT | ≥ 4.4/5 | Post-resolution survey |
-| NPS | ≥ +58 | Survey |
-| Deflection rate | ≥ 30% | Chatbot/KB resolved vs agent-handled |
-| Peak concurrency | ≥ 1,000 CCU, 0 dropped | Ingress + real-time load tests |
-| Real-time push latency | ≤ 2s (p95) | Gateway telemetry |
-| Availability (business hours) | 99.9% | APM/uptime monitoring |
-| Audit trace coverage | 100% of interactions | Trace sampling |
+| Tốc độ trả lời VoIP (80/20) | 80% cuộc gọi trả lời ≤ 20s | Thống kê VoIP/ACD |
+| Tự động chào chat — phản hồi đầu tiên | ≤ 3 phút | Timestamp nhắn tin |
+| Trả lời agent-trực-tiếp chat | ≤ 5 phút | Thời gian từ gán ticket đến trả lời |
+| Phản hồi email / web-form | ≤ 4 giờ hành chính | Timestamp ticket |
+| Tuân thủ SLA | ≥ 94.2% (mục tiêu Phase-1; sàn 92%) | Engine SLA của module Ticketing |
+| CSAT | ≥ 4.4/5 | Khảo sát sau giải quyết |
+| NPS | ≥ +58 | Khảo sát |
+| Tỷ lệ deflection | ≥ 30% | Tự phục vụ KB/chatbot vs agent xử lý |
+| Đồng thời peak | ≥ 1.000 CCU, 0 rớt | Load test ingress + realtime |
+| Độ trễ push realtime | ≤ 2s (p95) | Telemetry gateway |
+| Khả dụng (giờ hành chính) | 99.9% | Giám sát APM/uptime |
+| Phạm vi truy vết kiểm toán | 100% tương tác | Sampling trace |
 
-## Product Scope
+## 4. Phạm vi sản phẩm
 
-> Build sequencing (omnichannel-first waves) is governed by `execution-plan-omnicare.md`. This section defines *what* is in scope per phase.
+> Thứ tự build (các wave ưu tiên omnichannel) được quản lý bởi `execution-plan-omnicare.md`. Phần này định nghĩa *những gì* thuộc phạm vi mỗi phase.
 
-### MVP Strategy & Philosophy
-**MVP Approach:** Experience MVP — a demo-grade, end-to-end real-time omnichannel agent loop (ingestion → identity → push → ticket → SLA breach alert → CSAT) with mocked external systems, **driven by the backend (Omnichannel + BFF) into the already-delivered frontend**. Designed to be **conclusively demonstrable to an evaluation board** — a live, data-driven loop, not static UI.
-**Resource Requirements:** small backend team (Omnichannel service + BFF) + DevOps, absorbed by the existing K8s/OTel/Loki stack. Frontend is already delivered (no FE build); FE↔backend integration is a contract-conformance effort only.
+### Chiến lược & Triết lý MVP
+**Cách tiếp cận MVP:** Experience MVP — một vòng lặp omnichannel agent thời gian thực end-to-end chất lượng demo (ingestion → định danh → push → ticket → cảnh báo vi phạm SLA → CSAT) với hệ thống external được mock, **được dẫn dắt bởi backend (Omnichannel + BFF + module Ticketing) vào frontend đã bàn giao**. Thiết kế để **demo kết luận được trước hội đồng đánh giá** — một vòng lặp sống, dẫn dắt bởi dữ liệu, không phải UI tĩnh.
+**Nguồn lực:** đội backend nhỏ (module Omnichannel + BFF + module Ticketing) + DevOps, hấp thụ bởi stack K8s/OTel/Loki hiện có. Frontend đã bàn giao (không build FE); tích hợp FE↔backend chỉ là nỗ lực phù hợp contract.
 
-### MVP Feature Set (Phase 1)
-**Core journeys supported:** J1 (Zalo incident), J2 (billing call), J3 (SLA firefighting) — each demo-able end-to-end.
-**Must-have (Omnichannel + BFF — this scope):**
-- Multi-channel ingestion + 200-OK + idempotency + normalization.
-- Real-time push (Inbox + Softphone screen-pop).
-- **Ticket interaction via the Ticketing service:** create a ticket from a conversation (`TicketCreateRequested` → Ticketing service), display ticket state, and **render `SlaWarning` events** consumed from the broker on the Kanban / Inbox (red-flash + countdown) — *required for the J3 demo*. The SLA engine + breach worker themselves live in the **Ticketing & SLA service** (see below), not here.
-- **Backend surface for the existing FE:** REST/gRPC endpoints + WebSocket gateway + broker events that power the delivered screens — Inbox unified feed, SLA Kanban data (served from BFF → Ticketing service), Knowledge Base (FAQ) query, Field-incident intake, Softphone screen-pop, Broadcast send, CSAT survey. **No UI is built; the frontend already exists** and integrates against these contracts.
-- **Call-recording URL** in interaction history (mock audio file) — *retention proof*.
-- Mock adapters: Identity resolution, Customer 360, AI insight display, static Audio AI, **Ticketing & SLA service** (a stub that accepts ticket-create and emits `SlaWarning` so J3 is demo-able even before the real service ships).
+### Bộ tính năng MVP (Phase 1)
+**Các hành trình cốt lõi được hỗ trợ:** J1 (sự cố Zalo), J2 (cuộc gọi khiếu nại hóa đơn), J3 (chữa cháy SLA) — mỗi hành trình demo được end-to-end.
+**Must-have (Omnichannel + BFF + module Ticketing — phạm vi này):**
+- Ingestion đa kênh + 200-OK + idempotency + chuẩn hóa.
+- Push thời gian thực (Inbox + screen-pop Softphone).
+- **Tương tác ticket qua module Ticketing trong-project:** tạo ticket từ hội thoại (gọi create command của module Ticketing), hiển thị trạng thái ticket, và **render event `SlaWarning`** do SLA worker của module Ticketing phát trên Kanban / Inbox (chớp đỏ + đếm ngược) — *cần cho demo J3*. Engine SLA + breach worker nằm trong **module Ticketing** (xem §9.3), cùng deploy trong-process.
+- **Bề mặt backend cho FE hiện tại:** endpoint REST/gRPC + gateway WebSocket + event cấp nguồn cho các màn hình đã bàn giao — feed Inbox hợp nhất, dữ liệu SLA Kanban (từ BFF → module Ticketing), truy vấn Knowledge Base (FAQ), tiếp nhận sự cố hiện trường, screen-pop Softphone, gửi Broadcast, khảo sát CSAT. **Không build UI; frontend đã tồn tại** và tích hợp theo các contract này.
+- **URL ghi âm cuộc gọi** trong lịch sử tương tác (file audio mock) — *bằng chứng retention*.
+- Mock adapter: định danh, Customer 360, hiển thị AI insight, Audio AI tĩnh. (Module Ticketing ship là module **thật** ngay từ v1.3; stub trong-bộ-nhớ chỉ giữ lại làm toggle fallback cho local-dev/demo.)
 - RBAC (Agent/Supervisor/Admin).
 
-**Required from the sibling Ticketing & SLA service for the MVP demo (built under its own PRD, not here):** ticket lifecycle + SLA policy engine + breach worker that emits `SlaWarning`. This scope ships a **contract-conformant stub** so the omnichannel demo is conclusive on its own.
+**Demo MVP (J1/J2/J3):** vòng đời ticket + engine chính sách SLA + breach worker phát `SlaWarning` — tất cả build trong module Ticketing trong-project. Không phụ thuộc external; demo kết luận được ngay tự thân.
 
-### Post-MVP Features
+### Tính năng post-MVP
 **Phase 2 (Growth):**
-- Real adapters (IAM, Customer 360, VoIP, AI vision/NLP/audio).
-- IVR multi-branch + skill/geo routing (§5.1).
-- AI volume forecasting (§5.1 / external 10.6).
-- Advanced CSAT + periodic NPS + closing-the-loop (auto-reopen on <3★) (§5.3).
-- Parent-Incident triage · Customer self-tracking (J6) · deflection measurement (J4).
+- Adapter thật (IAM, Customer 360, VoIP, AI vision/NLP/audio).
+- IVR đa nhánh + routing theo kỹ năng/địa bàn (§5.1).
+- Dự báo khối lượng AI (§5.1 / external 10.6).
+- CSAT nâng cao + NPS định kỳ + closing-the-loop (auto-reopen khi <3★) (§5.3).
+- Triage Parent-Incident · Khách tự theo dõi (J6) · đo deflection (J4).
 
-**Phase 3 (Vision):** advanced AI integrations · field-service depth · multi-tenant.
+**Phase 3 (Vision):** tích hợp AI nâng cao · chiều sâu field-service · multi-tenant.
 
-### Risk Mitigation Strategy
-| Risk | Mitigation |
+### Chiến lược giảm rủi ro
+| Rủi ro | Giảm thiểu |
 |---|---|
-| Omnichannel ↔ Ticketing service boundary | contract-first + idempotency + DLQ; broker events versioned; contract tests both sides; 1,000 CCU load-tested |
-| Parent-Incident clustering accuracy | shadow-mode before auto |
-| Agent adoption | training + dense-desktop UX |
-| Deflection depends on external chatbot | measure independently |
-| Multi-service ops cost | lean on existing K8s/OTel/Loki stack |
+| Ranh giới module Omnichannel ↔ Ticketing | contract module/command-bus rõ ràng + idempotency + outbox giao dịch; event có version; contract test ở ranh giới module; load test 1.000 CCU |
+| Độ chính xác phân cụm Parent-Incident | shadow-mode trước khi tự động |
+| Agent chấp nhận | đào tạo + UX desktop dày đặc |
+| Deflection phụ thuộc chatbot external | đo độc lập |
+| Chi phí vận hành đa-module | dựa vào stack K8s/OTel/Loki hiện có |
 
 ---
 
-## User Journeys
+## 5. Hành trình người dùng
 
-### Journey 1 — Zalo Incident Resolution (Speed & Identity)
-**Persona:** Bác Nam (customer) + Trà (agent) · **Channel:** Zalo OA
-- **Opening:** A pipe bursts outside Nam's home; he photographs it and sends it via the company's Zalo OA.
-- **Rising:** The ingress acknowledges with HTTP 200 immediately (no Zalo timeout), normalizes the message to a standard format, and emits an event. Chatbot identifies the unknown contact and asks for a customer code or phone; Nam provides it; identity resolution links the Zalo ID to profile "Nguyễn Văn Nam." The message and photo push to Trà's unified inbox within 2 seconds, with a Customer 360 card (contract, debt history).
-- **Climax:** Trà grasps the issue and creates an incident ticket in one click; the omnichannel workspace sends a `TicketCreateRequested` to the **Ticketing & SLA service**, which opens the ticket and starts its SLA clock. (If an external vision service is wired, an incident-classification tag may be displayed — external, not built.)
-- **Resolution:** The field team resolves the issue; Trà moves the ticket to Done (the action is proxied through the BFF to the Ticketing service); a CSAT survey is sent via Zalo by the omnichannel service; Nam rates 5 stars.
-- **Capabilities:** ingestion + idempotency + 200-OK resilience · identity resolution · Customer 360 · real-time push · **ticket-create + state-change via the Ticketing service** · CSAT loop.
+### Hành trình 1 — Giải quyết sự cố Zalo (Tốc độ & Định danh)
+**Nhân vật:** Bác Nam (khách hàng) + Trà (agent) · **Kênh:** Zalo OA
+- **Mở:** Ống nước vỡ trước nhà Nam; ông chụp ảnh và gửi qua Zalo OA của công ty.
+- **Phát triển:** Ingress xác nhận bằng HTTP 200 lập tức (không timeout Zalo), chuẩn hóa tin về định dạng chung, và phát một event. Chatbot nhận diện contact lạ và hỏi mã khách hàng hoặc SĐT; Nam cung cấp; định danh liên kết Zalo ID với profile "Nguyễn Văn Nam." Tin và ảnh push tới inbox hợp nhất của Trà trong 2 giây, kèm thẻ Customer 360 (hợp đồng, lịch sử công nợ).
+- **Cao trào:** Trà nắm bắt vấn đề và tạo incident ticket trong một cú click; workspace gửi `TicketCreateRequested` tới **module Ticketing** (trong-project), module này mở ticket và khởi động đồng hồ SLA. (Nếu service vision external được nối, một tag phân loại sự cố có thể hiển thị — external, không build.)
+- **Giải quyết:** Đội hiện trường xử lý xong; Trà đẩy ticket sang Done (thao tác proxy qua BFF tới module Ticketing); khảo sát CSAT được gửi qua Zalo bởi module Omnichannel; Nam đánh giá 5 sao.
+- **Năng lực:** ingestion + idempotency + 200-OK chịu lỗi · định danh · Customer 360 · push realtime · **tạo-ticket + đổi-trạng-thái qua module Ticketing** · vòng lặp CSAT.
 
-### Journey 2 — Billing Complaint Call (Identify Before Answering)
-**Persona:** Chị Hoa (customer, frustrated) + Minh (agent) · **Channel:** VoIP 1900
-- **Opening:** Hoa's bill spikes; she calls 1900, annoyed.
-- **Rising:** On ring, the telephony integration sends the calling number; Minh's softphone auto-pops Hoa's profile and a consumption chart (3× this month) before he answers.
-- **Climax:** Minh answers within the 80/20 target and calmly explains tiered pricing and leak-check steps, informed by the advance context. (An external speech-to-text transcript may be displayed — external, not built.)
-- **Resolution:** Hoa is satisfied; Minh logs the outcome into the shared customer timeline.
-- **Capabilities:** VoIP screen-pop (identify-before-answer) · Customer 360 · 80/20 SLA · shared timeline.
+### Hành trình 2 — Cuộc gọi khiếu nại hóa đơn (Định danh trước khi bắt máy)
+**Nhân vật:** Chị Hoa (khách hàng, bực tức) + Minh (agent) · **Kênh:** VoIP 1900
+- **Mở:** Hóa đơn Hoa tăng vọt; cô gọi 1900, khó chịu.
+- **Phát triển:** Khi đổ chuông, tích hợp telephony gửi số gọi; softphone của Minh auto-pop profile của Hoa và biểu đồ tiêu thụ (×3 tháng này) trước khi anh bắt máy.
+- **Cao trào:** Minh bắt máy trong mục tiêu 80/20 và bình tĩnh giải thích giá bậc thang và các bước kiểm tra rò rỉ, nhờ ngữ cảnh có sẵn. (Một transcript speech-to-text external có thể hiển thị — external, không build.)
+- **Giải quyết:** Hoa hài lòng; Minh ghi nhận kết quả vào timeline khách hàng chung.
+- **Năng lực:** screen-pop VoIP (định danh-trước-khi-bắt-máy) · Customer 360 · SLA 80/20 · timeline chung.
 
-### Journey 3 — SLA Firefighting (Supervisor)
-**Persona:** Tuấn (shift lead) · **Channel:** internal Kanban
-- **Opening:** A message flood arrives on meter-reading day.
-- **Rising:** The **Ticketing & SLA service's** background worker scans thousands of tickets and detects #402 (water-out) overdue by 3 hours, 15 minutes from SLA breach.
-- **Climax:** The Ticketing service emits an `SlaWarning` over the broker; the **omnichannel workspace consumes it** and Tuấn's Kanban (and the holding agent's) flashes a red border with a blinking countdown.
-- **Resolution:** Tuấn re-assigns #402 to a free agent — the action is proxied through the BFF to the Ticketing service; the customer is called back; the 94.2% SLA is preserved.
-- **Capabilities:** **SLA breach worker (Ticketing service)** · `SlaWarning` consumed + rendered real-time (omnichannel) · Kanban visual alert · supervisor re-assignment (proxied) + permissions.
+### Hành trình 3 — Chữa cháy SLA (Supervisor)
+**Nhân vật:** Tuấn (trưởng ca) · **Kênh:** Kanban nội bộ
+- **Mở:** Một luồng tin tràn vào ngày chỉ số nước.
+- **Phát triển:** Background worker của **module Ticketing** quét hàng ngàn ticket và phát hiện #402 (mất nước) quá hạn 3 giờ, còn 15 phút nữa là vi phạm SLA.
+- **Cao trào:** Module Ticketing phát `SlaWarning` qua event bus; **workspace omnichannel tiêu thụ nó** và Kanban của Tuấn (của cả agent đang giữ) chớp viền đỏ với bộ đếm nhấp nháy.
+- **Giải quyết:** Tuấn gán lại #402 cho một agent rảnh — thao tác proxy qua BFF tới module Ticketing; khách hàng được gọi lại; SLA 94.2% được giữ.
+- **Năng lực:** **SLA breach worker (module Ticketing)** · `SlaWarning` tiêu thụ + render realtime (omnichannel) · cảnh báo trực quan Kanban · gán-lại supervisor (proxy) + phân quyền.
 
-### Journey 4 — Self-Service Deflection (Automated Relief)
-**Persona:** Anh Khang (customer) · **Channel:** Zalo/App
-- **Opening:** Khang sees a scheduled water-cut notice and asks when water will return.
-- **Rising:** The knowledge base matches "Lịch cắt nước P. Hòa Bình" and returns the schedule and an affected-area map within seconds. (The conversational handling is provided by an external chatbot — external, not built; the system integrates and measures.)
-- **Climax / Resolution:** No agent is involved and no ticket is created; the interaction counts toward the ≥30% deflection target.
-- **Capabilities:** knowledge-base search · deflection measurement · chatbot integration hook (external bot).
+### Hành trình 4 — Deflection tự phục vụ (Giảm tải tự động)
+**Nhân vật:** Anh Khang (khách hàng) · **Kênh:** Zalo/App
+- **Mở:** Khang thấy thông báo cắt nước theo lịch và hỏi khi nào có nước lại.
+- **Phát triển:** Knowledge base khớp "Lịch cắt nước P. Hòa Bình" và trả về lịch cùng bản đồ khu vực bị ảnh hưởng trong vài giây. (Việc xử lý hội thoại do chatbot external cung cấp — external, không build; hệ thống tích hợp và đo lường.)
+- **Cao trào / Giải quyết:** Không có agent nào can thiệp và không tạo ticket; tương tác đóng góp vào mục tiêu deflection ≥30%.
+- **Năng lực:** tìm kiếm knowledge-base · đo deflection · hook tích hợp chatbot (bot external).
 
-### Journey 5 — Unresolvable Identity (Error Recovery)
-**Persona:** A new tenant (no profile) + agent · **Channel:** App
-- **Opening:** The tenant messages, but identity resolution cannot match any existing profile.
-- **Rising:** The message is flagged "unidentified" yet still captured (no message lost); it surfaces to an agent with a fallback path.
-- **Climax / Resolution:** The agent creates a provisional profile / routes to onboarding, and the customer is served via the fallback.
-- **Capabilities:** identity-resolution failure handling · graceful fallback · no-message-loss guarantee · manual profile creation.
+### Hành trình 5 — Định danh không giải quyết được (Phục hồi lỗi)
+**Nhân vật:** Một thuê bao mới (không profile) + agent · **Kênh:** App
+- **Mở:** Khách nhắn tin, nhưng định danh không khớp profile nào.
+- **Phát triển:** Tin bị đánh dấu "unidentified" nhưng vẫn được lưu (không mất tin); nó xuất hiện với agent kèm đường fallback.
+- **Cao trào / Giải quyết:** Agent tạo profile tạm / chuyển tới onboarding, và khách được phục vụ qua fallback.
+- **Năng lực:** xử lý lỗi định danh · fallback êm · đảm bảo không-mất-tin · tạo profile thủ công.
 
-### Journey 6 — Customer Self-Tracking
-**Persona:** A customer · **Channel:** My Công ty App
-- **Opening:** The customer wants to know the status of a reported issue without calling.
-- **Rising:** The customer opens My Công ty App and enters a lookup code.
-- **Climax / Resolution:** The app displays the ticket's current stage (Grab/Shopee-style tracking) — received, in progress, assigned to field team, resolved — with no agent contact needed.
-- **Capabilities:** customer self-service tracking · ticket-status lookup by code · app integration (My Công ty / module 7.1).
+### Hành trình 6 — Khách tự theo dõi
+**Nhân vật:** Một khách hàng · **Kênh:** App My Công ty
+- **Mở:** Khách muốn biết trạng thái sự cố đã báo mà không cần gọi.
+- **Phát triển:** Khách mở App My Công ty và nhập mã tra cứu.
+- **Cao trào / Giải quyết:** App hiển thị giai đoạn hiện tại của ticket (theo dõi kiểu Grab/Shopee) — đã nhận, đang xử lý, đã giao đội hiện trường, đã giải quyết — không cần liên hệ agent.
+- **Năng lực:** tự theo dõi ticket · tra cứu trạng thái ticket theo mã · tích hợp app (My Công ty / module 7.1).
 
-### Journey Requirements Summary
+### Tóm tắt yêu cầu hành trình
 
-**In build scope (Omnichannel service + BFF) → become Functional Requirements:**
-- Multi-channel ingestion + idempotency + 200-OK resilience.
-- Real-time push ≤ 2s (inbox + softphone).
-- Identity resolution (channel ID → profile), including failure/fallback and manual creation.
-- Customer 360 view (contract / debt / consumption / shared timeline) — *via Customer 360 service*.
-- **Ticket-create + state-change actions proxied to the Ticketing service**, and **`SlaWarning` consumed + rendered** on Kanban/Inbox (the engine/worker itself is NOT here).
-- Customer self-service ticket tracking (lookup code) — *reads ticket state from the Ticketing service via BFF*.
-- CSAT survey on resolution (capture + delivery here; auto-reopen on low score is acted on by the Ticketing service).
-- Auto-greeting (non-AI) + canned-response suggestions + knowledge-base search.
-- Field-incident intake (photo → AI-tag display → GIS pin → FSM dispatch trigger).
-- Proactive broadcast (water-cut / flush / maintenance) by area.
-- Supervisor tools (Kanban alerts render, re-assignment proxied, permissions).
-- VoIP screen-pop + 80/20 SLA + call recording (retention).
-- AI insight display capability (a plug — renders external AI signals; never runs inference).
-- Operations dashboard (BFF-aggregated KPIs).
+**Trong phạm vi build (module Omnichannel + BFF + module Ticketing) → thành Yêu cầu chức năng:**
+- Ingestion đa kênh + idempotency + 200-OK chịu lỗi.
+- Push realtime ≤ 2s (inbox + softphone).
+- Định danh (channel ID → profile), kể cả fallback/lỗi và tạo thủ công.
+- Góc nhìn Customer 360 (hợp đồng / công nợ / tiêu thụ / timeline chung) — *qua port Customer 360*.
+- **Thao tác tạo-ticket + đổi-trạng-thái gọi module Ticketing trong-project**, và **`SlaWarning` tiêu thụ + render** trên Kanban/Inbox (engine/worker nằm trong module Ticketing).
+- Khách tự theo dõi ticket (mã tra cứu) — *đọc trạng thái ticket từ module Ticketing qua BFF*.
+- Khảo sát CSAT khi giải quyết (thu + gửi tại đây; auto-reopen khi điểm thấp do module Ticketing xử lý).
+- Tự động chào (không-AI) + gợi ý câu trả lời mẫu + tìm kiếm knowledge-base.
+- Tiếp nhận sự cố hiện trường (ảnh → hiển thị AI-tag → GIS pin → trigger dispatch FSM).
+- Thông báo chủ động (cắt nước / xả / bảo trì) theo khu vực.
+- Công cụ supervisor (render cảnh báo Kanban, gán-lại proxy, phân quyền).
+- Screen-pop VoIP + SLA 80/20 + ghi âm (retention).
+- Năng lực hiển thị AI insight (một plug — render tín hiệu AI external; không bao giờ chạy inference).
+- Dashboard vận hành (KPI tổng hợp BFF).
 
-**Consumed from sibling services (separate bounded contexts — NOT built in this PRD):**
-- **Ticketing & SLA service:** ticket lifecycle, ID/owner, type/priority classification, **SLA policy engine, breach worker, escalation, auto-reopen** (own PRD).
-- Customer 360 / Identity service: profile, contract, debt, consumption.
-- Field-team App: Work Orders.
+**Tiêu thụ từ port external (KHÔNG build trong PRD này):**
+- Customer 360 / Identity service: profile, hợp đồng, công nợ, tiêu thụ.
+- Field-team App: Work Order.
 
-**Out of build scope (external AI, via API later):**
-- AI vision classification, NLP intent, speech-to-text, conversational chatbot.
-- Note: the ≥30% deflection target and AI insight display are contingent on these external services being wired.
+**Ngoài phạm vi build (AI external, qua API sau):**
+- Phân loại AI vision, NLP intent, speech-to-text, chatbot hội thoại.
+- Ghi chú: mục tiêu deflection ≥30% và hiển thị AI insight phụ thuộc việc nối các service external này.
+
+> **(v1.3)** Ticketing & SLA không còn nằm trong danh sách tiêu thụ — nó được build trong-project như module Ticketing (xem §9.3).
 
 ---
 
-## Domain-Specific Requirements
+## 6. Yêu cầu đặc thù lĩnh vực
 
-> **Operator:** city/urban **state-owned enterprise (SOE)**. Enterprise-grade rigor (RBAC, audit logging, traceability) is applied as architecture best practice. Regulatory standards (Decree 13/2023, WCAG 2.1 AA) guide the architecture as **best-practice guidelines** rather than immediate hard-certification gates.
+> **Nhà vận hành:** doanh nghiệp nhà nước (SOE) đô thị/khu vực. Độ nghiêm ngặt enterprise (RBAC, audit logging, truy vết) được áp dụng như best-practice kiến trúc. Các tiêu chuẩn quy định (Nghị định 13/2023, WCAG 2.1 AA) định hướng kiến trúc như **hướng dẫn best-practice** chứ không phải cổng chứng nhận cứng ngay lập tức.
 
-### Compliance & Regulatory
-- **Personal Data Protection (Decree 13/2023/ND-CP):** applied as a best-practice guideline — consent, purpose-limitation, retention, and data-subject rights for all customer PII (phone, address, contract, debt, consumption, CSAT).
-- **Call-recording transparency (§5.1):** an automatic **IVR announcement** ("This call may be recorded to improve service quality…") plays before routing to an agent, satisfying transparency for the 90-day recording retention.
-- **Cybersecurity (Law on Cybersecurity 2018):** logging, incident reporting, and data protection applied as best practice.
-- **Auditability / transparency (SOE):** 100% interaction traceability (trace_id), immutable logs, defined retention.
+### Tuân thủ & Quy định
+- **Bảo vệ dữ liệu cá nhân (Nghị định 13/2023/NĐ-CP):** áp dụng như hướng dẫn best-practice — đồng thuận, giới hạn mục đích, retention, và quyền chủ thể dữ liệu với mọi PII khách hàng (SĐT, địa chỉ, hợp đồng, công nợ, tiêu thụ, CSAT).
+- **Minh bạch ghi âm (§5.1):** một **thông báo IVR tự động** ("Cuộc gọi này có thể được ghi âm để cải thiện chất lượng phục vụ…") phát trước khi chuyển tới agent, đáp ứng minh bạch cho retention ghi âm 90 ngày.
+- **An ninh mạng (Luật An ninh mạng 2018):** logging, báo cáo sự cố, và bảo vệ dữ liệu áp dụng như best-practice.
+- **Khả năng kiểm toán / minh bạch (SOE):** truy vết 100% tương tác (trace_id), log bất biến, retention định nghĩa rõ.
 
-### Technical Constraints
-- **Data residency / sovereignty:** deployment **on-premise or on a Vietnam-hosted domestic cloud**; customer PII and consumption profiles remain within national borders.
-- **Security:** encryption in-transit + at-rest · RBAC (agent/supervisor/admin) · least-privilege · audit logging.
-- **Privacy:** data minimization · consent management · retention policies (90-day recordings) · data-subject access/deletion handling.
-- **Accessibility (WCAG 2.1 AA as guideline):** UI conformance is owned by the **delivered frontend** (out of this backend scope); the backend serves KB/self-tracking **content in a semantic, structured form** that does not block AA compliance.
-- **Performance / Availability:** real-time ≤ 2s · ≥ 1,000 CCU peak · 99.9% business hours.
+### Ràng buộc kỹ thuật
+- **Residency / chủ quyền dữ liệu:** triển khai **on-premise hoặc cloud trong nước (Việt Nam)**; PII khách hàng và profile tiêu thụ nằm trong biên giới quốc gia.
+- **Bảo mật:** mã hóa in-transit + at-rest · RBAC (agent/supervisor/admin) · least-privilege · audit logging.
+- **Quyền riêng tư:** tối thiểu dữ liệu · quản lý đồng thuận · chính sách retention (ghi âm 90 ngày) · xử lý yêu cầu truy cập/xóa của chủ thể dữ liệu.
+- **Khả năng tiếp cận (WCAG 2.1 AA như hướng dẫn):** tuân thủ UI thuộc về **frontend đã bàn giao** (ngoài phạm vi backend này); backend serve nội dung KB/tự-theo-dõi **dạng cấu trúc, ngữ nghĩa** (tiêu đề, nhãn, trường alt-text, language tag) không cản trở AA.
+- **Hiệu năng / Khả dụng:** realtime ≤ 2s · ≥ 1.000 CCU peak · 99.9% giờ hành chính.
 
-### Integration Requirements *(the ports — from Chapter 5)*
-**Ticketing & SLA service** (sibling microservice, async via broker + BFF) · Customer 360 (1.1) · My Công ty App (7.1) · Business Dashboard (9.1) · AI Chatbot (10.1, external) · AI Forecasting (10.6, external) · Field-team Mobile App (Work Orders).
+### Yêu cầu tích hợp *(các port — từ Chương 5)*
+**Module Ticketing** (trong-project, qua event bus trong-process + đọc BFF) · Customer 360 (1.1) · My Công ty App (7.1) · Business Dashboard (9.1) · AI Chatbot (10.1, external) · AI Forecasting (10.6, external) · Field-team Mobile App (Work Order).
 
-### Domain Pattern — Network Outage Triage (utility-specific)
-Water networks fail geographically: a main-pipe burst triggers **thousands of near-simultaneous reports** from one area. Beyond static capacity (1,000 CCU) and idempotency, **routing rules must auto-detect and merge duplicate reports into a single "Parent Incident"** so the coordinator's Kanban is not flooded. Individual reports attach to the parent as affected customers, not as separate tickets. *(→ Functional Requirement in Step 9.)*
+### Mẫu lĩnh vực — Triage sự cố mất nước diện rộng (đặc thù tiện ích)
+Mạng nước hỏng theo địa lý: vỡ ống chính kích hoạt **hàng ngàn báo cáo gần-đồng-thời** từ một khu vực. Vượt sức chứa tĩnh (1.000 CCU) và idempotency, **routing rule phải tự phát hiện và gộp báo cáo trùng vào một "Parent Incident" duy nhất** để Kanban của điều phối viên không bị tràn. Các báo cáo cá nhân attach vào parent như khách bị ảnh hưởng, không thành ticket riêng. *(→ Yêu cầu chức năng ở Bước 9.)*
 
-### Risk Mitigations
+### Giảm thiểu rủi ro
 
-| Risk | Mitigation |
+| Rủi ro | Giảm thiểu |
 |---|---|
-| PII exposure | RBAC + encryption + audit + minimization |
-| Recording without consent | IVR consent announcement + retention policy |
-| Identity-resolution error | fallback + manual verification, never block service |
-| Mass-duplicate reports (outage) | Parent-Incident auto-merge + geographic clustering |
-| Message loss at peak | idempotency + DLQ + 1,000 CCU capacity |
-| Traceability gap | trace_id propagation across the async boundary |
+| Rò rỉ PII | RBAC + mã hóa + audit + tối thiểu |
+| Ghi âm không đồng thuận | thông báo đồng thuận IVR + chính sách retention |
+| Lỗi định danh | fallback + xác minh thủ công, không bao giờ chặn dịch vụ |
+| Báo cáo trùng hàng loạt (sự cố) | auto-merge Parent-Incident + phân cụm địa lý |
+| Mất tin ở peak | idempotency + DLQ + sức chứa 1.000 CCU |
+| Lỗ hổng truy vết | lan truyền trace_id qua ranh giới async |
 
 ---
 
-## Innovation & Novel Patterns
+## 7. Đổi mới & Mẫu mới
 
-### Detected Innovation Areas
-- **Geo-clustered mass-outage triage (Parent-Incident merging):** when a main-pipe burst triggers thousands of near-simultaneous reports, the system auto-clusters by geographic radius + time window + incident-type similarity and merges them into a single **Parent Incident**, attaching individual reports as affected customers. This inverts the standard "one report = one ticket" helpdesk assumption and prevents coordinator-Kanban flooding during widespread outages. *(Genuinely novel for a contact center; domain-specific to utility networks.)*
-- **Honest scope:** beyond outage triage, OmniCare is an excellent execution of proven omnichannel patterns (unified inbox, SLA management, VoIP screen-pop, CSAT) rather than breakthrough innovation.
+### Khu vực đổi mới được phát hiện
+- **Triage sự cố diện rộng phân cụm theo địa lý (Parent-Incident merging):** khi vỡ ống chính kích hoạt hàng ngàn báo cáo gần-đồng-thời, hệ thống tự phân cụm theo bán kính địa lý + cửa thời gian + độ tương tự loại sự cố và gộp vào một **Parent Incident** duy nhất, attach báo cáo cá nhân như khách bị ảnh hưởng. Điều này đảo ngược giả định helpdesk chuẩn "một báo cáo = một ticket" và ngăn ngập Kanban điều phối viên trong sự cố diện rộng. *(Thực sự mới cho contact center; đặc thù mạng tiện ích.)*
+- **Phạm vi trung thực:** vượt ra ngoài triage sự cố, OmniCare là một thực thi xuất sắc các mẫu omnichannel đã chứng minh (unified inbox, quản lý SLA, screen-pop VoIP, CSAT) chứ không phải đổi mới đột phá.
 
-### Market Context & Competitive Landscape
-- Generic helpdesks lack utility-specific outage clustering and Customer 360 (contract / debt / consumption).
-- Utility field-service tools handle outages but rarely unify them with the contact-center queue.
-- OmniCare's edge = bridging **contact-center + outage-incident management** in a single queue.
+### Bối cảnh thị trường & Cảnh quan cạnh tranh
+- Helpdesk dùng chung thiếu phân cụm sự cố đặc thù tiện ích và Customer 360 (hợp đồng / công nợ / tiêu thụ).
+- Công cụ field-service tiện ích xử lý sự cố nhưng hiếm khi thống nhất với hàng đợi contact-center.
+- Lợi thế của OmniCare = cầu nối **contact-center + quản lý sự cố** trong một hàng đợi.
 
-### Validation Approach
-- Define clustering rules (geo radius + time window + incident-type similarity) and a **confidence threshold** before auto-merge.
-- Pilot in **shadow mode** (suggest merges; agent confirms) before full auto-merge.
-- Measure: merge accuracy, false-merge rate, coordinator Kanban-load reduction.
+### Cách tiếp cận thẩm định
+- Định nghĩa quy tắc phân cụm (bán kính địa lý + cửa thời gian + độ tương tự loại sự cố) và **ngưỡng tin cậy** trước auto-merge.
+- Thử nghiệm ở **shadow mode** (gợi ý gộp; agent xác nhận) trước auto-merge đầy đủ.
+- Đo: độ chính xác gộp, tỷ lệ gộp sai, mức giảm tải Kanban điều phối viên.
 
-### Risk Mitigation
-| Risk | Mitigation |
+### Giảm thiểu rủi ro
+| Rủi ro | Giảm thiểu |
 |---|---|
-| False merge (unrelated reports grouped) | confidence threshold + agent confirmation + easy un-merge |
-| Missed merge (true cluster undetected) | always create individual tickets as fallback; never lose a report |
-| Over-aggressive auto-merge | start in suggest-mode (human-in-the-loop), graduate to auto |
+| Gộp sai (báo cáo không liên quan bị nhóm) | ngưỡng tin cậy + xác nhận agent + dễ un-merge |
+| Bỏ sót gộp (cụm thật không phát hiện) | luôn tạo ticket cá nhân làm fallback; không bao giờ mất báo cáo |
+| Auto-merge quá hăng | bắt đầu ở suggest-mode (human-in-the-loop), tốt nghiệp sang auto |
 
 ---
 
-## Backend Surface, BFF & Real-time Requirements
+## 8. Bề mặt backend, BFF & Realtime
 
-> Frontend (the agent-workspace SPA) is **already delivered and out of scope**. This section specifies the **server-side surface** the existing FE depends on. Pure-frontend concerns (browser matrix, responsive layout, SEO, UI accessibility, time-to-interactive) are intentionally **not** covered here.
+> Frontend (SPA workspace agent) **đã bàn giao và ngoài phạm vi**. Phần này đặc tả **bề mặt server** mà FE hiện tại phụ thuộc. Các concern thuần frontend (browser matrix, responsive, SEO, accessibility UI, time-to-interactive) cố tình **không** được đề cập ở đây.
 
-### Service-Type Overview
-Two backend deployables: the **Omnichannel domain service** (ingestion, normalization, identity, channels, real-time gateway, KB, broadcast, CSAT capture, field-incident intake, outage detection) and the **BFF** (single aggregation gateway for the SPA). Both extend the existing NestJS estate. Sibling services (Ticketing & SLA, Customer 360, Field-team App, AI) are consumed, not built.
+### Tổng quan loại service
+Một deployable backend duy nhất — **backend OmniCare** (NestJS) — chứa ba lớp/module logic: **module domain Omnichannel** (ingestion, chuẩn hóa, định danh, kênh, gateway realtime, KB, broadcast, thu CSAT, tiếp nhận sự cố hiện trường, phát hiện outage), **module Ticketing & SLA** (cùng deploy, schema riêng — vòng đời ticket, engine SLA, breach worker, escalation, reopen, parent-incident), và lớp **BFF** (gateway tổng hợp duy nhất cho SPA). Các port external (Customer 360, Field-team App, AI) được tiêu thụ, không build.
 
-### API & Contract Surface
-- **BFF is the single entry point** for the SPA — no frontend call reaches a domain service directly. The BFF exposes read-aggregation endpoints (e.g., a conversation view = omnichannel thread + Customer 360 card + ticket/SLA state from the Ticketing service) and write endpoints that fan out to the right service.
-- **Contracts are versioned and contract-tested** on both sides of every boundary (esp. Omnichannel ↔ Ticketing). Breaking changes require a version bump; consumer-driven contract tests gate releases.
-- **API shapes match what the delivered FE already calls** — this PRD conforms the backend to the existing screens, not the reverse. (Field mapping per screen is tracked in the FE integration contract, not duplicated here.)
+### Bề mặt API & Contract
+- **BFF là điểm vào duy nhất** cho SPA — không có lời gọi FE nào chạm trực tiếp module domain. BFF cung cấp endpoint tổng hợp-đọc (ví dụ: một conversation view = chuỗi omnichannel + thẻ Customer 360 + trạng thái ticket/SLA từ module Ticketing) và endpoint ghi fan-out tới đúng module.
+- **Contract có version và được contract-test** ở cả hai phía mọi ranh giới module (đặc biệt Omnichannel ↔ Ticketing). Thay đổi phá vỡ cần bump version; contract test consumer-driven chặn release.
+- **Hình dáng API khớp với cái FE đã bàn giao đang gọi** — PRD này conform backend theo các màn hình hiện có, không phải ngược lại. (Mapping field theo màn hình được theo dõi trong contract tích hợp FE, không lặp lại ở đây.)
 
-### Real-time Gateway
-- **WebSocket (socket.io)** gateway in the Omnichannel service: new-inbound push, screen-pop signal, and relay of `SlaWarning`/ticket-state events originating in the Ticketing service.
-- Delivery target: a server-emitted event reaches the connected client within **2 seconds (p95)** of the backend receiving/producing it.
-- Reconnection + backfill: on socket reconnect the client can request missed events without message loss (idempotent replay).
+### Gateway thời gian thực
+- Gateway **WebSocket (socket.io)** trong module Omnichannel: push tin-đến, tín hiệu screen-pop, và relay event `SlaWarning`/đổi-trạng-thái ticket xuất phát từ module Ticketing.
+- Mục tiêu giao: một event server-phát tới client đã kết nối trong **2 giây (p95)** kể từ khi backend nhận/sản xuất nó.
+- Reconnect + backfill: khi socket reconnect, client có thể yêu cầu event bị thiếu mà không mất tin (replay idempotent).
 
-### Backend Performance Targets
-- BFF read aggregation: ≤ **500ms (p95)** under normal load (NFR2).
-- Webhook acknowledgement: ≤ **200ms** (NFR4).
-- Real-time push: ≤ **2s (p95)** (NFR1).
-- Peak: ≥ **1,000 CCU** across ingress + real-time layers with zero dropped messages (NFR6).
-> (Frontend time-to-interactive is a delivered-FE concern and is no longer an NFR here.)
+### Mục tiêu hiệu năng backend
+- Tổng hợp đọc BFF: ≤ **500ms (p95)** dưới tải thường (NFR2).
+- Xác nhận webhook: ≤ **200ms** (NFR4).
+- Push realtime: ≤ **2s (p95)** (NFR1).
+- Peak: ≥ **1.000 CCU** qua lớp ingress + realtime, không rớt tin (NFR6).
+> (Time-to-interactive frontend là concern của FE đã bàn giao và không còn là NFR ở đây.)
 
-### Role-Based Access Control (RBAC)
-Agent / Supervisor / Admin enforced **server-side** at the BFF/domain-service boundary — ticket handling, re-assignment (proxied), SLA-data read, configuration. The backend is the authority; the FE only reflects granted permissions.
+### Kiểm soát truy cập theo vai trò (RBAC)
+Agent / Supervisor / Admin được thực thi **server-side** ở ranh giới BFF/module — xử lý ticket, gán-lại (proxy), đọc dữ liệu SLA, cấu hình. Backend là thẩm quyền; FE chỉ phản ánh quyền được cấp.
 
-### Integration List (the ports)
-Ticketing & SLA service (sibling) · Customer 360 · My Công ty App · Business Dashboard · AI Chatbot (external) · AI Forecasting (external) · Field-team App — all via the BFF/ports.
+### Danh sách tích hợp (các port)
+Module Ticketing (trong-project) · Customer 360 · My Công ty App · Business Dashboard · AI Chatbot (external) · AI Forecasting (external) · Field-team App — tất cả qua BFF/port.
 
----
+### Giải pháp móc nối kỹ thuật (Integration Hookups)
 
-## Functional Requirements
+> PRD đặc tả *năng lực* (FR); phần này đặc tả **cách móc nối kỹ thuật** với các hệ thống external, vì NestJS không tự xử lý luồng âm thanh, không sở hữu model AI, và không sở hữu dữ liệu khách hàng gốc. **Nguyên tắc chung:** *ingress* dùng webhook + idempotency + 200-OK ≤200ms; *outbound* dùng outbox + retry + DLQ; `trace_id` lan truyền toàn luồng (NFR13).
 
-> **Read as backend capabilities (v1.2).** The frontend is delivered; each FR below is the **backend** capability that fulfills it — the API, query, broker event, or WebSocket push. Phrasings like "Agents can view / reply / move…" mean the backend **serves the data and exposes the operation** the existing FE renders; they do **not** imply building UI. **Phase tags:** [MVP] (Phase 1) / [G2] (Phase 2 Growth). **Ownership tags:** [OMNI] = built here (Omnichannel + BFF); [TKT-SVC] = Ticketing & SLA microservice contract (consumed, not built here). Untagged-for-ownership FRs default to [OMNI]. Every downstream artifact (UX, architecture, epics) derives from this list. (62 FRs total — **55 [OMNI]** in this build scope + **7 [TKT-SVC]** documented as the Ticketing-service contract: FR21, FR22, FR23, FR24, FR26, FR27, FR61. Note FR25 & FR60 are display/consume actions and FR62 is a dispatch action — all [OMNI].)
+**1. Tổng đài / Telephony (PBX) — FR32, FR33, FR34, FR35, FR59**
+- NestJS **không** xử lý luồng âm thanh (RTP). Thiết lập **Telephony Webhook** với nhà cung cấp PBX (Stringee / VCCall / FPT / v.v.):
+  - **Signaling:** khi khách gọi, PBX bắn `call.ringing` (kèm số gọi) → NestJS query Customer 360 → push **screen-pop** qua WebSocket tới agent (FR33).
+  - **Queue / Routing:** để PBX xử lý chia cuộc (tối ưu hơn); NestJS chỉ đồng bộ `agent.state_changed` (Available/Busy) lên PBX để PBX chọn agent rảnh (FR32, FR16).
+  - **Ghi âm:** khi kết thúc, PBX bắn `call.ended` kèm URL file ghi âm → NestJS chỉ lưu **URL metadata** vào DB (file vật lý nằm ở server tổng đài / S3) (FR34, FR35).
+  - **Đồng ý:** PBX phát thông báo IVR ghi âm trước khi nối agent (FR59).
+- Đây là dạng **webhook-ingress** (giống ingress tin nhắn): idempotency + 200-OK.
 
-### 1. Multi-Channel Ingestion & Messaging
-- **FR1** [MVP] The system can receive inbound messages from multiple channels (Zalo OA, mobile app, Facebook, email) into a single normalized stream.
-- **FR2** [MVP] The system can acknowledge each inbound message immediately upon receipt, independent of downstream processing.
-- **FR3** [MVP] The system can detect and discard duplicate inbound messages caused by network retries.
-- **FR4** [MVP] The system can normalize messages from different channels into a single common format.
-- **FR5** [MVP] The system can send outbound messages to customers on the channel of the original conversation.
-- **FR6** [G2] The system can send proactive broadcast notifications to groups of customers across channels.
-- **FR7** [MVP] The system can safely retain and automatically retry processing of interactions if ticket creation or routing fails, ensuring no interaction is lost.
-- **FR8** [MVP] The system can present conversation messages in their correct chronological order within a thread.
+**2. Customer 360 / Định danh (Anti-Corruption Layer) — FR28, FR29, FR30, FR31**
+- Adapter (**Anti-Corruption Layer**) trong BFF gọi Customer Service: `GET /customers/lookup?zalo_id=xxx` (hoặc SĐT) → trả profile.
+- **Fallback:** nếu Customer Service down, BFF vẫn cho phép hiển thị tin dưới dạng **"Khách Vô Danh"** — tuyệt đối không block luồng chat (FR30); agent tạo/link profile tạm sau (FR31).
+- Cache profile vào Redis (short TTL) để giảm gọi lại.
 
-### 2. Unified Agent Workspace
-- **FR9** [MVP] Agents can view all inbound conversations across channels in a single unified inbox.
-- **FR10** [MVP] Agents can open a conversation and view its full message history and attachments.
-- **FR11** [MVP] Agents can reply to a customer within the conversation thread.
-- **FR12** [MVP] Agents can see new inbound messages appear in real time without refreshing.
-- **FR13** [MVP] Agents can view a consolidated interaction timeline per customer across channels and calls.
-- **FR14** [MVP] Agents can access internal knowledge-base articles from within the workspace.
-- **FR15** [MVP] The system can display context classification tags (e.g., urgency, topic) and speech-to-text transcripts supplied by external AI assistants directly on the conversation screen.
-- **FR16** [MVP] Agents can set their availability status, and the system can route and assign work based on agent availability.
-- **FR17** [MVP] Agents can search and filter conversations in the inbox by channel, status, customer, and priority.
-- **FR18** [MVP] Agents can close or archive a conversation (distinct from ticket resolution).
+**3. AI (vision / NLP / intent) — Bất đồng bộ — FR15, NFR22**
+- AI model (Python) chậm; gọi **sync** sẽ block event loop khi có nhiều tin/ảnh cùng lúc.
+- **Async + Safe degradation (NFR22):** Omnichannel nhận ảnh → lưu URL tạm → đẩy job vào **Queue (BullMQ)** → AI Service lấy job, phân tích, gọi **webhook ngược** về NestJS (trả tag: *Khẩn cấp / Vỡ ống…*) → NestJS push tag lên chat qua WebSocket (FR15).
+- **Circuit-breaker:** nếu AI chậm/down, tin vẫn hiển thị bình thường (tag AI vắng mặt) — không block ingestion (NFR22).
 
-### 3. Ticket & SLA (split across two services)
-
-> **Ownership legend:** **[OMNI]** = built in this PRD (Omnichannel service + BFF). **[TKT-SVC]** = owned by the separate **Ticketing & SLA microservice**, documented here as the integration **contract** (built under its own PRD — *not* in this scope). The omnichannel workspace acts on tickets by sending broker events / BFF calls and by consuming events back; it never owns the ticket store, SLA engine, or breach worker.
-
-**3a — Omnichannel-side ticket interaction (built here)**
-- **FR19** [MVP·OMNI] Agents can create a ticket from a conversation; the workspace sends a creation request (`TicketCreateRequested`) to the Ticketing & SLA service with conversation + customer context.
-- **FR20** [MVP·OMNI] Agents can advance a ticket through its workflow stages (received → in progress → waiting → resolved) from the workspace UI; the state change is proxied through the BFF to the Ticketing & SLA service.
-- **FR25** [MVP·OMNI] The system can consume `SlaWarning` events (near/at breach) emitted by the Ticketing & SLA service and surface them in real time to supervisors and the responsible agent (Kanban red-flash + countdown; Inbox SLA chip).
-- **FR60** [MVP·OMNI] Agents and supervisors can view a ticket's current state and SLA countdown alongside the conversation and on the Kanban, with data sourced from the Ticketing & SLA service via the BFF.
-
-**3b — Ticketing & SLA service contract (NOT built in this scope — separate microservice)**
-- **FR21** [TKT-SVC] The Ticketing & SLA service assigns a unique identifier and responsible owner to each ticket.
-- **FR22** [TKT-SVC] The Ticketing & SLA service classifies tickets by type and priority level.
-- **FR23** [TKT-SVC] The Ticketing & SLA service applies SLA policies to tickets based on type and priority.
-- **FR24** [TKT-SVC] The Ticketing & SLA service continuously monitors open tickets and detects those approaching SLA breach (background breach worker), emitting `SlaWarning`.
-- **FR26** [TKT-SVC·G2] The Ticketing & SLA service automatically escalates tickets that breach SLA to a higher authority.
-- **FR27** [TKT-SVC·G2] The Ticketing & SLA service automatically reopens a ticket when it receives a `CsatSubmitted` event reporting a rating below threshold.
-
-### 4. Customer Identity & 360° Context
-- **FR28** [MVP] The system can resolve a customer's identity from a channel identifier (e.g., Zalo ID, phone number) to a unified customer profile.
-- **FR29** [MVP] Agents can view a customer's 360° profile (contract, receivables, consumption history, address) alongside a conversation.
-- **FR30** [MVP] The system can handle unrecognized customers via a fallback identification flow without losing the inbound message.
-- **FR31** [MVP] Agents can create or link a provisional customer profile when identity cannot be resolved.
-
-### 5. Call Center & Telephony
-- **FR32** [MVP] The system can receive incoming calls and route them to available agents.
-- **FR33** [MVP] The system can present the caller's customer profile to the agent before the call is answered.
-- **FR34** [G2] The system can record calls and retain recordings for a defined period.
-- **FR35** [MVP] Agents can access the recording reference of a past call from the interaction history.
-- **FR36** [G2] The system can present an interactive voice menu (IVR) and route calls by caller selection.
-- **FR37** [G2] The system can route calls by caller geography and agent skill.
-- **FR38** [G2] Customers can request a callback from the app and receive it within a target time.
-
-### 6. Knowledge Base & Self-Service
-- **FR39** [MVP] Agents can search internal knowledge-base articles by keyword, including Vietnamese diacritics and synonyms.
-- **FR40** [G2] Content editors can manage articles through an author → edit → approve → publish workflow with versioning.
-- **FR41** [G2] Customers can self-serve answers from the knowledge base without contacting an agent.
-
-### 7. Customer Experience Measurement
-- **FR42** [MVP] The system can request a satisfaction (CSAT) rating from a customer after a ticket is closed (triggered by a `TicketClosed` event from the Ticketing service) and emit a `CsatSubmitted` event (consumed by the Ticketing service for auto-reopen — see FR27).
-- **FR43** [G2] The system can collect satisfaction ratings across multiple channels.
-- **FR44** [G2] The system can measure Net Promoter Score (NPS) through periodic surveys.
-- **FR45** [G2] The system can measure Customer Effort Score (CES) for key processes.
-- **FR46** [G2] The system can trigger a follow-up contact when a customer rates below threshold (closing the loop).
-- **FR47** [G2·OMNI] Customers can track the status of their own ticket via a lookup code (My Công ty App / customer web), with ticket state read from the Ticketing & SLA service via the BFF.
-- **FR48** [G2] The system can measure and report the deflection rate (requests resolved via knowledge-base self-service without a ticket or agent).
-
-### 8. Mass-Outage Triage
-> **Ownership split:** *detection / clustering* is pre-ticket triage built here **[OMNI]**; the *Parent Incident as a grouping of child tickets* belongs to the **[TKT-SVC]** contract. Agent merge/split actions are OMNI UI actions proxied to the Ticketing service when tickets are involved.
-- **FR49** [G2·OMNI] The omnichannel service can detect clusters of near-simultaneous reports from a geographic area (geo radius + time window + incident-type similarity) and propose a parent-incident grouping — pre-ticket triage; the actual grouping of tickets is executed by the Ticketing service (see FR61).
-- **FR50** [G2·OMNI] Agents can view all affected reports/customers attached to a parent incident in the workspace (UI; list aggregated via BFF from omnichannel reports + the Ticketing-service grouping).
-- **FR51** [G2·OMNI] Agents can split a mis-merged report out of a parent incident from the workspace; when the report has an associated ticket, the regrouping is proxied through the BFF to the Ticketing service.
-- **FR52** [G2·OMNI] The system can attach and resolve a geographic location to incident reports at intake (GIS pin); ticket-level geo is persisted by the Ticketing service.
-- **FR61** [TKT-SVC·G2] The Ticketing & SLA service maintains the Parent Incident as a grouping of child tickets — attaching, detaching, splitting, and resolving child tickets under a single parent.
-- **FR62** [MVP·OMNI] The system can dispatch a Work Order to the Field-team App when a field incident is confirmed — including incident type, priority, geographic location, and photo references — so the field team can act on it. *(MVP — required for the J1 demo and the Sự cố hiện trường screen; the Field-team App is a consumed port.)*
-
-### 9. Operations Dashboard & Supervision
-- **FR53** [MVP·OMNI] Supervisors can view real-time operational KPIs on a dashboard (Điều hành CSKH), BFF-aggregated from interaction volume + channel mix (omnichannel), SLA compliance + open-ticket counts (Ticketing service), and CSAT/NPS (omnichannel capture).
-- **FR54** [MVP·OMNI] Supervisors can reassign tickets between agents from the workspace; the reassignment is proxied through the BFF to the Ticketing & SLA service.
-
-### 10. Security, Access & Audit
-- **FR55** [MVP] The system can authenticate agents and enforce role-based permissions (agent, supervisor, admin).
-- **FR56** [MVP] The system can record an audit trail of who did what and when across all interactions.
-- **FR57** [MVP] The system can trace a customer interaction end-to-end across all processing steps.
-- **FR58** [MVP] The system can restrict access to customer personal data by role.
-- **FR59** [MVP] The system can notify callers that a call may be recorded before connecting to an agent.
+**4. FSM / Đội hiện trường (Field-team) — Outbound Webhook + Retry + DLQ — FR62**
+- Khi ticket chuyển sang DISPATCHED (`TicketStateChanged`), một event listener gọi REST API sang hệ thống FSM.
+- **Retry + DLQ:** nếu FSM trả lỗi 5xx (sập), request vào **Dead Letter Queue**, retry sau (ví dụ 5 phút) — đảm bảo lệnh giao việc không "rơi" giữa chừng.
+- Pattern *outbound* (outbox + retry + DLQ) này áp dụng chung cho mọi ghi xuống hệ thống external: Customer writes, broadcast gửi kênh, gửi CSAT ra kênh, v.v.
 
 ---
 
-## Non-Functional Requirements
+## 9. Yêu cầu chức năng (Functional Requirements)
 
-> **How WELL** the system performs — each NFR measurable and testable. Vague quality words from FRs ("real time", "continuously", "target time") are resolved into concrete thresholds here. (24 NFRs across 6 categories; NFR10 split into a [TKT-SVC contract] emit and an [OMNI] render.)
+> **Đọc như năng lực backend (v1.3).** Frontend đã bàn giao; mỗi FR dưới là năng lực **backend** thực hiện nó — API, query, event, hoặc push WebSocket. Cách diễn đạt như "Agents có thể xem / trả lời / đẩy…" có nghĩa backend **serve dữ liệu và mở thao tác** mà FE hiện tại render; chúng **không** ngụ ý build UI. **Tag phase:** [MVP] (Phase 1) / [G2] (Phase 2 Growth). **Tag sở hữu:** [OMNI] = module Omnichannel (trong-project); [TKT] = module Ticketing & SLA (trong-project, cùng deploy, schema riêng). Cả hai đều ĐƯỢC BUILD trong project — tag chỉ tên module bounded-context sở hữu. FR không gắn tag sở hữu mặc định là [OMNI]. Port external (Customer 360, AI, Field-team) được tiêu thụ, không gắn tag từng FR. Mọi artifact xuôi dòng (UX, kiến trúc, epic) dẫn xuất từ danh sách này. (Tổng 62 FR — **tất cả build trong-project**: 55 [OMNI] + 7 [TKT]: FR21, FR22, FR23, FR24, FR26, FR27, FR61. Lưu ý FR25 & FR60 là hành động hiển thị/tiêu thụ và FR62 là hành động dispatch — đều [OMNI].)
 
-### Performance
-- **NFR1** The system shall push a new inbound message to the agent screen within 2 seconds at the 95th percentile.
-- **NFR2** The system shall respond to BFF read requests within 500ms at the 95th percentile under normal load.
-- **NFR3** The BFF shall return the agent-workspace bootstrap aggregation (session + inbox first page + counters) within 1 second at the 95th percentile, so the delivered frontend can reach interactivity quickly. *(Frontend time-to-interactive itself is owned by the delivered FE — out of scope.)*
-- **NFR4** The system shall acknowledge partner webhooks within 200 milliseconds of receipt.
-- **NFR5** The system shall enforce rate limiting at the API Gateway (max 50 requests/second per IP or Channel ID) and auto-lock IPs exhibiting anomalous scanning behavior, protecting the public webhook ingress from DDoS and spam.
+### 1. Ingestion & Nhắn tin đa kênh
+- **FR1** [MVP] Hệ thống có thể nhận tin đến từ nhiều kênh (Zalo OA, app di động, Facebook, email) vào một luồng chuẩn hóa duy nhất.
+- **FR2** [MVP] Hệ thống có thể xác nhận từng tin đến ngay khi nhận, độc lập với xử lý xuôi dòng.
+- **FR3** [MVP] Hệ thống có thể phát hiện và loại bỏ tin đến trùng do retry mạng.
+- **FR4** [MVP] Hệ thống có thể chuẩn hóa tin từ các kênh khác nhau về một định dạng chung duy nhất.
+- **FR5** [MVP] Hệ thống có thể gửi tin đi tới khách hàng trên kênh của hội thoại gốc.
+- **FR6** [G2] Hệ thống có thể gửi thông báo broadcast chủ động tới nhóm khách hàng qua các kênh.
+- **FR7** [MVP] Hệ thống có thể lưu an toàn và tự động retry xử lý tương tác nếu tạo/routing ticket thất bại, đảm bảo không tương tác bị mất.
+- **FR8** [MVP] Hệ thống có thể trình bày tin hội thoại theo đúng thứ tự thời gian trong chuỗi.
 
-### Scalability
-- **NFR6** The system shall sustain at least 1,000 concurrent users across the ingress and real-time layers with zero dropped messages — during both meter-reading day and widespread-incident peaks.
-- **NFR7** The system shall handle 10× load growth with under 10% performance degradation via auto-scaling.
+### 2. Workspace agent hợp nhất
+- **FR9** [MVP] Agent có thể xem mọi hội thoại đến qua các kênh trong một inbox hợp nhất duy nhất.
+- **FR10** [MVP] Agent có thể mở một hội thoại và xem toàn bộ lịch sử tin và tệp đính kèm.
+- **FR11** [MVP] Agent có thể trả lời khách hàng trong chuỗi hội thoại.
+- **FR12** [MVP] Agent có thể thấy tin đến mới xuất hiện thời gian thực mà không cần refresh.
+- **FR13** [MVP] Agent có thể xem timeline tương tác gộp theo khách hàng qua các kênh và cuộc gọi.
+- **FR14** [MVP] Agent có thể truy cập bài knowledge-base nội bộ từ trong workspace.
+- **FR15** [MVP] Hệ thống có thể hiển thị tag phân loại ngữ cảnh (ví dụ: khẩn cấp, chủ đề) và transcript speech-to-text do trợ lý AI external cung cấp trực tiếp trên màn hội thoại.
+- **FR16** [MVP] Agent có thể đặt trạng thái khả dụng, và hệ thống có thể route/giao việc dựa trên khả dụng của agent.
+- **FR17** [MVP] Agent có thể tìm và lọc hội thoại trong inbox theo kênh, trạng thái, khách hàng và ưu tiên.
+- **FR18** [MVP] Agent có thể đóng hoặc lưu trữ hội thoại (khác với giải quyết ticket).
 
-### Reliability & Availability
-- **NFR8** The system shall maintain 99.9% uptime during business hours.
-- **NFR9** The system shall lose zero inbound messages even when the **Ticketing & SLA service** (or any sibling) is unavailable — via idempotency + DLQ + reconciliation; ticket-create requests queue and replay when the service recovers.
-- **NFR10** [TKT-SVC contract] The **Ticketing & SLA service** shall scan open tickets and emit an `SlaWarning` within 60 seconds of a breach threshold being crossed.
-- **NFR10b** [OMNI] The omnichannel service shall consume an `SlaWarning` and render it to the agent/supervisor screen within 2 seconds (p95) of receipt from the broker.
-- **NFR11** The system shall recover from a single-service failure within 5 minutes via container restart or failover.
-- **NFR12** The system shall guarantee RPO < 5 minutes and RTO < 1 hour for core databases via automated backup and Point-in-Time Recovery.
-- **NFR13** The system shall carry an end-to-end trace_id across 100% of interactions and emit structured logs for 100% of services.
+### 3. Ticket & SLA (một project, hai module bounded-context)
 
-### Security & Privacy
-- **NFR14** The system shall encrypt 100% of customer data in transit (TLS 1.2+) and at rest.
-- **NFR15** The system shall enforce role-based access on 100% of customer-data access and record an immutable audit trail for 100% of data-access and state-change events.
-- **NFR16** The system shall keep 100% of customer PII and consumption data within Vietnam (on-premise or domestic cloud).
-- **NFR17** The system shall retain call recordings for 90 days then auto-purge, and precede 100% of recorded calls with a consent notification.
-- **NFR18** The system shall retain all system and audit logs (login, employee PII access) immutably for at least 12 months (Cybersecurity Law 2018).
-- **NFR19** The system shall handle customer data access/erasure requests within 72 hours (Decree 13 guideline).
+> **Chú giải sở hữu:** **[OMNI]** = module Omnichannel (trong-project). **[TKT]** = module Ticketing & SLA (trong-project, cùng deploy, schema riêng). Cả hai build tại đây. Module Omnichannel tác động ticket bằng cách gọi command của module Ticketing (trong-process, qua command bus / `IEventBus`) và tiêu thụ event nó phát; module Ticketing sở hữu ticket store, engine SLA, breach worker — như một bounded-context riêng, chỉ không phải deployable riêng (v1.3).
 
-### Accessibility (backend obligation only)
-- **NFR20** UI-level WCAG 2.1 AA conformance is owned by the **delivered frontend** and is out of this backend scope. The backend shall serve Knowledge Base and self-tracking **content in a structured, semantic form** (headings, labels, alt-text fields, language tags) that does not preclude the frontend from meeting WCAG 2.1 AA.
+> **Ghi chú triển khai (kỷ luật đóng gói):** mọi thay đổi trạng thái Ticket phải đi qua **Command** của module Ticketing (create / advance / reassign / escalate / reopen / attach-parent) — **KHÔNG** bao giờ `UPDATE` trực tiếp bảng `tickets` bằng SQL. State machine + dual-clock SLA + invariants được đóng gói trong aggregate `Ticket` (xem story T-1), đảm bảo chỉ chuyển trạng thái hợp lệ và SLA được tính đúng.
 
-### Integration
-- **NFR21** The system shall integrate with sibling services (**Ticketing & SLA**, Customer 360, My Công ty, Business Dashboard, Field-team App) via versioned, contract-tested API + broker-event contracts, with consumer-driven contract tests on both sides of the Omnichannel ↔ Ticketing boundary.
-- **NFR22** The system shall consume external AI services via adapters with safe degradation (circuit-breaker), and integration failures shall never block inbound message handling.
-- **NFR23** The system shall fulfill customer callback requests within 60 seconds.
+**3a — Tương tác ticket phía Omnichannel [OMNI]**
+- **FR19** [MVP·OMNI] Agent có thể tạo ticket từ hội thoại; workspace gửi yêu cầu tạo (`TicketCreateRequested`) tới module Ticketing với ngữ cảnh hội thoại + khách hàng.
+- **FR20** [MVP·OMNI] Agent có thể đẩy ticket qua các giai đoạn workflow (received → in progress → waiting → resolved) từ UI workspace; thay đổi trạng thái proxy qua BFF tới module Ticketing.
+- **FR25** [MVP·OMNI] Hệ thống có thể tiêu thụ event `SlaWarning` (gần/tại vi phạm) do module Ticketing phát và hiển thị realtime tới supervisor và agent phụ trách (chớp đỏ Kanban + đếm ngược; chip SLA Inbox).
+- **FR60** [MVP·OMNI] Agent và supervisor có thể xem trạng thái hiện tại và đếm ngược SLA của ticket bên cạnh hội thoại và trên Kanban, dữ liệu lấy từ module Ticketing qua BFF.
+
+**3b — Năng lực module Ticketing [TKT] (trong-project)**
+- **FR21** [MVP·TKT] Module Ticketing gán định danh duy nhất và owner phụ trách cho mỗi ticket.
+- **FR22** [MVP·TKT] Module Ticketing phân loại ticket theo loại và mức ưu tiên.
+- **FR23** [MVP·TKT] Module Ticketing áp dụng chính sách SLA cho ticket theo loại và ưu tiên.
+- **FR24** [MVP·TKT] Module Ticketing liên tục giám sát ticket mở và phát hiện những ticket sắp vi phạm SLA (background breach worker), phát `SlaWarning`.
+- **FR26** [G2·TKT] Module Ticketing tự động escalate ticket vi phạm SLA lên cấp thẩm quyền cao hơn.
+- **FR27** [G2·TKT] Module Ticketing tự động mở lại ticket khi nhận event `CsatSubmitted` báo đánh giá dưới ngưỡng.
+
+### 4. Định danh khách hàng & ngữ cảnh 360°
+- **FR28** [MVP] Hệ thống có thể định danh khách hàng từ channel identifier (ví dụ: Zalo ID, SĐT) tới profile khách hàng hợp nhất.
+- **FR29** [MVP] Agent có thể xem profile 360° khách hàng (hợp đồng, khoản phải thu, lịch sử tiêu thụ, địa chỉ) bên cạnh hội thoại.
+- **FR30** [MVP] Hệ thống có thể xử lý khách chưa nhận diện qua luồng định danh fallback mà không mất tin đến.
+- **FR31** [MVP] Agent có thể tạo hoặc liên kết profile khách hàng tạm khi định danh không được.
+
+### 5. Tổng đài & Telephony
+- **FR32** [MVP] Hệ thống có thể nhận cuộc gọi đến và route tới agent khả dụng.
+- **FR33** [MVP] Hệ thống có thể trình bày profile khách hàng của người gọi cho agent trước khi cuộc gọi được bắt.
+- **FR34** [G2] Hệ thống có thể ghi âm cuộc gọi và giữ ghi âm trong một khoảng định nghĩa.
+- **FR35** [MVP] Agent có thể truy cập tham chiếu ghi âm của cuộc gọi quá khứ từ lịch sử tương tác.
+- **FR36** [G2] Hệ thống có thể trình bày menu giọng nói (IVR) tương tác và route cuộc gọi theo lựa chọn của người gọi.
+- **FR37** [G2] Hệ thống có thể route cuộc gọi theo địa lý người gọi và kỹ năng agent.
+- **FR38** [G2] Khách hàng có thể yêu cầu callback từ app và nhận trong thời gian mục tiêu.
+
+### 6. Knowledge Base & Tự phục vụ
+- **FR39** [MVP] Agent có thể tìm bài knowledge-base nội bộ theo từ khóa, kể cả dấu tiếng Việt và từ đồng nghĩa.
+- **FR40** [G2] Biên tập viên nội dung có thể quản lý bài qua workflow tác giả → biên tập → phê duyệt → xuất bản có versioning.
+- **FR41** [G2] Khách hàng có thể tự phục vụ câu trả lời từ knowledge base mà không liên hệ agent.
+
+### 7. Đo lường trải nghiệm khách hàng
+- **FR42** [MVP] Hệ thống có thể yêu cầu đánh giá hài lòng (CSAT) từ khách hàng sau khi ticket đóng (trigger bởi event `TicketClosed` từ module Ticketing) và phát event `CsatSubmitted` (module Ticketing tiêu thụ để auto-reopen — xem FR27).
+- **FR43** [G2] Hệ thống có thể thu đánh giá hài lòng qua nhiều kênh.
+- **FR44** [G2] Hệ thống có thể đo Net Promoter Score (NPS) qua khảo sát định kỳ.
+- **FR45** [G2] Hệ thống có thể đo Customer Effort Score (CES) cho các quy trình chính.
+- **FR46** [G2] Hệ thống có thể trigger liên hệ theo dõi khi khách đánh giá dưới ngưỡng (closing the loop).
+- **FR47** [G2·OMNI] Khách hàng có thể theo dõi trạng thái ticket của mình qua mã tra cứu (App My Công ty / web khách hàng), trạng thái ticket đọc từ module Ticketing qua BFF.
+- **FR48** [G2] Hệ thống có thể đo và báo cáo tỷ lệ deflection (yêu cầu giải quyết qua tự phục vụ knowledge-base không cần ticket/agent).
+
+### 8. Triage sự cố diện rộng
+> **Phân chia sở hữu:** *phát hiện / phân cụm* là triage trước-ticket build tại đây **[OMNI]**; *Parent Incident như nhóm child ticket* thuộc module **[TKT]** (trong-project). Thao tác merge/split của agent là action UI OMNI gọi module Ticketing khi liên quan ticket.
+- **FR49** [G2·OMNI] Module Omnichannel có thể phát hiện các cụm báo cáo gần-đồng-thời từ một khu vực địa lý (bán kính địa lý + cửa thời gian + độ tương tự loại sự cố) và đề xuất grouping parent-incident — triage trước-ticket; việc grouping ticket thật do module Ticketing thực thi (xem FR61).
+- **FR50** [G2·OMNI] Agent có thể xem mọi báo cáo/khách bị ảnh hưởng attach vào parent incident trong workspace (UI; danh sách tổng hợp qua BFF từ báo cáo omnichannel + grouping của module Ticketing).
+- **FR51** [G2·OMNI] Agent có thể tách một báo cáo gộp sai khỏi parent incident từ workspace; khi báo cáo có ticket liên quan, regrouping proxy qua BFF tới module Ticketing.
+- **FR52** [G2·OMNI] Hệ thống có thể gắn và phân giải vị trí địa lý cho báo cáo sự cố lúc intake (GIS pin); geo cấp ticket do module Ticketing lưu.
+- **FR61** [G2·TKT] Module Ticketing duy trì Parent Incident như một nhóm child ticket — attach, detach, split, và resolve child ticket dưới một parent duy nhất.
+- **FR62** [MVP·OMNI] Hệ thống có thể dispatch Work Order tới Field-team App khi sự cố hiện trường được xác nhận — gồm loại sự cố, ưu tiên, vị trí địa lý, và tham chiếu ảnh — để đội hiện trường hành động. *(MVP — cần cho demo J1 và màn Sự cố hiện trường; Field-team App là port tiêu thụ.)*
+
+### 9. Dashboard vận hành & Giám sát
+- **FR53** [MVP·OMNI] Supervisor có thể xem KPI vận hành realtime trên dashboard (Điều hành CSKH), tổng hợp BFF từ khối lượng tương tác + cơ cấu kênh (omnichannel), tuân thủ SLA + số ticket mở (module Ticketing), và CSAT/NPS (thu omnichannel).
+- **FR54** [MVP·OMNI] Supervisor có thể gán lại ticket giữa các agent từ workspace; gán lại proxy qua BFF tới module Ticketing.
+
+### 10. Bảo mật, truy cập & Kiểm toán
+- **FR55** [MVP] Hệ thống có thể xác thực agent và thực thi phân quyền theo vai trò (agent, supervisor, admin).
+- **FR56** [MVP] Hệ thống có thể ghi audit trail về ai làm gì và khi nào qua mọi tương tác.
+- **FR57** [MVP] Hệ thống có thể truy vết tương tác khách hàng end-to-end qua mọi bước xử lý.
+- **FR58** [MVP] Hệ thống có thể hạn chế truy cập dữ liệu cá nhân khách hàng theo vai trò.
+- **FR59** [MVP] Hệ thống có thể thông báo cho người gọi rằng cuộc gọi có thể được ghi âm trước khi nối tới agent.
+
+---
+
+## 10. Yêu cầu phi chức năng (Non-Functional Requirements)
+
+> **Hệ thống thực hiện TỐT NHƯ THẾ NÀO** — mỗi NFR đo được và kiểm tra được. Từ ngữ chất lượng mơ hồ trong FR ("real time", "liên tục", "thời gian mục tiêu") được giải thành ngưỡng cụ thể ở đây. (24 NFR qua 6 nhóm; NFR10 tách thành phần phát [TKT] (module Ticketing trong-project) và phần render [OMNI].)
+
+### Hiệu năng
+- **NFR1** Hệ thống sẽ push tin đến mới tới màn agent trong 2 giây ở phân vị 95.
+- **NFR2** Hệ thống sẽ phản hồi yêu cầu đọc BFF trong 500ms ở phân vị 95 dưới tải thường.
+- **NFR3** BFF sẽ trả về tổng hợp bootstrap workspace agent (session + trang 1 inbox + counter) trong 1 giây ở phân vị 95, để frontend đã bàn giao đạt interactivity nhanh. *(Time-to-interactive frontend thuộc về FE đã bàn giao — ngoài phạm vi.)*
+- **NFR4** Hệ thống sẽ xác nhận webhook đối tác trong 200 mili-giây kể từ khi nhận.
+- **NFR5** Hệ thống sẽ thực thi rate limiting ở API Gateway (tối đa 50 yêu cầu/giây mỗi IP hoặc Channel ID) và tự khóa IP thể hiện hành vi quét bất thường, bảo vệ ingress webhook công cộng khỏi DDoS và spam.
+
+### Khả năng mở rộng
+- **NFR6** Hệ thống sẽ duy trì tối thiểu 1.000 người dùng đồng thời qua lớp ingress và realtime, không rớt tin — trong cả ngày chỉ số nước và peak sự cố diện rộng.
+- **NFR7** Hệ thống sẽ xử lý tăng trưởng tải 10× với dưới 10% suy giảm hiệu năng qua auto-scaling.
+
+### Độ tin cậy & Khả dụng
+- **NFR8** Hệ thống sẽ duy trì uptime 99.9% trong giờ hành chính.
+- **NFR9** Hệ thống sẽ không mất tin đến nào khi crash process hoặc lỗi thoáng qua — qua idempotency + outbox giao dịch + reconciliation; yêu cầu tạo-ticket được lưu trong outbox và replay khi restart. *(v1.3: với Ticketing cùng deploy trong-process, nó không thể "không khả dụng" độc lập — đảm bảo nay là phục hồi crash thay vì chịu sibling-down.)*
+- **NFR10** [TKT] **Module Ticketing** sẽ quét ticket mở và phát `SlaWarning` trong 60 giây kể từ khi ngưỡng vi phạm bị vượt.
+- **NFR10b** [OMNI] Module Omnichannel sẽ tiêu thụ `SlaWarning` và render tới màn agent/supervisor trong 2 giây (p95) kể từ khi nhận từ event bus.
+- **NFR11** Hệ thống sẽ phục hồi từ lỗi single-module trong 5 phút qua restart container hoặc failover.
+- **NFR12** Hệ thống sẽ đảm bảo RPO < 5 phút và RTO < 1 giờ cho CSDL lõi qua backup tự động và Point-in-Time Recovery.
+- **NFR13** Hệ thống sẽ mang trace_id end-to-end qua 100% tương tác và phát structured log cho 100% module.
+
+### Bảo mật & Quyền riêng tư
+- **NFR14** Hệ thống sẽ mã hóa 100% dữ liệu khách hàng in transit (TLS 1.2+) và at rest.
+- **NFR15** Hệ thống sẽ thực thi truy cập theo vai trò trên 100% truy cập dữ liệu khách hàng và ghi audit trail bất biến cho 100% sự kiện truy cập-dữ-liệu và đổi-trạng-thái.
+- **NFR16** Hệ thống sẽ giữ 100% PII khách hàng và dữ liệu tiêu thụ trong Việt Nam (on-premise hoặc cloud trong nước).
+- **NFR17** Hệ thống sẽ giữ ghi âm cuộc gọi 90 ngày rồi tự xóa, và đi trước 100% cuộc gọi ghi âm bằng thông báo đồng thuận.
+- **NFR18** Hệ thống sẽ giữ mọi log hệ thống và audit (login, truy cập PII nhân viên) bất biến ít nhất 12 tháng (Luật An ninh mạng 2018).
+- **NFR19** Hệ thống sẽ xử lý yêu cầu truy cập/xóa dữ liệu khách hàng trong 72 giờ (hướng dẫn Nghị định 13).
+
+### Khả năng tiếp cận (chỉ nghĩa vụ backend)
+- **NFR20** Tuân thủ WCAG 2.1 AA cấp UI thuộc về **frontend đã bàn giao** và ngoài phạm vi backend này. Backend sẽ serve nội dung Knowledge Base và tự-theo-dõi **dạng cấu trúc, ngữ nghĩa** (tiêu đề, nhãn, trường alt-text, language tag) không cản trở frontend đạt WCAG 2.1 AA.
+
+### Tích hợp
+- **NFR21** Hệ thống sẽ tích hợp với port external (Customer 360, My Công ty, Business Dashboard, Field-team App) qua contract API có version và contract-test. Ranh giới module trong-project Omnichannel ↔ Ticketing được che bởi contract test cấp module (command/event có version); event chạy qua port `IEventBus` để broker thật có thể thêm sau mà không đổi contract.
+- **NFR22** Hệ thống sẽ tiêu thụ dịch vụ AI external qua adapter với safe degradation (circuit-breaker), và lỗi tích hợp không bao giờ chặn xử lý tin đến.
+- **NFR23** Hệ thống sẽ hoàn tất yêu cầu callback khách hàng trong 60 giây.
+  

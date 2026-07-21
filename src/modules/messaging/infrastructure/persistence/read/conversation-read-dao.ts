@@ -142,10 +142,18 @@ export class ConversationReadDao extends BaseReadDao {
       return { items: [], total };
     }
 
-    // Batch-fetch ONLY the latest message per conversation (DISTINCT ON — avoids loading full history)
+    // Batch-fetch ONLY the latest message per conversation (DISTINCT ON — avoids loading full history).
+    // Alias snake_case DB columns → camelCase: db.execute(raw) KHÔNG qua Drizzle ORM mapping,
+    // nên msg.conversationId/createdAt trước đây undefined → lastMessage null → preview rỗng.
     const convIds = conversations.map((c) => c.id);
     const lastMessages = await this.db.execute(
-      sql`SELECT DISTINCT ON (${messagesTable.conversationId}) *
+      sql`SELECT DISTINCT ON (${messagesTable.conversationId})
+            *,
+            ${messagesTable.conversationId} AS "conversationId",
+            ${messagesTable.senderType} AS "senderType",
+            ${messagesTable.externalId} AS "externalId",
+            ${messagesTable.createdAt} AS "createdAt",
+            ${messagesTable.updatedAt} AS "updatedAt"
           FROM ${messagesTable}
           WHERE ${messagesTable.conversationId} IN (${sql.join(
             convIds.map((id) => sql`${id}`),

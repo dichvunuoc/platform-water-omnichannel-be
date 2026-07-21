@@ -4,7 +4,7 @@ Status: ready-for-dev
 
 ## Story
 
-As a Ticketing service,
+As the Ticketing module (in-project, v1.3),
 I want to track two SLA countdowns (acknowledge + resolve) per ticket with P0/P1=24/7 and P2/P3=business-hours,
 so that approaching breaches trigger SlaWarning and past-deadline triggers SlaBreached (FR24).
 
@@ -73,5 +73,5 @@ async checkSla() {
 ```
 
 ## References
-- **PRD:** §2.1 SLA table, FR-T3 — [prd-ticketing-sla-service.md](../../_bmad-output/planning-artifacts/prd-ticketing-sla-service.md)
+- **PRD:** FR23, FR24 + NFR10 — [prd.md §9.3 / §10](../planning-artifacts/prd.md) (v1.3)
 - **Dependencies:** Epic T-1 (tickets exist)

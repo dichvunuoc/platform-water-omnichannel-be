@@ -13,6 +13,8 @@ import {
 import { Logger } from 'nestjs-pino';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { IoAdapter } from '@nestjs/platform-socket.io';
+import fastifyCors from '@fastify/cors';
 import {
   GlobalExceptionFilter,
   ResponseInterceptor,
@@ -34,6 +36,12 @@ async function bootstrap() {
   // Enable graceful shutdown hooks
   app.enableShutdownHooks();
 
+  // CORS cho FE dev (localhost:4322) — Phase 1 E2E inbox đa kênh.
+  await app.register(fastifyCors, {
+    origin: ['http://localhost:4322'],
+    credentials: true,
+  });
+
   // Global Validation Pipe - validates and transforms DTOs
   app.useGlobalPipes(GlobalValidationPipe);
 
@@ -42,6 +50,9 @@ async function bootstrap() {
 
   // Global Response Interceptor - standardizes all responses
   app.useGlobalInterceptors(new ResponseInterceptor());
+
+  // WebSocket adapter (socket.io) — cho MessagingGateway realtime (namespace /agent)
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   // Swagger API Documentation
   const swaggerConfig = new DocumentBuilder()

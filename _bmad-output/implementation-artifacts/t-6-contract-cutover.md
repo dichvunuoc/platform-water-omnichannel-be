@@ -1,6 +1,8 @@
 # Story T-6: Contract Integration + Cutover
 
-Status: ready-for-dev
+Status: OBSOLETE (v1.3) — superseded
+
+> **(v1.3) Obsolete.** This story specified a **separate-service** cutover: `src/apps/ticketing/main.ts` on port 3001 + HTTP calls from the BFF. PRD v1.3 builds Ticketing **in-project** instead (modular monolith, in-process `IEventBus`), so there is no separate bootstrap and no HTTP cutover. The contract (commands/events) and the `IEventBus` port from this story are **preserved** as the in-module contract (Architecture §5). If Ticketing is ever extracted to its own deployable, this story's structure can be revived behind the same contract (ADR-1 extraction path).
 
 ## Story
 

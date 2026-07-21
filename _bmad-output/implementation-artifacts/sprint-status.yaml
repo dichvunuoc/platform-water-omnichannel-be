@@ -17,11 +17,12 @@
 # Mục tiêu: demo end-to-end vào FE đã giao, dùng mock + Ticketing stub.
 # Không cần DB thật chạy (unit test đủ). Đây là "bản lề" đồ án.
 #
-#  TICKETING STUB (prerequisite):
-#    Stub giả lập Ticketing service — nhận 3 command (TicketCreate,
-#    StateChange, Reassign) + phát 4 event (SlaWarning, SlaBreached,
-#    TicketClosed, StateChanged). Không có DB thật, trả data tĩnh.
-#    → Enables: Epic 3 (SLA render), 6 (CSAT trigger), 8 (dashboard)
+#  TICKETING MODULE (wave-1, in-project — v1.3):
+#    Module Ticketing thật (src/modules/ticketing) — Ticket aggregate + SLA
+#    dual-clock + breach worker + escalation + reopen + parent-incident.
+#    Thay thế stub trong-bộ-nhớ. Stub (ticketing-stub) giờ chỉ là toggle
+#    fallback cho local-dev/demo.
+#    → Enables: Epic 3 (SLA render), 6 (CSAT trigger), 8 (dashboard), 9 (parent-incident)
 #
 #  EPIC 1 (✅ DONE — 7 stories, 65 tests):
 #    1-1: Nhận webhook Zalo/App/FB/Email → 200-OK ≤200ms + idempotency
@@ -45,11 +46,11 @@
 #    2-2: Customer 360 card — hợp đồng, công nợ, tiêu thụ nước (FR29)
 #         → Agent thấy ngữ cảnh KH ngay khi mở conversation (bên phải)
 #
-#  EPIC 3 (needs Ticketing stub):
-#    3-1: BFF publish TicketCreateRequested → broker (FR19)
-#         → OmniCare CHỈ gửi yêu cầu + link conv↔ticketId khi nhận reply.
+#  EPIC 3 (uses Ticketing module):
+#    3-1: BFF gọi TicketCreateRequested → module Ticketing (FR19)
+#         → OmniCare gửi yêu cầu + link conv↔ticketId khi nhận reply.
 #           Việc TẠO ticket thật (FR21-23: assign ID, classify, SLA policy)
-#           = Ticketing & SLA service [TKT-SVC], KHÔNG thuộc scope này.
+#           = module Ticketing [TKT] (trong-project từ v1.3).
 #    3-2: Kanban + SLA countdown + advance stage (FR20/FR60)
 #         → Agent/supervisor thấy ticket moving + SLA đang đếm ngược
 #    3-3: Render SlaWarning → Kanban chớp đỏ + countdown (FR25)
@@ -59,7 +60,7 @@
 #    7-1: Dispatch Work Order → Field-team App (FR62)
 #         → "Chuyển đội hiện trường" — J1 demo chốt: sự cố → ticket → dispatch
 #
-#  EPIC 8 (needs Ticketing stub):
+#  EPIC 8 (uses Ticketing module):
 #    8-1: Dashboard KPIs (volume + SLA + CSAT) BFF-aggregated (FR53)
 #         → Supervisor thấy số liệu real-time trên màn "Điều hành CSKH"
 #    8-2: Reassign ticket → TicketReassignRequested (FR54)
@@ -75,19 +76,17 @@
 #    5-1: KB Vietnamese search (FR14/39)
 #         → Agent gõ "/" → gợi ý câu trả lời mẫu (FAQ) bằng tiếng Việt
 #
-#  EPIC 6 MVP slice (needs Ticketing stub):
+#  EPIC 6 MVP slice (uses Ticketing module):
 #    6-1: CSAT survey khi TicketClosed (FR42)
 #         → Đóng ticket → gửi khảo sát CSAT → phát CsatSubmitted
 #
-# ── WAVE 2 — REAL TICKING SERVICE (separate PRD) ─────────────────
-# Mục tiêu: thay Ticketing stub bằng service thật (own DB + SLA worker).
-# Cutover = config swap (zero rewrite phía Omnichannel — contract-first).
-# Không track ở đây (sprint riêng của Ticketing service).
-#
-#  wave-2-ticketing-cutover:
-#    Stub → real Ticketing service. Chạy lại contract test.
-#    Unlocks: FR61 (Parent-Incident grouping), FR26/27 (escalation,
-#    auto-reopen), real SLA engine.
+# ── TICKETING = IN-PROJECT MODULE (v1.3) ───────────────────────────
+# v1.3 gộp Ticketing vào project: module thật (src/modules/ticketing) thay
+# stub ngay từ wave-1. Không còn wave-2 cutover, không PRD/service riêng.
+# Contract (commands/events) + IEventBus port giữ nguyên → nếu sau này cần
+# tách ra microservice thì chỉ là config/port swap (zero rewrite phía OMNI).
+# Unlocks ngay: FR61 (Parent-Incident), FR26/27 (escalation, auto-reopen),
+# real SLA engine.
 #
 # ── WAVE 3 — G2 DEPTH (deferred by priority) ────────────────────
 # Mục tiêu: mở rộng tính năng sau MVP. KHÔNG phụ thuộc wave-2
@@ -108,7 +107,7 @@
 #    6-4: Customer self-track ticket (FR47) — reads Ticketing state
 #    6-5: Deflection measurement ≥30% (FR48)
 #
-#  Epic 9 (HARD BLOCKED — needs wave-2 real Ticketing FR61):
+#  Epic 9 (unblocked v1.3 — Ticketing module in-project provides FR61):
 #    9-1: Outage clustering → Parent-Incident (FR49)
 #    9-2: Affected-report view (FR50)
 #    9-3: Split mis-merged report (FR51)
@@ -140,12 +139,13 @@ development_status:
   2-2-customer-360-card-conversation-view: done
   epic-2-retrospective: optional
 
-  # ── Wave-1 Prerequisite: Ticketing Stub ──
-  ticketing-stub: backlog   # Contract-conformant stub: accept TicketCreateRequested/TicketStateChanged/TicketReassignRequested; emit SlaWarning/SlaBreached/TicketClosed/TicketStateChanged. Needed before Epics 3, 6, 8.
+  # ── Wave-1: Ticketing Module (in-project, v1.3) ──
+  ticketing-module: backlog   # Real Ticketing & SLA module (src/modules/ticketing): Ticket aggregate + dual-clock SLA + breach worker + escalation + reopen + parent-incident (FR61). Replaces the stub; enables Epics 3, 6, 8, 9.
+  ticketing-stub: optional    # (v1.3) In-memory fallback toggle only — superseded by ticketing-module; retained for local-dev/demo convenience.
 
   # ── Epic 3: Ticket Interaction & SLA Surfacing (needs Ticketing stub) ──
   epic-3: done   # 3 stories · 15 Epic-3 tests (80 total) · J3 demo flow verified
-  3-1-request-ticket-create-link-conversation: done   # FR19 · BFF calls stub + links conv↔ticketId
+  3-1-request-ticket-create-link-conversation: done   # FR19 · BFF calls Ticketing module + links conv↔ticketId
   3-2-ticket-state-sla-countdown-view-stage-advance: done   # FR20/FR60 · Kanban view + SLA enrichment + advance + reassign
   3-3-consume-render-slawarning: done   # FR25 · SlaWarning subscription in gateway → WS sla.warning push
   epic-3-retrospective: optional
@@ -155,7 +155,7 @@ development_status:
   7-1-dispatch-work-order-field-team-app: done   # FR62 · POST /bff/conversations/:id/dispatch-work-order
   epic-7-retrospective: optional
 
-  # ── Epic 8: Supervisor Operations Dashboard (needs Ticketing stub) ──
+  # ── Epic 8: Supervisor Operations Dashboard (uses Ticketing module) ──
   epic-8: done   # 2 stories · dashboard KPIs (FR53) + reassign (FR54)
   8-1-operations-dashboard-kpis: done   # FR53 · GET /bff/operations/kpis (volume + SLA + channelMix + CSAT)
   8-2-reassign-ticket: done   # FR54 · POST /bff/tickets/:ticketId/reassign
@@ -172,15 +172,15 @@ development_status:
   5-1-kb-vietnamese-search: done   # FR14/FR39 · GET /bff/kb/search?q=
   epic-5-retrospective: optional
 
-  # ── Epic 6: Customer Feedback & Measurement (MVP slice, needs Ticketing stub) ──
+  # ── Epic 6: Customer Feedback & Measurement (MVP slice, uses Ticketing module) ──
   epic-6: done   # 1 story · CSAT on ticket close (MVP slice)
   6-1-csat-on-ticket-close: done   # FR42 · POST /bff/csat + autoReopen trigger if <3
   epic-6-retrospective: optional
 
-  # ── Wave-3 G2 (deferred by PRIORITY — not all blocked on wave-2) ──
+  # ── Wave-3 G2 (deferred by PRIORITY) ──
   # Epic 4-G2 + 5-G2: NO Ticketing dependency — deferred by priority only (can pull forward).
-  # Epic 6-G2 (6-2/6-3): soft dep on Ticketing events (CSAT trigger) — works with stub.
-  # Epic 9 (9-1→9-4): HARD blocked on wave-2 real Ticketing FR61 (parent-grouping).
+  # Epic 6-G2 (6-2/6-3): soft dep on Ticketing events (CSAT trigger) — uses Ticketing module.
+  # Epic 9 (9-1→9-4): unblocked v1.3 — Ticketing module in-project provides FR61 (parent-grouping).
 
   # ── Epic 4 G2 (no Ticketing dep — pull-forward candidate) ──
   4-3-call-recording-capture-retention: backlog   # FR34 · recording capture + configurable retention
@@ -191,22 +191,22 @@ development_status:
   5-2-kb-cms-authoring-workflow: backlog   # FR40 · author→edit→approve→publish + versioning
   5-3-customer-self-serve-kb: backlog   # FR41 · public KB search (customer scope)
 
-  # ── Epic 6 G2 (soft dep — works with Ticketing stub via TicketClosed event) ──
+  # ── Epic 6 G2 (soft dep — uses Ticketing module via TicketClosed event) ──
   6-2-multichannel-csat-nps-ces: backlog   # FR43/FR44/FR45 · multi-channel survey + NPS scheduler + CES
   6-3-closing-loop-low-scores: backlog   # FR46 · low-score → 24h callback follow-up
-  6-4-customer-self-track-ticket: backlog   # FR47 · soft dep: reads ticket state from Ticketing (stub ok)
+  6-4-customer-self-track-ticket: backlog   # FR47 · reads ticket state from Ticketing module
   6-5-deflection-measurement: backlog   # FR48 · KB/chatbot deflection metric
 
-  # ── Epic 9: Mass-Outage Triage (HARD BLOCKED on wave-2 real Ticketing FR61) ──
+  # ── Epic 9: Mass-Outage Triage (unblocked v1.3 — Ticketing module in-project provides FR61) ──
   epic-9: backlog
-  9-1-outage-detection-clustering: backlog   # FR49/NFR6 · geo+time+type clustering → parent proposal (needs FR61)
-  9-2-affected-report-view-parent: backlog   # FR50 · BFF join for affected list (needs FR61)
-  9-3-split-mis-merged-report: backlog   # FR51 · split action → Ticketing regroup (needs FR61)
+  9-1-outage-detection-clustering: backlog   # FR49/NFR6 · geo+time+type clustering → parent proposal
+  9-2-affected-report-view-parent: backlog   # FR50 · BFF join for affected list
+  9-3-split-mis-merged-report: backlog   # FR51 · split action → Ticketing module regroup
   9-4-gis-pin-at-intake: backlog   # FR52 · geo resolution + GIS pin data
   epic-9-retrospective: optional
 
   # ── Epic 4/5/6 status note: "partial" — MVP slice (wave-1) + G2 slice (wave-3) ──
   # Mark epic-4/5/6 as done ONLY when BOTH slices are complete.
 
-  # ── Wave-2 Cutover (stub → real Ticketing service) ──
-  wave-2-ticketing-cutover: backlog   # Config swap stub→real + rerun contract tests (Arch §5/§10); zero omnichannel-side rewrite
+  # ── Ticketing in-project (v1.3) — no separate-service cutover ──
+  wave-2-ticketing-cutover: removed-v1.3   # (v1.3) Obsolete — Ticketing built in-project from wave-1. Re-add only if Ticketing is extracted to its own deployable (Arch §5/§10, ADR-1 extraction path).
