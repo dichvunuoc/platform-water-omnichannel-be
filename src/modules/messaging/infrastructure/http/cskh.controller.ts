@@ -10,7 +10,14 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Inject,
+  Logger,
 } from '@nestjs/common';
+import { NOTIFICATION_PORT_TOKEN } from '../../constants/notification-tokens';
+import type {
+  INotificationPort,
+  NotificationSendRequest,
+} from '../../domain/ports/notification.port';
 import {
   cskhCatalogs,
   cskhTickets,
@@ -41,6 +48,21 @@ import {
  */
 @Controller('api/cskh')
 export class CskhController {
+  private readonly logger = new Logger(CskhController.name);
+
+  constructor(
+    @Inject(NOTIFICATION_PORT_TOKEN) private readonly notifications: INotificationPort,
+  ) {}
+
+  /** Fire-and-forget notification — không block nghiệp vụ khi noti fail. */
+  private fireNoti(req: NotificationSendRequest): void {
+    this.notifications
+      .send(req)
+      .catch((e) =>
+        this.logger.warn(`noti templateKey=${req.templateKey} failed: ${e.message}`),
+      );
+  }
+
   // ── Health (Phase 0 contract verify) ────────────────────────────────────────
   @Get('health')
   @HttpCode(HttpStatus.OK)
@@ -137,6 +159,13 @@ export class CskhController {
     if (!t) throw new NotFoundException('Không tìm thấy phiếu.');
     t.status = 'resolved';
     t.slaLeftH = null;
+    // Notification: gửi CSAT request cho khách (template cskh.csat_request)
+    this.fireNoti({
+      templateKey: 'cskh.csat_request',
+      recipients: [{ phone: t.phone }],
+      data: { ticketCode: t.code, customerName: t.name },
+      idempotencyKey: `cskh.csat:${t.id}`,
+    });
     return t;
   }
 
@@ -179,6 +208,13 @@ export class CskhController {
       throw new ConflictException({ code: 'INVALID_TRANSITION', message: 'Trạng thái không hợp lệ để điều phối.' });
     }
     inc.status = 'dispatched';
+    // Notification: báo khách đội hiện trường đang ra (template cskh.incident.dispatched)
+    this.fireNoti({
+      templateKey: 'cskh.incident.dispatched',
+      recipients: [{ phone: inc.phone }],
+      data: { incidentCode: inc.code, address: inc.addr, crewEta: 45 },
+      idempotencyKey: `cskh.incident.dispatch:${inc.id}`,
+    });
     return inc;
   }
 
@@ -238,6 +274,14 @@ export class CskhController {
     const bc = cskhBroadcasts.find((b) => b.id === id);
     if (!bc) throw new NotFoundException('Không tìm thấy broadcast.');
     bc.status = 'sending';
+    // Notification: gửi thông báo hàng loạt (template cskh.broadcast).
+    // Demo 1 recipient; real: audience resolver theo area → many recipients.
+    this.fireNoti({
+      templateKey: 'cskh.broadcast',
+      recipients: [{ phone: '0900000000' }],
+      data: { title: bc.title, area: bc.area, window: bc.window, audience: bc.audience },
+      idempotencyKey: `cskh.broadcast:${bc.id}`,
+    });
     return bc;
   }
 }

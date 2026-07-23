@@ -294,6 +294,31 @@ export class ConversationReadDao extends BaseReadDao {
   }
 
   /**
+   * Active conversation thread by (channel, customerChannelId) — for partner-app
+   * reads (e.g. the app-tu-phuc-vu customer chat). Looks up the active conversation
+   * by the composite key (channel + customer_channel_id + status=ACTIVE) then reuses
+   * {@link findById} so the thread + cache logic is shared. Returns null if none.
+   */
+  async findActiveThreadByCustomerChannel(
+    channel: ChannelEnum,
+    customerChannelId: string,
+  ): Promise<ConversationDetail | null> {
+    const rows = await this.db
+      .select({ id: conversationsTable.id })
+      .from(conversationsTable)
+      .where(
+        and(
+          eq(conversationsTable.channel, channel),
+          eq(conversationsTable.customerChannelId, customerChannelId),
+          eq(conversationsTable.status, 'ACTIVE'),
+        ),
+      )
+      .limit(1);
+    if (rows.length === 0) return null;
+    return this.findById(rows[0].id);
+  }
+
+  /**
    * Count unread/active conversations (for bootstrap).
    */
   async countActive(filter?: InboxFilter): Promise<number> {

@@ -1,10 +1,11 @@
-import { Body, Controller, HttpCode, HttpStatus, Inject, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Post, Query } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import type { ICommandBus } from 'src/libs/core/application';
 import { COMMAND_BUS_TOKEN } from 'src/libs/core/constants';
 import { ChannelEnum } from '../../domain';
 import { ReceiveInboundMessageCommand } from '../../application/commands';
 import { InboundMessageDto } from '../../application/dtos';
+import { ConversationReadDao } from '../persistence/read/conversation-read-dao';
 
 /**
  * Inbound Webhook Controller
@@ -25,6 +26,7 @@ export class InboundWebhookController {
   constructor(
     @Inject(COMMAND_BUS_TOKEN)
     private readonly commandBus: ICommandBus,
+    private readonly readDao: ConversationReadDao,
   ) {}
 
   /**
@@ -48,6 +50,32 @@ export class InboundWebhookController {
       ),
     );
     return { ok: true, ...result };
+  }
+
+  /**
+   * App (customer) reads its active conversation thread — used by app-tu-phuc-vu
+   * chat (BFF GET /call-center/messages proxies here). Keyed by userId
+   * (= customer_channel_id, channel APP). Returns {conversationId, messages};
+   * empty messages if no conversation yet. Agent replies (OUTBOUND/AGENT) are in
+   * the same thread so the app sees both sides.
+   */
+  @Get('app/conversation')
+  async getAppConversation(@Query('userId') userId: string) {
+    const detail = await this.readDao.findActiveThreadByCustomerChannel(
+      ChannelEnum.APP,
+      userId,
+    );
+    if (!detail) return { conversationId: null, messages: [] };
+    return {
+      conversationId: detail.id,
+      messages: detail.messages.map((m) => ({
+        id: m.id,
+        content: m.content,
+        direction: m.direction,
+        senderType: m.senderType,
+        createdAt: m.createdAt,
+      })),
+    };
   }
 
   /**

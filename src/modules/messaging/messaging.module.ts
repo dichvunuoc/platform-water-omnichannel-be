@@ -14,10 +14,16 @@ import { PresenceService } from './application/presence.service';
 import { AiInsightService } from './application/ai-insight.service';
 import { MockAiVisionAdapter, MockAudioAiAdapter, MockNlpAdapter } from './infrastructure/adapters/mock/mock-ai-adapters';
 import { MockCustomer360Adapter } from './infrastructure/adapters/mock/mock-customer-360.adapter';
+import { Customer360BffAdapter } from './infrastructure/adapters/http/customer-360-bff.adapter';
 import { MockFieldTeamAdapter } from './infrastructure/adapters/mock/mock-field-team.adapter';
 import { TicketViewService } from './application/ticket-view.service';
 import { DispatchWorkOrderHandler } from './application/commands/handlers/dispatch-work-order.handler';
 import { FIELD_TEAM_PORT_TOKEN } from './constants/field-team-tokens';
+import { NOTIFICATION_PORT_TOKEN } from './constants/notification-tokens';
+import { MockNotificationAdapter } from './infrastructure/adapters/mock/mock-notification.adapter';
+import { NotificationGrpcAdapter } from './infrastructure/adapters/grpc/notification-grpc.adapter';
+import { KeycloakSaTokenService } from './infrastructure/adapters/grpc/keycloak-sa-token.service';
+import { ConfigService } from '@nestjs/config';
 import {
   CONVERSATION_REPOSITORY_TOKEN,
   CONVERSATION_READ_DAO_TOKEN,
@@ -74,9 +80,19 @@ import { ChannelEnum } from './domain';
     MockAudioAiAdapter,
     MockNlpAdapter,
 
-    // Customer 360 (FR28-31 — mock adapter wave-1; real Customer 360 wave-3)
-    { provide: CUSTOMER_360_PORT_TOKEN, useExisting: MockCustomer360Adapter },
+    // Customer 360 (FR28-31) — Mock default; Customer360BffAdapter khi CSKH_BFF_URL set
+    // (gọi qua .NET water-business-cskh-bff, không qua customer service trực tiếp)
     MockCustomer360Adapter,
+    Customer360BffAdapter,
+    {
+      provide: CUSTOMER_360_PORT_TOKEN,
+      useFactory: (
+        config: ConfigService,
+        mock: MockCustomer360Adapter,
+        bff: Customer360BffAdapter,
+      ) => (config.get<string>('CSKH_BFF_URL') ? bff : mock),
+      inject: [ConfigService, MockCustomer360Adapter, Customer360BffAdapter],
+    },
 
     // Outbound channel adapters
     ZaloOutboundAdapter,
@@ -103,6 +119,20 @@ import { ChannelEnum } from './domain';
     DispatchWorkOrderHandler,
     MockFieldTeamAdapter,
     { provide: FIELD_TEAM_PORT_TOKEN, useExisting: MockFieldTeamAdapter },
+
+    // Notification (gRPC Send → notification-be-rs; Mock default, Grpc khi NOTIFICATION_GRPC_URL set)
+    KeycloakSaTokenService,
+    MockNotificationAdapter,
+    NotificationGrpcAdapter,
+    {
+      provide: NOTIFICATION_PORT_TOKEN,
+      useFactory: (
+        config: ConfigService,
+        mock: MockNotificationAdapter,
+        grpc: NotificationGrpcAdapter,
+      ) => (config.get<string>('NOTIFICATION_GRPC_URL') ? grpc : mock),
+      inject: [ConfigService, MockNotificationAdapter, NotificationGrpcAdapter],
+    },
   ],
   exports: [CONVERSATION_REPOSITORY_TOKEN],
 })
