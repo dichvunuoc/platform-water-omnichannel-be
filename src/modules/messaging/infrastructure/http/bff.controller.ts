@@ -19,9 +19,9 @@ import { ArchiveConversationCommand } from '../../application/commands/archive-c
 import { CreateTicketRequestCommand } from '../../application/commands/create-ticket-request.command';
 import { ReplyDto, UpdatePresenceDto, CloseConversationDto, ClassifyImageDto, TranscribeAudioDto, ClassifyIntentDto, CreateTicketDto, DispatchWorkOrderDto, SubmitCsatDto } from '../../application/dtos';
 import { DispatchWorkOrderCommand } from '../../application/commands/dispatch-work-order.command';
-import { PresenceService, AgentStatus } from '../../application/presence.service';
+import { PresenceService, AgentStatus } from '../../../presence/presence.service';
 import { TicketViewService } from '../../application/ticket-view.service';
-import { AiInsightService } from '../../application/ai-insight.service';
+import { AiInsightService } from '../../../ai-insight/ai-insight.service';
 import { AssignCustomerCommand } from '../../application/commands/assign-customer.command';
 import { CUSTOMER_360_PORT_TOKEN } from '../../constants/customer-tokens';
 import type { ICustomer360Port } from '../../domain/ports/customer-360.port';

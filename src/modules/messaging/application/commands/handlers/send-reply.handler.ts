@@ -12,10 +12,10 @@ import {
   type ChannelEnum,
 } from '../../../domain';
 import type { IConversationRepository } from '../../../domain';
-import type { IOutboundChannelAdapter } from '../../ports/outbound-channel.port';
+import type { IOutboundChannelAdapter } from '../../../../outbound-channel/outbound-channel.port';
 import { CONVERSATION_REPOSITORY_TOKEN } from '../../../constants/tokens';
 import { SendReplyCommand } from '../send-reply.command';
-import { OUTBOUND_ADAPTERS_TOKEN } from '../../../constants/outbound-tokens';
+import { OUTBOUND_ADAPTERS_TOKEN } from '../../../../outbound-channel/outbound.tokens';
 
 /**
  * Send Reply Command Handler

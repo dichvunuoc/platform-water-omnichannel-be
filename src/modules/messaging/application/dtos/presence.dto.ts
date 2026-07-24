@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
-import { AgentStatus } from '../presence.service';
+import { AgentStatus } from '../../../presence/presence.service';
 
 /**
  * Presence update DTO (FR16).

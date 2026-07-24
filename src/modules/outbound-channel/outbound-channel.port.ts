@@ -1,4 +1,4 @@
-import { ChannelEnum } from '../../domain';
+import { ChannelEnum } from '../messaging/domain';
 
 /**
  * Outbound Send Result

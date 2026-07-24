@@ -3,9 +3,9 @@ import type { ICommandHandler } from 'src/libs/core/application';
 import { NotFoundException } from 'src/libs/core/common';
 import { CommandHandler } from 'src/libs/shared/cqrs';
 import type { IConversationRepository } from '../../../domain';
-import type { IFieldTeamPort, WorkOrderResult } from '../../../domain/ports/field-team.port';
+import type { IFieldTeamPort, WorkOrderResult } from '../../../../field-team/field-team.port';
 import { CONVERSATION_REPOSITORY_TOKEN } from '../../../constants/tokens';
-import { FIELD_TEAM_PORT_TOKEN } from '../../../constants/field-team-tokens';
+import { FIELD_TEAM_PORT_TOKEN } from '../../../../field-team/field-team.tokens';
 import { DispatchWorkOrderCommand } from '../dispatch-work-order.command';
 
 /**
