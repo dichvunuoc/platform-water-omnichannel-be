@@ -1,7 +1,6 @@
 /** ChatbotModule — Zalo OA chatbot port. Mock default. */
 import { Module } from '@nestjs/common';
-import { CHATBOT_PORT_TOKEN } from '../messaging/constants/cskh-aggregation.tokens';
-import { MockChatbotAdapter } from '../messaging/infrastructure/adapters/mock/mock-cskh-aggregation.adapters';
+import { CHATBOT_PORT_TOKEN, MockChatbotAdapter } from './chatbot.adapter';
 
 @Module({
   providers: [MockChatbotAdapter, { provide: CHATBOT_PORT_TOKEN, useExisting: MockChatbotAdapter }],

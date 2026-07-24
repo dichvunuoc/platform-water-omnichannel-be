@@ -1,7 +1,6 @@
 /** TelephonyModule — tổng đài/softphone port (→ telephony/PBX). Mock default. */
 import { Module } from '@nestjs/common';
-import { TELEPHONY_PORT_TOKEN } from '../messaging/constants/cskh-aggregation.tokens';
-import { MockTelephonyAdapter } from '../messaging/infrastructure/adapters/mock/mock-cskh-aggregation.adapters';
+import { TELEPHONY_PORT_TOKEN, MockTelephonyAdapter } from './telephony.adapter';
 
 @Module({
   providers: [MockTelephonyAdapter, { provide: TELEPHONY_PORT_TOKEN, useExisting: MockTelephonyAdapter }],

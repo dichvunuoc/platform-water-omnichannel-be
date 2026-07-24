@@ -12,26 +12,15 @@ import {
   Inject,
   Logger,
 } from '@nestjs/common';
-import { NOTIFICATION_PORT_TOKEN } from '../../../notification/notification.tokens';
-import type { INotificationPort, NotificationSendRequest } from '../../../notification/notification.port';
-import {
-  INCIDENT_PORT_TOKEN,
-  TELEPHONY_PORT_TOKEN,
-  CSAT_PORT_TOKEN,
-  KNOWLEDGE_PORT_TOKEN,
-  CHATBOT_PORT_TOKEN,
-  BROADCAST_PORT_TOKEN,
-  DASHBOARD_PORT_TOKEN,
-} from '../../constants/cskh-aggregation.tokens';
-import type {
-  IIncidentPort,
-  ITelephonyPort,
-  ICsatPort,
-  IKnowledgePort,
-  IChatbotPort,
-  IBroadcastPort,
-  IDashboardPort,
-} from '../../domain/ports/cskh-aggregation.ports';
+import { NOTIFICATION_PORT_TOKEN } from '../notification/notification.tokens';
+import type { INotificationPort, NotificationSendRequest } from '../notification/notification.port';
+import { INCIDENT_PORT_TOKEN, type IIncidentPort } from '../incident/incident.adapter';
+import { TELEPHONY_PORT_TOKEN, type ITelephonyPort } from '../telephony/telephony.adapter';
+import { CSAT_PORT_TOKEN, type ICsatPort } from '../csat/csat.adapter';
+import { KNOWLEDGE_PORT_TOKEN, type IKnowledgePort } from '../knowledge/knowledge.adapter';
+import { CHATBOT_PORT_TOKEN, type IChatbotPort } from '../chatbot/chatbot.adapter';
+import { BROADCAST_PORT_TOKEN, type IBroadcastPort } from '../broadcast/broadcast.adapter';
+import { DASHBOARD_PORT_TOKEN, type IDashboardPort } from '../dashboard/dashboard.adapter';
 import {
   cskhCatalogs,
   cskhTickets,

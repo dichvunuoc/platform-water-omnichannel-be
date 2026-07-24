@@ -4,7 +4,7 @@
  * (ingest/conversation) — chỉ lo hợp đồng FE agent desktop.
  */
 import { Module } from '@nestjs/common';
-import { CskhController } from '../messaging/infrastructure/http/cskh.controller';
+import { CskhController } from './cskh.controller';
 import { NotificationModule } from '../notification/notification.module';
 import { Customer360Module } from '../customer-360/customer-360.module';
 import { IncidentModule } from '../incident/incident.module';
