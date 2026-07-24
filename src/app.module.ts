@@ -13,7 +13,8 @@ import {
   CorrelationIdMiddleware,
 } from 'src/libs/shared';
 import { MessagingModule } from './modules/messaging/messaging.module';
-import { CskhModule } from './modules/cskh/cskh.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
+import { CskhBffModule } from './modules/cskh-bff/cskh-bff.module';
 import { TicketingStubModule } from './modules/ticketing-stub/ticketing-stub.module';
 
 @Global()
@@ -39,10 +40,12 @@ import { TicketingStubModule } from './modules/ticketing-stub/ticketing-stub.mod
     OutboxModule,
     // Health check endpoints
     HealthModule,
-    // OmniCare Messaging Module (Epic 1 — ingestion spine + unified inbox)
+    // OmniCare Messaging Module (core conversation domain — ingest + inbox + handlers)
     MessagingModule,
-    // CSKH BFF layer (CskhController /api/cskh/* + 9 aggregation service modules)
-    CskhModule,
+    // Realtime gateway (socket.io — push events to agent screens)
+    RealtimeModule,
+    // CSKH BFF layer (CskhController /api/cskh/* + 9 service module imports)
+    CskhBffModule,
     // Ticketing Stub (wave-1 — in-memory Ticketing & SLA service simulator)
     TicketingStubModule,
   ],
