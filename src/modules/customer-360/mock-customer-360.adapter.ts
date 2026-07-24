@@ -3,7 +3,7 @@ import type {
   ICustomer360Port,
   CustomerProfile,
   IdentityResolutionResult,
-} from '../../../domain/ports/customer-360.port';
+} from './customer-360.port';
 
 /**
  * Mock Customer 360 Adapter (wave-1)

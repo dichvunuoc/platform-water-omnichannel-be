@@ -7,7 +7,7 @@ import type {
   INotificationPort,
   NotificationSendRequest,
   NotificationSendResult,
-} from '../../../domain/ports/notification.port';
+} from './notification.port';
 import { KeycloakSaTokenService } from './keycloak-sa-token.service';
 
 /**

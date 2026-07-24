@@ -23,8 +23,8 @@ import { PresenceService, AgentStatus } from '../../../presence/presence.service
 import { TicketViewService } from '../../application/ticket-view.service';
 import { AiInsightService } from '../../../ai-insight/ai-insight.service';
 import { AssignCustomerCommand } from '../../application/commands/assign-customer.command';
-import { CUSTOMER_360_PORT_TOKEN } from '../../constants/customer-tokens';
-import type { ICustomer360Port } from '../../domain/ports/customer-360.port';
+import { CUSTOMER_360_PORT_TOKEN } from '../../../customer-360/customer-360.tokens';
+import type { ICustomer360Port } from '../../../customer-360/customer-360.port';
 import { ChannelEnum } from '../../domain';
 
 /**

@@ -5,9 +5,9 @@ import { REQUEST_CONTEXT_TOKEN } from 'src/libs/core/constants';
 import type { IRequestContextProvider } from 'src/libs/core/common';
 import { CommandHandler } from 'src/libs/shared/cqrs';
 import type { IConversationRepository } from '../../../domain';
-import type { ICustomer360Port } from '../../../domain/ports/customer-360.port';
+import type { ICustomer360Port } from '../../../../customer-360/customer-360.port';
 import { CONVERSATION_REPOSITORY_TOKEN } from '../../../constants/tokens';
-import { CUSTOMER_360_PORT_TOKEN } from '../../../constants/customer-tokens';
+import { CUSTOMER_360_PORT_TOKEN } from '../../../../customer-360/customer-360.tokens';
 import { AssignCustomerCommand } from '../assign-customer.command';
 
 /**

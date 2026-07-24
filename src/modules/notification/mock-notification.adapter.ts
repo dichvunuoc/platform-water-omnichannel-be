@@ -3,7 +3,7 @@ import type {
   INotificationPort,
   NotificationSendRequest,
   NotificationSendResult,
-} from '../../../domain/ports/notification.port';
+} from './notification.port';
 
 /**
  * Mock Notification Adapter — default khi `NOTIFICATION_GRPC_URL` chưa cấu hình.

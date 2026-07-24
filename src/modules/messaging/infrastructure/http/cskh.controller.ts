@@ -12,8 +12,8 @@ import {
   Inject,
   Logger,
 } from '@nestjs/common';
-import { NOTIFICATION_PORT_TOKEN } from '../../constants/notification-tokens';
-import type { INotificationPort, NotificationSendRequest } from '../../domain/ports/notification.port';
+import { NOTIFICATION_PORT_TOKEN } from '../../../notification/notification.tokens';
+import type { INotificationPort, NotificationSendRequest } from '../../../notification/notification.port';
 import {
   INCIDENT_PORT_TOKEN,
   TELEPHONY_PORT_TOKEN,

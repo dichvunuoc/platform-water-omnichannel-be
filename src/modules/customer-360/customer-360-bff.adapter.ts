@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type {
   ICustomer360Port,
   CustomerProfile,
-} from '../../../domain/ports/customer-360.port';
+} from './customer-360.port';
 
 /**
  * Customer 360 BFF adapter — lấy profile qua .NET `water-business-cskh-bff`

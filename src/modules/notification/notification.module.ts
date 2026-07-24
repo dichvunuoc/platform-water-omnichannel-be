@@ -5,10 +5,10 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NOTIFICATION_PORT_TOKEN } from '../messaging/constants/notification-tokens';
-import { MockNotificationAdapter } from '../messaging/infrastructure/adapters/mock/mock-notification.adapter';
-import { NotificationGrpcAdapter } from '../messaging/infrastructure/adapters/grpc/notification-grpc.adapter';
-import { KeycloakSaTokenService } from '../messaging/infrastructure/adapters/grpc/keycloak-sa-token.service';
+import { NOTIFICATION_PORT_TOKEN } from './notification.tokens';
+import { MockNotificationAdapter } from './mock-notification.adapter';
+import { NotificationGrpcAdapter } from './notification-grpc.adapter';
+import { KeycloakSaTokenService } from './keycloak-sa-token.service';
 
 @Module({
   providers: [

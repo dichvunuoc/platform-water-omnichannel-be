@@ -4,9 +4,9 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CUSTOMER_360_PORT_TOKEN } from '../messaging/constants/customer-tokens';
-import { MockCustomer360Adapter } from '../messaging/infrastructure/adapters/mock/mock-customer-360.adapter';
-import { Customer360BffAdapter } from '../messaging/infrastructure/adapters/http/customer-360-bff.adapter';
+import { CUSTOMER_360_PORT_TOKEN } from './customer-360.tokens';
+import { MockCustomer360Adapter } from './mock-customer-360.adapter';
+import { Customer360BffAdapter } from './customer-360-bff.adapter';
 
 @Module({
   providers: [
