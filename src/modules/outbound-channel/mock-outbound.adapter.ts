@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ChannelEnum } from '../../../domain';
-import type { IOutboundChannelAdapter, OutboundResult } from '../../../application/ports';
+import { ChannelEnum } from '../messaging/domain';
+import type { IOutboundChannelAdapter, OutboundResult } from './outbound-channel.port';
 
 /**
  * Mock Outbound Adapter

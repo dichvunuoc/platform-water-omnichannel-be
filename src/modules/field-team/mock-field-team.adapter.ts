@@ -3,7 +3,7 @@ import type {
   IFieldTeamPort,
   WorkOrderRequest,
   WorkOrderResult,
-} from '../../../domain/ports/field-team.port';
+} from './field-team.port';
 
 /**
  * Mock Field Team Adapter (wave-1)

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ChannelEnum } from '../../../domain';
-import type { IOutboundChannelAdapter, OutboundResult } from '../../../application/ports';
+import { ChannelEnum } from '../messaging/domain';
+import type { IOutboundChannelAdapter, OutboundResult } from './outbound-channel.port';
 
 /**
  * Zalo Outbound Adapter (wave-1 — real API call)

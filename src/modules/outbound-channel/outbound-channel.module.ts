@@ -1,7 +1,8 @@
 /** OutboundChannelModule — channel adapters (Zalo real骨架 + App/FB/Email mock). */
 import { Module } from '@nestjs/common';
-import { ZaloOutboundAdapter, MockOutboundAdapter } from '../messaging/infrastructure/channels/outbound';
-import { OUTBOUND_ADAPTERS_TOKEN } from '../messaging/constants/outbound-tokens';
+import { ZaloOutboundAdapter } from './zalo-outbound.adapter';
+import { MockOutboundAdapter } from './mock-outbound.adapter';
+import { OUTBOUND_ADAPTERS_TOKEN } from './outbound.tokens';
 import { ChannelEnum } from '../messaging/domain';
 
 @Module({

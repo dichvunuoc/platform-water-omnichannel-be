@@ -1,7 +1,7 @@
 /** AiInsightModule — AI vision/audio/NLP ports (mock wave-1; real AI wave-3). */
 import { Module } from '@nestjs/common';
-import { AiInsightService } from '../messaging/application/ai-insight.service';
-import { MockAiVisionAdapter, MockAudioAiAdapter, MockNlpAdapter } from '../messaging/infrastructure/adapters/mock/mock-ai-adapters';
+import { AiInsightService } from './ai-insight.service';
+import { MockAiVisionAdapter, MockAudioAiAdapter, MockNlpAdapter } from './mock-ai-adapters';
 
 @Module({
   providers: [

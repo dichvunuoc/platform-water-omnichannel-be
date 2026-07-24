@@ -3,7 +3,7 @@ import type {
   IAiVisionPort,
   IAudioAiPort,
   INlpPort,
-} from '../../../application/ports/ai-vision.port';
+} from './ports/ai-vision.port';
 
 /**
  * Mock AI Vision Adapter (wave-1)
