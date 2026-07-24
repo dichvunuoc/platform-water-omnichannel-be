@@ -13,6 +13,7 @@ import {
   CorrelationIdMiddleware,
 } from 'src/libs/shared';
 import { MessagingModule } from './modules/messaging/messaging.module';
+import { CskhModule } from './modules/cskh/cskh.module';
 import { TicketingStubModule } from './modules/ticketing-stub/ticketing-stub.module';
 
 @Global()
@@ -40,6 +41,8 @@ import { TicketingStubModule } from './modules/ticketing-stub/ticketing-stub.mod
     HealthModule,
     // OmniCare Messaging Module (Epic 1 — ingestion spine + unified inbox)
     MessagingModule,
+    // CSKH BFF layer (CskhController /api/cskh/* + 9 aggregation service modules)
+    CskhModule,
     // Ticketing Stub (wave-1 — in-memory Ticketing & SLA service simulator)
     TicketingStubModule,
   ],
