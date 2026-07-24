@@ -314,3 +314,49 @@ export const cskhDash = {
     { name: 'Võ Quốc Bảo', team: 'Điều hành', online: true, handled: 63, sla: 95, csat: 4.5, open: 2 },
   ],
 }
+
+// ─── Type aliases (cho port interfaces tham chiếu) ───────────────────────────
+export type CsatAggregate = typeof cskhCsat;
+export type KnowledgeBase = typeof cskhKnowledge;
+export type DashboardData = typeof cskhDash;
+
+// ─── Telephony (softphone — tổng đài 1900) ───────────────────────────────────
+export interface CallSummary {
+  id: string; name: string; phone: string; waitSec: number; ivr: string; topic: string;
+}
+export interface ActiveCall {
+  callId: string; name: string; phone: string; durationSec: number; ivr: string;
+  topic: string; status: 'connected';
+}
+export interface CallLogEntry {
+  callId: string; name: string; phone: string; durationSec: number;
+  direction: 'in' | 'out'; time: string; topic?: string;
+}
+export interface CallerProfile {
+  phone: string; name: string; maHb?: string; custType?: string; addr?: string; status?: string;
+}
+export interface CallRecording {
+  callId: string; url: string; consent: boolean; retentionDays: number;
+}
+
+/** Mutable */
+export let cskhTelephony = {
+  queue: [
+    { id: 'c1', name: 'Dàng Minh Sơn', phone: '0888 332 109', waitSec: 38, ivr: 'Nhánh 2 - Sự cố', topic: 'suco' },
+    { id: 'c2', name: 'Bùi Thị Ngọc', phone: '0917 200 551', waitSec: 72, ivr: 'Nhánh 1 - Hoá đơn', topic: 'hoadon' },
+    { id: 'c3', name: 'Hồ Văn Tâm', phone: '0938 412 770', waitSec: 21, ivr: 'Nhánh 2 - Sự cố', topic: 'suco' },
+  ] as CallSummary[],
+  activeCall: {
+    callId: 'call-active-01', name: 'Dàng Minh Sơn', phone: '0888 332 109', durationSec: 72,
+    ivr: 'Nhánh 2 - Sự cố', topic: 'Sự cố', status: 'connected',
+  } as ActiveCall,
+  log: [
+    { callId: 'cl1', name: 'Nguyễn Thị Hồng Vân', phone: '0908 215 770', durationSec: 252, direction: 'in', time: '09:42', topic: 'suco' },
+    { callId: 'cl2', name: 'Lê Thị Mai', phone: '0917 882 314', durationSec: 390, direction: 'in', time: '10:05', topic: 'hoadon' },
+    { callId: 'cl3', name: 'Trần Quốc Bảo', phone: '0938 412 770', durationSec: 168, direction: 'in', time: '11:20', topic: 'chatluong' },
+    { callId: 'cl4', name: 'Phạm Gia Khoa', phone: '0772 813 244', durationSec: 115, direction: 'out', time: '14:00' },
+  ] as CallLogEntry[],
+  recordings: [
+    { callId: 'cl1', url: '/rec/cl1.mp3', consent: true, retentionDays: 90 },
+  ] as CallRecording[],
+};

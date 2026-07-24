@@ -25,6 +25,24 @@ import { NotificationGrpcAdapter } from './infrastructure/adapters/grpc/notifica
 import { KeycloakSaTokenService } from './infrastructure/adapters/grpc/keycloak-sa-token.service';
 import { ConfigService } from '@nestjs/config';
 import {
+  MockIncidentAdapter,
+  MockTelephonyAdapter,
+  MockCsatAdapter,
+  MockKnowledgeAdapter,
+  MockChatbotAdapter,
+  MockBroadcastAdapter,
+  MockDashboardAdapter,
+} from './infrastructure/adapters/mock/mock-cskh-aggregation.adapters';
+import {
+  INCIDENT_PORT_TOKEN,
+  TELEPHONY_PORT_TOKEN,
+  CSAT_PORT_TOKEN,
+  KNOWLEDGE_PORT_TOKEN,
+  CHATBOT_PORT_TOKEN,
+  BROADCAST_PORT_TOKEN,
+  DASHBOARD_PORT_TOKEN,
+} from './constants/cskh-aggregation.tokens';
+import {
   CONVERSATION_REPOSITORY_TOKEN,
   CONVERSATION_READ_DAO_TOKEN,
 } from './constants/tokens';
@@ -133,6 +151,22 @@ import { ChannelEnum } from './domain';
       ) => (config.get<string>('NOTIFICATION_GRPC_URL') ? grpc : mock),
       inject: [ConfigService, MockNotificationAdapter, NotificationGrpcAdapter],
     },
+
+    // CSKH aggregation ports (7 domain — Mock default, lean port-adapter; RealAdapter khi service sẵn)
+    MockIncidentAdapter,
+    MockTelephonyAdapter,
+    MockCsatAdapter,
+    MockKnowledgeAdapter,
+    MockChatbotAdapter,
+    MockBroadcastAdapter,
+    MockDashboardAdapter,
+    { provide: INCIDENT_PORT_TOKEN, useExisting: MockIncidentAdapter },
+    { provide: TELEPHONY_PORT_TOKEN, useExisting: MockTelephonyAdapter },
+    { provide: CSAT_PORT_TOKEN, useExisting: MockCsatAdapter },
+    { provide: KNOWLEDGE_PORT_TOKEN, useExisting: MockKnowledgeAdapter },
+    { provide: CHATBOT_PORT_TOKEN, useExisting: MockChatbotAdapter },
+    { provide: BROADCAST_PORT_TOKEN, useExisting: MockBroadcastAdapter },
+    { provide: DASHBOARD_PORT_TOKEN, useExisting: MockDashboardAdapter },
   ],
   exports: [CONVERSATION_REPOSITORY_TOKEN],
 })

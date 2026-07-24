@@ -9,42 +9,45 @@ import {
   HttpStatus,
   NotFoundException,
   BadRequestException,
-  ConflictException,
   Inject,
   Logger,
 } from '@nestjs/common';
 import { NOTIFICATION_PORT_TOKEN } from '../../constants/notification-tokens';
+import type { INotificationPort, NotificationSendRequest } from '../../domain/ports/notification.port';
+import {
+  INCIDENT_PORT_TOKEN,
+  TELEPHONY_PORT_TOKEN,
+  CSAT_PORT_TOKEN,
+  KNOWLEDGE_PORT_TOKEN,
+  CHATBOT_PORT_TOKEN,
+  BROADCAST_PORT_TOKEN,
+  DASHBOARD_PORT_TOKEN,
+} from '../../constants/cskh-aggregation.tokens';
 import type {
-  INotificationPort,
-  NotificationSendRequest,
-} from '../../domain/ports/notification.port';
+  IIncidentPort,
+  ITelephonyPort,
+  ICsatPort,
+  IKnowledgePort,
+  IChatbotPort,
+  IBroadcastPort,
+  IDashboardPort,
+} from '../../domain/ports/cskh-aggregation.ports';
 import {
   cskhCatalogs,
   cskhTickets,
-  cskhIncidents,
-  cskhCsat,
-  cskhKnowledge,
-  cskhBot,
-  cskhBroadcasts,
-  cskhDash,
   type Ticket,
   type TicketListDto,
-  type Incident,
-  type Broadcast,
-  type BotData,
 } from './cskh-fixture';
 
 /**
  * CSKH BFF Controller — hợp đồng FE agent desktop (`water-business-cskh-fe`).
  *
- * Prefix `/api/cskh` — 19 endpoints match FE cũ contract (mock-port verbatim từ
- * `cskh-fixture.ts`). Đa kênh (5 channels: hotline/zalo/app/web/facebook).
+ * Prefix `/api/cskh`. Aggregation LEAN: 7 domain qua port-adapter (incident,
+ * telephony, csat, knowledge, chatbot, broadcast, dashboard) — Mock default, swap
+ * RealAdapter khi service sẵn. Ticket + catalogs giữ direct (core/config, không
+ * phải service aggregation). Notification (gRPC) fire-and-forget trên 3 trigger.
  *
- * Envelope R0: success → `{success,data,error:null}`; error → `{success:false,
- * error:{code,detail}}`. Mã lỗi match FE: NOT_FOUND (404), INVALID_STATUS (400),
- * INVALID_KIND (400), INVALID_TRANSITION (409).
- *
- * Sau này thay fixture bằng real backing (conversation ingest → Ticket, ...).
+ * Envelope R0 + error codes (NOT_FOUND, INVALID_STATUS, INVALID_KIND, INVALID_TRANSITION).
  */
 @Controller('api/cskh')
 export class CskhController {
@@ -52,6 +55,13 @@ export class CskhController {
 
   constructor(
     @Inject(NOTIFICATION_PORT_TOKEN) private readonly notifications: INotificationPort,
+    @Inject(INCIDENT_PORT_TOKEN) private readonly incidents: IIncidentPort,
+    @Inject(TELEPHONY_PORT_TOKEN) private readonly telephony: ITelephonyPort,
+    @Inject(CSAT_PORT_TOKEN) private readonly csatPort: ICsatPort,
+    @Inject(KNOWLEDGE_PORT_TOKEN) private readonly knowledgePort: IKnowledgePort,
+    @Inject(CHATBOT_PORT_TOKEN) private readonly chatbotPort: IChatbotPort,
+    @Inject(BROADCAST_PORT_TOKEN) private readonly broadcastPort: IBroadcastPort,
+    @Inject(DASHBOARD_PORT_TOKEN) private readonly dashboardPort: IDashboardPort,
   ) {}
 
   /** Fire-and-forget notification — không block nghiệp vụ khi noti fail. */
@@ -63,26 +73,26 @@ export class CskhController {
       );
   }
 
-  // ── Health (Phase 0 contract verify) ────────────────────────────────────────
+  // ── Health ────────────────────────────────────────────────────────────────────
   @Get('health')
   @HttpCode(HttpStatus.OK)
   async health(): Promise<{ status: string; service: string; timestamp: string }> {
     return { status: 'ok', service: 'cskh-bff', timestamp: new Date().toISOString() };
   }
 
-  // ── Catalogs ──────────────────────────────────────────────────────────────────
+  // ── Catalogs (reference data, direct) ─────────────────────────────────────────
   @Get('catalogs')
   async catalogs() {
     return cskhCatalogs;
   }
 
-  // ── Dashboard ─────────────────────────────────────────────────────────────────
+  // ── Dashboard (→ IDashboardPort) ──────────────────────────────────────────────
   @Get('dashboard')
   async dashboard() {
-    return cskhDash;
+    return this.dashboardPort.get();
   }
 
-  // ── Tickets ───────────────────────────────────────────────────────────────────
+  // ── Tickets (core — direct fixture; ticketing-stub backing sau) ───────────────
   @Get('tickets')
   async listTickets(
     @Query('status') status?: string,
@@ -110,9 +120,7 @@ export class CskhController {
     }
     const p = Number(page);
     const ps = Number(pageSize);
-    const total = items.length;
-    const paged = items.slice((p - 1) * ps, p * ps);
-    return { items: paged, total, page: p, pageSize: ps };
+    return { items: items.slice((p - 1) * ps, p * ps), total: items.length, page: p, pageSize: ps };
   }
 
   @Get('tickets/:id')
@@ -159,7 +167,6 @@ export class CskhController {
     if (!t) throw new NotFoundException('Không tìm thấy phiếu.');
     t.status = 'resolved';
     t.slaLeftH = null;
-    // Notification: gửi CSAT request cho khách (template cskh.csat_request)
     this.fireNoti({
       templateKey: 'cskh.csat_request',
       recipients: [{ phone: t.phone }],
@@ -169,46 +176,28 @@ export class CskhController {
     return t;
   }
 
-  // ── Incidents ─────────────────────────────────────────────────────────────────
+  // ── Incidents (→ IIncidentPort) ───────────────────────────────────────────────
   @Get('incidents')
   async listIncidents() {
-    return cskhIncidents;
+    return this.incidents.list();
   }
 
   @Post('incidents/:id/triage')
   @HttpCode(HttpStatus.OK)
-  async triageIncident(@Param('id') id: string): Promise<Incident> {
-    const inc = cskhIncidents.find((i) => i.id === id);
-    if (!inc) throw new NotFoundException('Không tìm thấy sự cố.');
-    if (inc.status !== 'new') {
-      throw new ConflictException({ code: 'INVALID_TRANSITION', message: 'Trạng thái không hợp lệ để phân loại.' });
-    }
-    inc.status = 'triaged';
-    return inc;
+  async triageIncident(@Param('id') id: string) {
+    return this.incidents.triage(id);
   }
 
   @Post('incidents/:id/kind')
   @HttpCode(HttpStatus.OK)
-  async setIncidentKind(@Param('id') id: string, @Body() body: { kind: string }): Promise<Incident> {
-    if (!VALID_KINDS.has(body.kind.toLowerCase())) {
-      throw new BadRequestException({ code: 'INVALID_KIND', message: 'Loại sự cố không hợp lệ.' });
-    }
-    const inc = cskhIncidents.find((i) => i.id === id);
-    if (!inc) throw new NotFoundException('Không tìm thấy sự cố.');
-    inc.kind = body.kind.toLowerCase();
-    return inc;
+  async setIncidentKind(@Param('id') id: string, @Body() body: { kind: string }) {
+    return this.incidents.setKind(id, body.kind);
   }
 
   @Post('incidents/:id/dispatch')
   @HttpCode(HttpStatus.OK)
-  async dispatchIncident(@Param('id') id: string): Promise<Incident> {
-    const inc = cskhIncidents.find((i) => i.id === id);
-    if (!inc) throw new NotFoundException('Không tìm thấy sự cố.');
-    if (inc.status !== 'triaged') {
-      throw new ConflictException({ code: 'INVALID_TRANSITION', message: 'Trạng thái không hợp lệ để điều phối.' });
-    }
-    inc.status = 'dispatched';
-    // Notification: báo khách đội hiện trường đang ra (template cskh.incident.dispatched)
+  async dispatchIncident(@Param('id') id: string) {
+    const inc = this.incidents.dispatch(id);
     this.fireNoti({
       templateKey: 'cskh.incident.dispatched',
       recipients: [{ phone: inc.phone }],
@@ -218,64 +207,78 @@ export class CskhController {
     return inc;
   }
 
-  // ── CSAT / Knowledge / Chatbot ────────────────────────────────────────────────
+  // ── Telephony / Softphone (→ ITelephonyPort) — NEW ───────────────────────────
+  @Get('softphone/queue')
+  async softphoneQueue() {
+    return this.telephony.queue();
+  }
+
+  @Get('softphone/active')
+  async softphoneActive() {
+    return this.telephony.activeCall();
+  }
+
+  @Get('softphone/log')
+  async softphoneLog() {
+    return this.telephony.log();
+  }
+
+  @Get('softphone/lookup/:phone')
+  async softphoneLookup(@Param('phone') phone: string) {
+    const profile = this.telephony.lookupPhone(phone);
+    if (!profile) throw new NotFoundException(`Không tìm thấy SĐT ${phone}`);
+    return profile;
+  }
+
+  @Get('calls/:callId/recording')
+  async callRecording(@Param('callId') callId: string) {
+    const rec = this.telephony.recording(callId);
+    if (!rec) throw new NotFoundException(`Không tìm thấy bản ghi ${callId}`);
+    return rec;
+  }
+
+  // ── CSAT (→ ICsatPort) ────────────────────────────────────────────────────────
   @Get('csat')
   async csat() {
-    return cskhCsat;
+    return this.csatPort.aggregate();
   }
 
+  // ── Knowledge (→ IKnowledgePort) ──────────────────────────────────────────────
   @Get('knowledge')
   async knowledge() {
-    return cskhKnowledge;
+    return this.knowledgePort.list();
   }
 
+  // ── Chatbot (→ IChatbotPort) ──────────────────────────────────────────────────
   @Get('chatbot')
-  async chatbot(): Promise<BotData> {
-    return cskhBot;
+  async chatbot() {
+    return this.chatbotPort.stats();
   }
 
   @Post('chatbot/toggle')
   @HttpCode(HttpStatus.OK)
-  async toggleChatbot(@Body() body: { enabled: boolean }): Promise<BotData> {
-    cskhBot.enabled = body.enabled;
-    return cskhBot;
+  async toggleChatbot(@Body() body: { enabled: boolean }) {
+    return this.chatbotPort.toggle(body.enabled);
   }
 
-  // ── Broadcasts ────────────────────────────────────────────────────────────────
+  // ── Broadcasts (→ IBroadcastPort) ─────────────────────────────────────────────
   @Get('broadcasts')
   async listBroadcasts() {
-    return cskhBroadcasts;
+    return this.broadcastPort.list();
   }
 
   @Post('broadcasts')
   @HttpCode(HttpStatus.OK)
   async createBroadcast(
     @Body() body: { title: string; channels: string[]; area: string; window: string },
-  ): Promise<Broadcast> {
-    const newBc: Broadcast = {
-      id: `bc${Date.now()}`,
-      title: body.title,
-      status: 'draft',
-      channels: body.channels,
-      area: body.area,
-      window: body.window,
-      audience: 0,
-      sent: 0,
-      opened: 0,
-      scheduled: '—',
-    };
-    cskhBroadcasts.push(newBc);
-    return newBc;
+  ) {
+    return this.broadcastPort.create(body);
   }
 
   @Post('broadcasts/:id/send')
   @HttpCode(HttpStatus.OK)
-  async sendBroadcast(@Param('id') id: string): Promise<Broadcast> {
-    const bc = cskhBroadcasts.find((b) => b.id === id);
-    if (!bc) throw new NotFoundException('Không tìm thấy broadcast.');
-    bc.status = 'sending';
-    // Notification: gửi thông báo hàng loạt (template cskh.broadcast).
-    // Demo 1 recipient; real: audience resolver theo area → many recipients.
+  async sendBroadcast(@Param('id') id: string) {
+    const bc = this.broadcastPort.send(id);
     this.fireNoti({
       templateKey: 'cskh.broadcast',
       recipients: [{ phone: '0900000000' }],
@@ -286,9 +289,8 @@ export class CskhController {
   }
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Helpers (ticket core) ──────────────────────────────────────────────────────
 const VALID_STATUSES = new Set(['new', 'progress', 'waiting', 'resolved', 'closed']);
-const VALID_KINDS = new Set(['vo_ong', 'ro_ri', 'nuoc_duc', 'mat_nuoc', 'yeu_ap', 'dong_ho']);
 
 function nowTime(): string {
   return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
