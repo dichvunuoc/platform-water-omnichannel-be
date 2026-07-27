@@ -63,6 +63,6 @@ import {
     IdempotencyService,
     TicketViewService,
   ],
-  exports: [CONVERSATION_REPOSITORY_TOKEN],
+  exports: [CONVERSATION_REPOSITORY_TOKEN, CONVERSATION_READ_DAO_TOKEN],
 })
 export class MessagingModule {}

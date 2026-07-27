@@ -5,6 +5,7 @@
  */
 import { Module } from '@nestjs/common';
 import { CskhController } from './cskh.controller';
+import { MessagingModule } from '../messaging/messaging.module';
 import { NotificationModule } from '../notification/notification.module';
 import { Customer360Module } from '../customer-360/customer-360.module';
 import { IncidentModule } from '../incident/incident.module';
@@ -17,6 +18,7 @@ import { DashboardModule } from '../dashboard/dashboard.module';
 
 @Module({
   imports: [
+    MessagingModule,
     NotificationModule,
     Customer360Module,
     IncidentModule,

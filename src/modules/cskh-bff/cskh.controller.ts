@@ -27,6 +27,14 @@ import {
   type Ticket,
   type TicketListDto,
 } from './cskh-fixture';
+import { CONVERSATION_READ_DAO_TOKEN } from '../messaging/constants/tokens';
+import type { ConversationReadDao } from '../messaging/infrastructure/persistence/read/conversation-read-dao';
+import {
+  mapInboxItem,
+  mapConversationDetail,
+  type InboxPageDto,
+  type ConversationDetailDto,
+} from './cskh.dto';
 
 /**
  * CSKH BFF Controller — hợp đồng FE agent desktop (`water-business-cskh-fe`).
@@ -51,6 +59,7 @@ export class CskhController {
     @Inject(CHATBOT_PORT_TOKEN) private readonly chatbotPort: IChatbotPort,
     @Inject(BROADCAST_PORT_TOKEN) private readonly broadcastPort: IBroadcastPort,
     @Inject(DASHBOARD_PORT_TOKEN) private readonly dashboardPort: IDashboardPort,
+    @Inject(CONVERSATION_READ_DAO_TOKEN) private readonly readDao: ConversationReadDao,
   ) {}
 
   /** Fire-and-forget notification — không block nghiệp vụ khi noti fail. */
@@ -60,6 +69,38 @@ export class CskhController {
       .catch((e) =>
         this.logger.warn(`noti templateKey=${req.templateKey} failed: ${e.message}`),
       );
+  }
+
+  // ── Inbox (BRIDGE Task B4: real conversations từ DB qua ConversationReadDao) ──
+  @Get('inbox')
+  async inbox(
+    @Query('channel') channel?: string,
+    @Query('status') status?: string,
+    @Query('customerId') customerId?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ): Promise<InboxPageDto> {
+    const filter: { channel?: string; status?: string; customerId?: string } = {};
+    if (channel) filter.channel = channel.toUpperCase();
+    if (status) filter.status = status.toUpperCase();
+    if (customerId) filter.customerId = customerId;
+    const p = Number(page);
+    const l = Number(limit);
+    const result = await this.readDao.findInbox(filter as any, p, l);
+    return {
+      items: result.items.map(mapInboxItem),
+      total: result.total,
+      page: p,
+      limit: l,
+      hasNext: (p - 1) * l + result.items.length < result.total,
+    };
+  }
+
+  @Get('conversations/:id')
+  async conversation(@Param('id') id: string): Promise<ConversationDetailDto> {
+    const detail = await this.readDao.findById(id);
+    if (!detail) throw new NotFoundException(`Không tìm thấy hội thoại ${id}`);
+    return mapConversationDetail(detail);
   }
 
   // ── Health ────────────────────────────────────────────────────────────────────
