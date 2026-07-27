@@ -2,7 +2,8 @@ import { Inject, Optional, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import type { ICommandHandler } from 'src/libs/core/application';
 import type { IRequestContextProvider } from 'src/libs/core/common';
-import { REQUEST_CONTEXT_TOKEN } from 'src/libs/core/constants';
+import { REQUEST_CONTEXT_TOKEN, EVENT_BUS_TOKEN } from 'src/libs/core/constants';
+import type { IEventBus } from 'src/libs/core/infrastructure';
 import { CommandHandler, IdempotencyService } from 'src/libs/shared/cqrs';
 import {
   Channel,
@@ -43,6 +44,9 @@ export class ReceiveInboundMessageHandler
     @Optional()
     @Inject(REQUEST_CONTEXT_TOKEN)
     private readonly requestContext?: IRequestContextProvider,
+    @Optional()
+    @Inject(EVENT_BUS_TOKEN)
+    private readonly eventBus?: IEventBus,
   ) {}
 
   async execute(
@@ -115,6 +119,29 @@ export class ReceiveInboundMessageHandler
     this.logger.log(
       `Inbound ingested: conversation=${conversationId} message=${message.id} channel=${command.channel}`,
     );
+
+    // Realtime push: publish MessageReceived → MessagingGateway → socket.io (in-process, ngay lập tức).
+    // Outbox (FR7) lo reliable async; đây là fast-path cho realtime agent screen.
+    if (this.eventBus) {
+      await this.eventBus
+        .publish({
+          eventType: 'MessageReceived',
+          aggregateId: conversationId,
+          occurredAt: new Date().toISOString(),
+          data: {
+            conversationId,
+            messageId: message.id,
+            channel: command.channel,
+            direction: 'INBOUND',
+            senderType: 'CUSTOMER',
+            content: command.content,
+            attachments: command.attachments ?? [],
+            timestamp: new Date().toISOString(),
+          },
+        } as any)
+        .catch((e) => this.logger.warn(`realtime publish failed: ${e.message}`));
+    }
+
     return result;
   }
 }
