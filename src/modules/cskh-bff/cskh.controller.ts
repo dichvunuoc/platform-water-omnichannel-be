@@ -28,7 +28,12 @@ import {
   type TicketListDto,
 } from './cskh-fixture';
 import { CONVERSATION_READ_DAO_TOKEN } from '../messaging/constants/tokens';
-import type { ConversationReadDao } from '../messaging/infrastructure/persistence/read/conversation-read-dao';
+import type { ConversationReadDao, ConversationDetail } from '../messaging/infrastructure/persistence/read/conversation-read-dao';
+import type { ICommandBus } from 'src/libs/core/application';
+import { COMMAND_BUS_TOKEN } from 'src/libs/core/constants';
+import { SendReplyCommand } from '../messaging/application/commands/send-reply.command';
+import { CUSTOMER_360_PORT_TOKEN } from '../customer-360/customer-360.tokens';
+import type { ICustomer360Port } from '../customer-360/customer-360.port';
 import {
   mapInboxItem,
   mapConversationDetail,
@@ -60,6 +65,8 @@ export class CskhController {
     @Inject(BROADCAST_PORT_TOKEN) private readonly broadcastPort: IBroadcastPort,
     @Inject(DASHBOARD_PORT_TOKEN) private readonly dashboardPort: IDashboardPort,
     @Inject(CONVERSATION_READ_DAO_TOKEN) private readonly readDao: ConversationReadDao,
+    @Inject(COMMAND_BUS_TOKEN) private readonly commandBus: ICommandBus,
+    @Inject(CUSTOMER_360_PORT_TOKEN) private readonly customer360: ICustomer360Port,
   ) {}
 
   /** Fire-and-forget notification — không block nghiệp vụ khi noti fail. */
@@ -100,7 +107,46 @@ export class CskhController {
   async conversation(@Param('id') id: string): Promise<ConversationDetailDto> {
     const detail = await this.readDao.findById(id);
     if (!detail) throw new NotFoundException(`Không tìm thấy hội thoại ${id}`);
-    return mapConversationDetail(detail);
+    return this.enrichedDetail(detail);
+  }
+
+  /** POST /conversations/:id/reply (Task B8) — agent reply qua SendReplyCommand + re-fetch detail. */
+  @Post('conversations/:id/reply')
+  @HttpCode(HttpStatus.OK)
+  async replyConversation(
+    @Param('id') id: string,
+    @Body() body: { agentId?: string; content: string },
+  ): Promise<ConversationDetailDto> {
+    await this.commandBus.execute(
+      new SendReplyCommand(id, body.agentId ?? 'agent-mvp', body.content, []),
+    );
+    const detail = await this.readDao.findById(id);
+    if (!detail) throw new NotFoundException(`Không tìm thấy hội thoại ${id}`);
+    return this.enrichedDetail(detail);
+  }
+
+  /** Map detail + enrich Customer360 (Task B7) qua ICustomer360Port; fallback stub khi chưa resolve. */
+  private async enrichedDetail(detail: ConversationDetail): Promise<ConversationDetailDto> {
+    const dto = mapConversationDetail(detail);
+    const profile =
+      (await this.customer360
+        .resolveIdentity(detail.channel, detail.customerChannelId)
+        .catch(() => null)) ??
+      (detail.customerId
+        ? await this.customer360.getProfile(detail.customerId).catch(() => null)
+        : null);
+    if (profile) {
+      dto.customer = { id: profile.id, name: profile.name };
+      dto.customer360 = {
+        id: profile.id,
+        name: profile.name,
+        phone: profile.phone,
+        address: profile.address,
+        custType: profile.customerType,
+        contract: profile.contract,
+      };
+    }
+    return dto;
   }
 
   // ── Health ────────────────────────────────────────────────────────────────────

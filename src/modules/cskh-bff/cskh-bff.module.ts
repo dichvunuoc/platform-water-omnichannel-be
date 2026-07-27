@@ -4,6 +4,7 @@
  * (ingest/conversation) — chỉ lo hợp đồng FE agent desktop.
  */
 import { Module } from '@nestjs/common';
+import { SharedCqrsModule } from 'src/libs/shared';
 import { CskhController } from './cskh.controller';
 import { MessagingModule } from '../messaging/messaging.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -18,6 +19,7 @@ import { DashboardModule } from '../dashboard/dashboard.module';
 
 @Module({
   imports: [
+    SharedCqrsModule,
     MessagingModule,
     NotificationModule,
     Customer360Module,
