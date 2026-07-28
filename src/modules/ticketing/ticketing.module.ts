@@ -6,6 +6,7 @@ import { CreateTicketHandler, AdvanceStageHandler } from './application/commands
 import { TICKET_REPOSITORY_TOKEN } from './constants';
 import { IdempotencyService } from 'src/libs/shared/cqrs';
 import { SlaWorkerService } from './infrastructure/sla-worker/sla-worker.service';
+import { ConversationStartedTicketHandler } from './application/event-handlers/conversation-started.handler';
 
 @Module({
   imports: [SharedCqrsModule],
@@ -18,6 +19,9 @@ import { SlaWorkerService } from './infrastructure/sla-worker/sla-worker.service
     // Command handlers
     CreateTicketHandler,
     AdvanceStageHandler,
+
+    // Event handler: ConversationStarted → auto-create Ticket (link conversation→ticket)
+    ConversationStartedTicketHandler,
 
     // SLA worker (cron-based, dual-clock SLA monitoring)
     SlaWorkerService,
