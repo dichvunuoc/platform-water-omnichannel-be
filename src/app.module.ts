@@ -17,7 +17,6 @@ import { MessagingModule } from './modules/messaging/messaging.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { CskhBffModule } from './modules/cskh-bff/cskh-bff.module';
 import { TicketingModule } from './modules/ticketing/ticketing.module';
-import { TicketingStubModule } from './modules/ticketing-stub/ticketing-stub.module';
 
 @Global()
 @Module({
@@ -52,8 +51,7 @@ import { TicketingStubModule } from './modules/ticketing-stub/ticketing-stub.mod
     CskhBffModule,
     // Ticketing & SLA (Phase 2 — real Ticket aggregate + SLA dual-clock worker)
     TicketingModule,
-    // Ticketing Stub (wave-1 — giữ đến khi link conversation→ticket hoàn tất, rồi remove)
-    TicketingStubModule,
+    // Ticketing Stub — REMOVED (Phase 2 real ticketing wired)
   ],
 })
 export class AppModule implements NestModule {

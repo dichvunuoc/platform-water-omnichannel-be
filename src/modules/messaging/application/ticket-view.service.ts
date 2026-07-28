@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { TicketingStubService } from '../../ticketing-stub/ticketing-stub.service';
-import type { StubTicket, KanbanResponse } from '../../ticketing-stub/ticketing-stub.types';
+import type { ITicketRepository, Ticket } from '../../ticketing/domain';
+import { TICKET_REPOSITORY_TOKEN } from '../../ticketing/constants';
 
 /** SLA color computed from remaining time (matches FE UI). */
 export type SlaColor = 'green' | 'yellow' | 'red' | 'gray';
@@ -38,83 +38,63 @@ export interface KanbanView {
 
 /**
  * Ticket View Service (FR20/FR60 — BFF read side).
- *
- * Reads ticket data from the Ticketing stub + enriches with:
- *   - SLA remaining time (slaRemainingMs)
- *   - SLA color (green/yellow/red/gray — matches FE UI)
- *   - Customer name (joined from Customer 360 mock)
- *
- * This is OmniCare's READ interface to the Ticketing service.
- * In wave-2: stub replaced by real service behind same contract.
+ * Reads từ real TicketRepository (Phase 2 — stub removed).
  */
 @Injectable()
 export class TicketViewService {
   constructor(
-    private readonly stub: TicketingStubService,
+    @Inject(TICKET_REPOSITORY_TOKEN)
+    private readonly repo: ITicketRepository,
   ) {}
 
-  /** Get all tickets grouped by stage with SLA enrichment. */
-  getKanbanView(): KanbanView {
-    const raw = this.stub.getKanban();
-    const enrich = (list: StubTicket[]): TicketView[] =>
-      list.map((t) => this.enrichTicket(t));
-
+  async getKanbanView(): Promise<KanbanView> {
+    const tickets = await this.repo.findAll();
+    const views = tickets.map((t) => this.enrichTicket(t));
+    const group = (stage: string) => views.filter((v) => v.stage === stage);
     return {
-      RECEIVED: enrich(raw.RECEIVED),
-      IN_PROGRESS: enrich(raw.IN_PROGRESS),
-      WAITING: enrich(raw.WAITING),
-      RESOLVED: enrich(raw.RESOLVED),
-      CLOSED: enrich(raw.CLOSED),
-      total: raw.total,
-      slaBreachedCount: raw.slaBreachedCount,
-      slaWarningCount: raw.slaWarningCount,
+      RECEIVED: group('RECEIVED'),
+      IN_PROGRESS: group('IN_PROGRESS'),
+      WAITING: group('WAITING'),
+      RESOLVED: group('RESOLVED'),
+      CLOSED: group('CLOSED'),
+      total: views.length,
+      slaBreachedCount: views.filter((v) => v.slaBreached).length,
+      slaWarningCount: views.filter((v) => v.slaWarning).length,
     };
   }
 
-  /** Get single ticket view (for ticket detail / SLA chip). */
-  getTicketView(ticketId: string): TicketView | null {
-    const ticket = this.stub.getTicket(ticketId);
-    if (!ticket) return null;
-    return this.enrichTicket(ticket);
+  async getTicketView(ticketId: string): Promise<TicketView | null> {
+    const ticket = await this.repo.getById(ticketId);
+    return ticket ? this.enrichTicket(ticket) : null;
   }
 
-  /** Get ticket linked to a conversation (for inbox SLA chip — AC: 4). */
-  getConversationTicketView(conversationId: string): TicketView | null {
-    const ticket = this.stub.getByConversation(conversationId);
-    if (!ticket) return null;
-    return this.enrichTicket(ticket);
+  async getConversationTicketView(conversationId: string): Promise<TicketView | null> {
+    const ticket = await this.repo.findByConversationId(conversationId);
+    return ticket ? this.enrichTicket(ticket) : null;
   }
 
-  /** Compute SLA enrichment from a raw ticket. */
-  private enrichTicket(ticket: StubTicket): TicketView {
+  private enrichTicket(ticket: Ticket): TicketView {
     const now = Date.now();
-    const remainingMs = ticket.slaDeadline - now;
-    const isResolved = ticket.stage === 'RESOLVED' || ticket.stage === 'CLOSED';
-
+    const rd = ticket.resolveDeadline;
+    const resolveMs = rd instanceof Date ? rd.getTime() : new Date(rd).getTime();
+    const remainingMs = resolveMs - now;
+    const isResolved = ticket.stage.value === 'RESOLVED' || ticket.stage.value === 'CLOSED';
     return {
       id: ticket.id,
       conversationId: ticket.conversationId,
       customerId: ticket.customerId,
       channel: ticket.channel,
       title: ticket.title,
-      stage: ticket.stage,
-      priority: ticket.priority,
+      stage: ticket.stage.value,
+      priority: ticket.priority.value,
       assignee: ticket.assignee,
-      createdAt: ticket.createdAt,
-      slaDeadline: ticket.slaDeadline,
+      createdAt: ticket.createdAt instanceof Date ? ticket.createdAt.getTime() : new Date(ticket.createdAt).getTime(),
+      slaDeadline: resolveMs,
       slaRemainingMs: isResolved ? 0 : remainingMs,
-      slaColor: this.computeSlaColor(remainingMs, isResolved),
+      slaColor: isResolved ? 'gray' : remainingMs <= 0 ? 'red' : remainingMs < 30 * 60 * 1000 ? 'yellow' : 'green',
       slaWarning: !isResolved && remainingMs < 30 * 60 * 1000 && remainingMs > 0,
       slaBreached: !isResolved && remainingMs <= 0,
       customerName: `Customer ${ticket.customerId ?? 'unknown'}`,
     };
-  }
-
-  /** SLA color logic matching the delivered FE. */
-  private computeSlaColor(remainingMs: number, isResolved: boolean): SlaColor {
-    if (isResolved) return 'gray';
-    if (remainingMs <= 0) return 'red';       // breached
-    if (remainingMs < 30 * 60 * 1000) return 'yellow'; // <30 min warning
-    return 'green';                            // ok
   }
 }

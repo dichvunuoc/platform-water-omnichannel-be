@@ -68,6 +68,11 @@ export class TicketRepository
       });
   }
 
+  async findAll(): Promise<Ticket[]> {
+    const rows = await this.db.select().from(ticketsTable);
+    return rows.map((r) => this.toDomain(r));
+  }
+
   async getById(id: string): Promise<Ticket | null> {
     const rows = await this.db
       .select()

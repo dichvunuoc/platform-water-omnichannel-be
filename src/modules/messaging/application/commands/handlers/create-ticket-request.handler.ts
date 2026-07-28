@@ -5,20 +5,13 @@ import { CommandHandler } from 'src/libs/shared/cqrs';
 import type { IConversationRepository } from '../../../domain';
 import { CONVERSATION_REPOSITORY_TOKEN } from '../../../constants/tokens';
 import { CreateTicketRequestCommand } from '../create-ticket-request.command';
-import { TicketingStubService } from '../../../../ticketing-stub/ticketing-stub.service';
+import type { ITicketRepository } from '../../../../ticketing/domain';
+import { TICKET_REPOSITORY_TOKEN } from '../../../../ticketing/constants';
+import { Ticket, TicketPriority } from '../../../../ticketing/domain';
 
 /**
- * Create Ticket Request Handler (FR19)
- *
- * OmniCare's side of the ticket-creation boundary:
- *   1. Load conversation (throw if not found).
- *   2. If conversation already has a ticketId → return it (duplicate guard).
- *   3. Call the Ticketing stub (simulates publishing TicketCreateRequested to the broker).
- *   4. Link the conversation to the returned ticket ID.
- *   5. Return { ok, ticketId }.
- *
- * NOTE: The actual ticket creation logic (FR21-23: assign ID, classify, SLA policy)
- * is the Ticketing & SLA service's responsibility — NOT here.
+ * Create Ticket Request Handler (FR19) — real ticketing (Phase 2, stub removed).
+ * Loads conversation → creates Ticket via real TicketRepository → links conversation.
  */
 @CommandHandler(CreateTicketRequestCommand)
 export class CreateTicketRequestHandler
@@ -29,43 +22,41 @@ export class CreateTicketRequestHandler
   constructor(
     @Inject(CONVERSATION_REPOSITORY_TOKEN)
     private readonly conversationRepository: IConversationRepository,
-    private readonly ticketingStub: TicketingStubService,
+    @Inject(TICKET_REPOSITORY_TOKEN)
+    private readonly ticketRepo: ITicketRepository,
   ) {}
 
   async execute(
     command: CreateTicketRequestCommand,
   ): Promise<{ ok: true; ticketId: string }> {
-    // 1. Load conversation
     const conversation = await this.conversationRepository.getById(command.conversationId);
     if (!conversation) {
       throw NotFoundException.entity('Conversation', command.conversationId);
     }
 
-    // 2. Duplicate guard — already has a ticket
     if (conversation.ticketId) {
       this.logger.debug(`Conversation ${command.conversationId} already linked to ticket ${conversation.ticketId}`);
       return { ok: true, ticketId: conversation.ticketId };
     }
 
-    // 3. Request ticket creation from the Ticketing service (stub)
-    //    In production: this publishes TicketCreateRequested to the broker.
-    //    For wave-1: we call the stub directly (synchronous — stub is in-process).
-    const ticket = this.ticketingStub.createTicket({
+    const id = `SC-${Date.now().toString(36).toUpperCase()}`;
+    const priority = TicketPriority.create(command.priority ?? 'P2');
+
+    const ticket = Ticket.create(id, {
       conversationId: command.conversationId,
       customerId: conversation.customerId ?? undefined,
       channel: conversation.channel.value,
-      priority: command.priority,
       title: command.title ?? `Ticket from conversation ${command.conversationId}`,
       description: command.description,
-      fastForwardSla: command.fastForwardSla ?? false,
+      priority,
     });
 
-    // 4. Link conversation → ticket
+    await this.ticketRepo.save(ticket);
+
     conversation.linkTicket(ticket.id);
     await this.conversationRepository.save(conversation);
 
-    this.logger.log(`Ticket requested + linked: conv=${command.conversationId} → ticket=${ticket.id} (priority=${ticket.priority})`);
-
+    this.logger.log(`Ticket created + linked: conv=${command.conversationId} → ticket=${ticket.id}`);
     return { ok: true, ticketId: ticket.id };
   }
 }

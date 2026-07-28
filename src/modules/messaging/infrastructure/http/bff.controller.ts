@@ -334,7 +334,7 @@ export class BffController {
    */
   @Get('operations/kpis')
   async getDashboardKpis() {
-    const kanban = this.ticketViewService.getKanbanView();
+    const kanban = await this.ticketViewService.getKanbanView();
     return {
       totalTickets: kanban.total,
       slaBreachedCount: kanban.slaBreachedCount,

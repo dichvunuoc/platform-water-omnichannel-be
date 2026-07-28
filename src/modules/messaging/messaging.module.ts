@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SharedCqrsModule } from 'src/libs/shared';
 import { IdempotencyService } from 'src/libs/shared/cqrs';
-import { TicketingStubModule } from '../ticketing-stub/ticketing-stub.module';
+import { TicketingModule } from '../ticketing/ticketing.module';
 import { Customer360Module } from '../customer-360/customer-360.module';
 import { PresenceModule } from '../presence/presence.module';
 import { AiInsightModule } from '../ai-insight/ai-insight.module';
@@ -37,7 +37,7 @@ import {
 @Module({
   imports: [
     SharedCqrsModule,
-    TicketingStubModule,
+    TicketingModule,
     Customer360Module,
     PresenceModule,
     AiInsightModule,
