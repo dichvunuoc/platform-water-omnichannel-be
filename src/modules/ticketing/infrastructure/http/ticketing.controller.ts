@@ -62,7 +62,7 @@ export class TicketingController {
         dto.channel ?? 'ZALO',
         dto.title ?? 'Untitled',
         dto.description ?? '',
-        dto.priority ?? 'P2',
+        (dto.priority ?? 'P2') as any,
       ),
     );
     return { ok: true, ticketId: result.ticketId };

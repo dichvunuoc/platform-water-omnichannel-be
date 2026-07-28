@@ -6,7 +6,7 @@ import type { IEventBus } from 'src/libs/core/infrastructure';
 import { EVENT_BUS_TOKEN } from 'src/libs/core/constants';
 import type { IOutboxRepository } from 'src/libs/core/infrastructure';
 import { OUTBOX_REPOSITORY_TOKEN } from 'src/libs/core/constants';
-import { BaseAggregateRepository, type SaveOptions } from 'src/libs/core/infrastructure';
+import { BaseAggregateRepository, type SaveOptions } from 'src/libs/shared';
 import {
   Ticket,
   TicketPriorityEnum,

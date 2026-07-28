@@ -15,6 +15,10 @@ import {
   outboxStatusEnum,
   outboxTable,
 } from '@shared/database/outbox/drizzle/schema/outbox.schema';
+import {
+  ticketsTable,
+  ticketRelations,
+} from '@modules/ticketing/infrastructure/persistence/drizzle/schema/ticketing.schema';
 
 export const schema = {
   conversationsTable,
@@ -23,4 +27,6 @@ export const schema = {
   messagesRelations,
   outboxTable,
   outboxStatusEnum,
+  ticketsTable,
+  ticketRelations,
 };

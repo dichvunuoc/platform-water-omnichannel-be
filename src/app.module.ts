@@ -1,5 +1,6 @@
 import { Global, Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import {
   SharedCqrsModule,
   LoggingModule,
@@ -15,6 +16,7 @@ import {
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { CskhBffModule } from './modules/cskh-bff/cskh-bff.module';
+import { TicketingModule } from './modules/ticketing/ticketing.module';
 import { TicketingStubModule } from './modules/ticketing-stub/ticketing-stub.module';
 
 @Global()
@@ -22,6 +24,8 @@ import { TicketingStubModule } from './modules/ticketing-stub/ticketing-stub.mod
   imports: [
     // Configuration (loads .env)
     ConfigModule.forRoot({ isGlobal: true }),
+    // @nestjs/schedule (SlaWorkerService @Cron — phải ở root level)
+    ScheduleModule.forRoot(),
     // Structured Logging with Pino
     LoggingModule,
     // Request Context with Correlation ID for distributed tracing
@@ -46,7 +50,9 @@ import { TicketingStubModule } from './modules/ticketing-stub/ticketing-stub.mod
     RealtimeModule,
     // CSKH BFF layer (CskhController /api/cskh/* + 9 service module imports)
     CskhBffModule,
-    // Ticketing Stub (wave-1 — in-memory Ticketing & SLA service simulator)
+    // Ticketing & SLA (Phase 2 — real Ticket aggregate + SLA dual-clock worker)
+    TicketingModule,
+    // Ticketing Stub (wave-1 — giữ đến khi link conversation→ticket hoàn tất, rồi remove)
     TicketingStubModule,
   ],
 })

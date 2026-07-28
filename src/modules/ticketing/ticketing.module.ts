@@ -5,6 +5,7 @@ import { TicketRepository } from './infrastructure/persistence/write';
 import { CreateTicketHandler, AdvanceStageHandler } from './application/commands';
 import { TICKET_REPOSITORY_TOKEN } from './constants';
 import { IdempotencyService } from 'src/libs/shared/cqrs';
+import { SlaWorkerService } from './infrastructure/sla-worker/sla-worker.service';
 
 @Module({
   imports: [SharedCqrsModule],
@@ -17,6 +18,9 @@ import { IdempotencyService } from 'src/libs/shared/cqrs';
     // Command handlers
     CreateTicketHandler,
     AdvanceStageHandler,
+
+    // SLA worker (cron-based, dual-clock SLA monitoring)
+    SlaWorkerService,
 
     // Idempotency
     IdempotencyService,
