@@ -12,6 +12,7 @@ import {
   schema,
   ContextModule,
   CorrelationIdMiddleware,
+  CacheModule,
 } from 'src/libs/shared';
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
@@ -43,6 +44,8 @@ import { TicketingModule } from './modules/ticketing/ticketing.module';
     OutboxModule,
     // Health check endpoints
     HealthModule,
+    // Cache (Redis-backed khi REDIS_URL set, in-memory fallback)
+    CacheModule,
     // OmniCare Messaging Module (core conversation domain — ingest + inbox + handlers)
     MessagingModule,
     // Realtime gateway (socket.io — push events to agent screens)
