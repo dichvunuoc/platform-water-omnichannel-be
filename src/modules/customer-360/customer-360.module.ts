@@ -7,11 +7,13 @@ import { ConfigService } from '@nestjs/config';
 import { CUSTOMER_360_PORT_TOKEN } from './customer-360.tokens';
 import { MockCustomer360Adapter } from './mock-customer-360.adapter';
 import { Customer360BffAdapter } from './customer-360-bff.adapter';
+import { IdentityResolutionHandler } from './identity-resolution.handler';
 
 @Module({
   providers: [
     MockCustomer360Adapter,
     Customer360BffAdapter,
+    IdentityResolutionHandler,
     {
       provide: CUSTOMER_360_PORT_TOKEN,
       useFactory: (
