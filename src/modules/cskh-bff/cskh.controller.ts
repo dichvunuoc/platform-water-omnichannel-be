@@ -32,6 +32,8 @@ import type { ConversationReadDao, ConversationDetail } from '../messaging/infra
 import type { ICommandBus } from 'src/libs/core/application';
 import { COMMAND_BUS_TOKEN } from 'src/libs/core/constants';
 import { SendReplyCommand } from '../messaging/application/commands/send-reply.command';
+import { CloseConversationCommand } from '../messaging/application/commands/close-conversation.command';
+import { ArchiveConversationCommand } from '../messaging/application/commands/archive-conversation.command';
 import { CUSTOMER_360_PORT_TOKEN } from '../customer-360/customer-360.tokens';
 import type { ICustomer360Port } from '../customer-360/customer-360.port';
 import {
@@ -108,6 +110,26 @@ export class CskhController {
     const detail = await this.readDao.findById(id);
     if (!detail) throw new NotFoundException(`Không tìm thấy hội thoại ${id}`);
     return this.enrichedDetail(detail);
+  }
+
+  /** POST /conversations/:id/close — đóng hội thoại (FR18). */
+  @Post('conversations/:id/close')
+  @HttpCode(HttpStatus.OK)
+  async closeConversation(@Param('id') id: string, @Body() body: { agentId?: string }) {
+    await this.commandBus.execute(
+      new CloseConversationCommand(id, body.agentId ?? 'agent-mvp'),
+    );
+    return { ok: true, conversationId: id, status: 'closed' };
+  }
+
+  /** POST /conversations/:id/archive — lưu trữ hội thoại (FR18, yêu cầu CLOSED trước). */
+  @Post('conversations/:id/archive')
+  @HttpCode(HttpStatus.OK)
+  async archiveConversation(@Param('id') id: string, @Body() body: { agentId?: string }) {
+    await this.commandBus.execute(
+      new ArchiveConversationCommand(id, body.agentId ?? 'agent-mvp'),
+    );
+    return { ok: true, conversationId: id, status: 'archived' };
   }
 
   /** POST /conversations/:id/reply (Task B8) — agent reply qua SendReplyCommand + re-fetch detail. */
@@ -352,16 +374,17 @@ export class CskhController {
   }
 
   @Post('broadcasts/:id/send')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.ACCEPTED)
   async sendBroadcast(@Param('id') id: string) {
     const bc = this.broadcastPort.send(id);
+    // Async: fire-and-forget notification (không block HTTP — 202 Accepted)
     this.fireNoti({
       templateKey: 'cskh.broadcast',
       recipients: [{ phone: '0900000000' }],
       data: { title: bc.title, area: bc.area, window: bc.window, audience: bc.audience },
       idempotencyKey: `cskh.broadcast:${bc.id}`,
     });
-    return bc;
+    return { ok: true, id: bc.id, status: 'sending', message: 'Đã đưa vào hàng đợi xử lý' };
   }
 }
 

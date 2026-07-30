@@ -30,11 +30,15 @@ export class IdentityResolutionHandler implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.subscribe('ConversationStarted', async (event: any) => {
-      await this.handleResolution(event).catch((e) =>
-        this.logger.error(`Identity resolution failed: ${e.message}`),
-      );
-    });
+    this.eventBus.subscribe(
+      'ConversationStarted',
+      async (event: any) => {
+        await this.handleResolution(event).catch((e) =>
+          this.logger.error(`Identity resolution failed: ${e.message}`),
+        );
+      },
+      { queueName: 'ConversationStarted.identity-resolution', durable: true },
+    );
   }
 
   private async handleResolution(event: any): Promise<void> {

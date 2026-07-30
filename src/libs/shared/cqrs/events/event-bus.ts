@@ -57,6 +57,7 @@ export class EventBus implements IEventBus {
   subscribe<T extends IDomainEvent>(
     eventType: string,
     handler: (event: T) => Promise<void>,
+    _options?: any,
   ): void {
     if (!this.customHandlers.has(eventType)) {
       this.customHandlers.set(eventType, []);

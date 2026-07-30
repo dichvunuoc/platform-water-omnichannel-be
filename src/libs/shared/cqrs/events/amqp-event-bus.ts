@@ -16,7 +16,7 @@
  */
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import type { ConfirmChannel } from 'amqplib';
-import type { IEventBus } from '../../../core/infrastructure/events/interfaces/event-bus.interface';
+import type { IEventBus, EventBusSubscribeOptions } from '../../../core/infrastructure/events/interfaces/event-bus.interface';
 import type { IDomainEvent } from '../../../core/domain/events';
 import { AmqpConnection, EXCHANGE_NAME } from './amqp-connection';
 
@@ -32,7 +32,6 @@ export class AmqpEventBus implements IEventBus {
   private readonly logger = new Logger('AmqpEventBus');
   private readonly pendingSubs: PendingSubscription[] = [];
   private registered = false;
-  private subCounter = 0;
 
   constructor(private readonly amqpConnection: AmqpConnection) {}
 
@@ -68,9 +67,12 @@ export class AmqpEventBus implements IEventBus {
   subscribe<T extends IDomainEvent>(
     eventType: string,
     handler: (event: T) => Promise<void>,
-    options?: { queueName?: string; durable?: boolean; autoDelete?: boolean },
+    options?: EventBusSubscribeOptions,
   ): void {
-    const queueName = options?.queueName ?? `${eventType}.q${this.subCounter++}`;
+    // Default: stable queue name = eventType + consumer name (from options).
+    // This ensures multi-replica pods of the same consumer TYPE share one queue
+    // (competing consumers — each message processed exactly once across replicas).
+    const queueName = options?.queueName ?? `${eventType}.consumer`;
     const sub: PendingSubscription = {
       eventType,
       queueName,
