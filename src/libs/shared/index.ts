@@ -21,3 +21,6 @@ export * from './caching';
 
 // Request Context (Correlation ID, User Context)
 export * from './context';
+
+// Security (Auth Guards, RBAC, Rate Limiter)
+export * from './security';

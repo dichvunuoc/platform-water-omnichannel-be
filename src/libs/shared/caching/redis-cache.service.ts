@@ -77,8 +77,8 @@ export class RedisCacheService
         await this.redis.connect();
       }
     } catch (error) {
-      this.logger.error('Failed to connect to Redis on module init', error);
-      throw error;
+      this.logger.error(`Failed to connect to Redis: ${(error as Error).message}. Cache operations will fail silently.`);
+      // Don't throw — let the app boot. Cache will retry on next operation.
     }
   }
 

@@ -140,6 +140,9 @@ export class Conversation extends AggregateRoot {
     if (!customerId) {
       throw new DomainException('customerId is required', 'CUSTOMER_ID_REQUIRED');
     }
+    // Idempotent: no-op if already assigned to the same customer (outbox
+    // at-least-once retries can re-publish ConversationStarted).
+    if (this._customerId === customerId) return;
     this._customerId = customerId;
     this.markAsModified(); // increment version for OCC
   }

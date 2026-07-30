@@ -41,6 +41,15 @@ export class AssignCustomerHandler
       throw NotFoundException.entity('Conversation', command.conversationId);
     }
 
+    // Idempotency: skip if conversation already has a customerId (outbox retries
+    // can re-publish ConversationStarted → re-trigger IdentityResolutionHandler).
+    if (conversation.customerId) {
+      this.logger.debug(
+        `Conversation ${conversation.id} already linked to customer ${conversation.customerId} — skipping`,
+      );
+      return { resolved: true, customerId: conversation.customerId };
+    }
+
     // 2. If customerId is provided directly (manual / already resolved), assign + save
     if (command.customerId) {
       conversation.assignCustomer(command.customerId);

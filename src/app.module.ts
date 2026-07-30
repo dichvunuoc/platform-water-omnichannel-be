@@ -13,6 +13,7 @@ import {
   ContextModule,
   CorrelationIdMiddleware,
   CacheModule,
+  AuthModule,
 } from 'src/libs/shared';
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
