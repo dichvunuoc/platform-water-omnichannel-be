@@ -32,6 +32,7 @@ export class AmqpEventBus implements IEventBus {
   private readonly logger = new Logger('AmqpEventBus');
   private readonly pendingSubs: PendingSubscription[] = [];
   private registered = false;
+  private subCounter = 0;
 
   constructor(private readonly amqpConnection: AmqpConnection) {}
 
@@ -69,7 +70,7 @@ export class AmqpEventBus implements IEventBus {
     handler: (event: T) => Promise<void>,
     options?: { queueName?: string; durable?: boolean; autoDelete?: boolean },
   ): void {
-    const queueName = options?.queueName ?? `${eventType}.consumer`;
+    const queueName = options?.queueName ?? `${eventType}.q${this.subCounter++}`;
     const sub: PendingSubscription = {
       eventType,
       queueName,
