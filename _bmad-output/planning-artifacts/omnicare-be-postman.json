@@ -1,0 +1,1679 @@
+{
+  "info": {
+    "name": "OmniCare CSKH API Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:4001"
+    }
+  ],
+  "item": [
+    {
+      "name": "HEALTH",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /health/live",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health/live",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                "live"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /health/ready",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health/ready",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                "ready"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "WEBHOOKS",
+      "item": [
+        {
+          "name": "POST /webhooks/inbound",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/webhooks/inbound",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "inbound"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET /webhooks/app/conversation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/webhooks/app/conversation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "app",
+                "conversation"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /webhooks/zalo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/webhooks/zalo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "zalo"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /webhooks/app",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/webhooks/app",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "app"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /webhooks/facebook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/webhooks/facebook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "facebook"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /webhooks/email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/webhooks/email",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "email"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "BFF",
+      "item": [
+        {
+          "name": "GET /bff/inbox",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/inbox",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "inbox"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /bff/conversations/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/conversations/{id}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "conversations",
+                "{id}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /bff/bootstrap",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/bootstrap",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "bootstrap"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /bff/conversations/{id}/reply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/conversations/{id}/reply",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "conversations",
+                "{id}",
+                "reply"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /bff/conversations/{id}/create-ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/conversations/{id}/create-ticket",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "conversations",
+                "{id}",
+                "create-ticket"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET /bff/tickets/kanban",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/tickets/kanban",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "tickets",
+                "kanban"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /bff/tickets/{ticketId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/tickets/{ticketId}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "tickets",
+                "{ticketId}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /bff/agent/presence",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/agent/presence",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "agent",
+                "presence"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET /bff/agent/presence",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/agent/presence",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "agent",
+                "presence"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /bff/conversations/{id}/close",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/conversations/{id}/close",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "conversations",
+                "{id}",
+                "close"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /bff/conversations/{id}/archive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/conversations/{id}/archive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "conversations",
+                "{id}",
+                "archive"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /bff/ai/classify-image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/ai/classify-image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "ai",
+                "classify-image"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /bff/ai/transcribe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/ai/transcribe",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "ai",
+                "transcribe"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /bff/ai/classify-intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/ai/classify-intent",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "ai",
+                "classify-intent"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /bff/conversations/{id}/resolve-identity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/conversations/{id}/resolve-identity",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "conversations",
+                "{id}",
+                "resolve-identity"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /bff/customers/{customerId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/customers/{customerId}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "customers",
+                "{customerId}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /bff/conversations/{id}/assign-customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/conversations/{id}/assign-customer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "conversations",
+                "{id}",
+                "assign-customer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /bff/operations/kpis",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/operations/kpis",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "operations",
+                "kpis"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /bff/tickets/{ticketId}/advance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/tickets/{ticketId}/advance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "tickets",
+                "{ticketId}",
+                "advance"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /bff/tickets/{ticketId}/reassign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/tickets/{ticketId}/reassign",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "tickets",
+                "{ticketId}",
+                "reassign"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /bff/conversations/{id}/dispatch-work-order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/conversations/{id}/dispatch-work-order",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "conversations",
+                "{id}",
+                "dispatch-work-order"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET /bff/softphone/lookup/{phone}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/softphone/lookup/{phone}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "softphone",
+                "lookup",
+                "{phone}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /bff/softphone/active",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/softphone/active",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "softphone",
+                "active"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /bff/calls/{callId}/recording",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/calls/{callId}/recording",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "calls",
+                "{callId}",
+                "recording"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /bff/kb/search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/kb/search",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "kb",
+                "search"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /bff/csat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bff/csat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bff",
+                "csat"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "TICKETS",
+      "item": [
+        {
+          "name": "GET /tickets/kanban",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tickets/kanban",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tickets",
+                "kanban"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /tickets/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tickets/{id}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tickets",
+                "{id}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /tickets/conversations/{conversationId}/ticket",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tickets/conversations/{conversationId}/ticket",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tickets",
+                "conversations",
+                "{conversationId}",
+                "ticket"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /tickets",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tickets",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tickets"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "POST /tickets/{id}/advance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tickets/{id}/advance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tickets",
+                "{id}",
+                "advance"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "API",
+      "item": [
+        {
+          "name": "GET /api/cskh/inbox",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/inbox",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "inbox"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/conversations/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/conversations/{id}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "conversations",
+                "{id}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/cskh/conversations/{id}/reply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/conversations/{id}/reply",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "conversations",
+                "{id}",
+                "reply"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/catalogs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/catalogs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "catalogs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "dashboard"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/tickets",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "tickets"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/tickets/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/tickets/{id}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "tickets",
+                "{id}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/cskh/tickets/{id}/reply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/tickets/{id}/reply",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "tickets",
+                "{id}",
+                "reply"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/cskh/tickets/{id}/assign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/tickets/{id}/assign",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "tickets",
+                "{id}",
+                "assign"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/cskh/tickets/{id}/status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/tickets/{id}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "tickets",
+                "{id}",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/cskh/tickets/{id}/resolve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/tickets/{id}/resolve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "tickets",
+                "{id}",
+                "resolve"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/incidents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/incidents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "incidents"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/cskh/incidents/{id}/triage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/incidents/{id}/triage",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "incidents",
+                "{id}",
+                "triage"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/cskh/incidents/{id}/kind",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/incidents/{id}/kind",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "incidents",
+                "{id}",
+                "kind"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/cskh/incidents/{id}/dispatch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/incidents/{id}/dispatch",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "incidents",
+                "{id}",
+                "dispatch"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/softphone/queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/softphone/queue",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "softphone",
+                "queue"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/softphone/active",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/softphone/active",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "softphone",
+                "active"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/softphone/log",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/softphone/log",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "softphone",
+                "log"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/softphone/lookup/{phone}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/softphone/lookup/{phone}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "softphone",
+                "lookup",
+                "{phone}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/calls/{callId}/recording",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/calls/{callId}/recording",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "calls",
+                "{callId}",
+                "recording"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/csat",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/csat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "csat"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/knowledge",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/knowledge",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "knowledge"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/chatbot",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/chatbot",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "chatbot"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/cskh/chatbot/toggle",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/chatbot/toggle",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "chatbot",
+                "toggle"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/cskh/broadcasts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/broadcasts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "broadcasts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/cskh/broadcasts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/broadcasts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "broadcasts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/cskh/broadcasts/{id}/send",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/cskh/broadcasts/{id}/send",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "cskh",
+                "broadcasts",
+                "{id}",
+                "send"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
