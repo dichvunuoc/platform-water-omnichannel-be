@@ -1,4 +1,5 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import type { IEventBus } from 'src/libs/core/infrastructure';
 import { EVENT_BUS_TOKEN } from 'src/libs/core/constants';
@@ -140,6 +141,15 @@ export class SlaWorkerService {
       this.logger.debug(`EventBus unavailable — '${eventType}' logged only`);
       return;
     }
-    await this.eventBus.publish({ eventType, aggregateId: payload.ticketId, data: payload } as any);
+    // Publish as a well-formed IDomainEvent (under AMQP, the outbox needs
+    // eventId + aggregateType for the outbox table NOT NULL columns).
+    await this.eventBus.publish({
+      eventId: randomUUID(),
+      eventType,
+      aggregateId: payload.ticketId,
+      aggregateType: 'Ticket',
+      occurredAt: new Date(),
+      data: payload,
+    } as any);
   }
 }

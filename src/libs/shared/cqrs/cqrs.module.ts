@@ -1,8 +1,11 @@
 import { Global, Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CqrsModule } from '@nestjs/cqrs';
 import { NestCommandBus } from './buses/nest-command-bus';
 import { NestQueryBus } from './buses/nest-query-bus';
 import { EventBus } from './events/event-bus';
+import { AmqpConnection } from './events/amqp-connection';
+import { AmqpEventBus } from './events/amqp-event-bus';
 import { IdempotencyService } from './idempotency/idempotency.service';
 
 import { COMMAND_BUS_TOKEN, QUERY_BUS_TOKEN, EVENT_BUS_TOKEN } from '@core';
@@ -10,42 +13,21 @@ import { COMMAND_BUS_TOKEN, QUERY_BUS_TOKEN, EVENT_BUS_TOKEN } from '@core';
 export { COMMAND_BUS_TOKEN, QUERY_BUS_TOKEN, EVENT_BUS_TOKEN };
 
 /**
- * CQRS Module - Global Module for DDD/CQRS Architecture
+ * CQRS Module — Global.
  *
- * Provides:
- * - Command Bus for write operations
- * - Query Bus for read operations
- * - Event Bus for domain events
- *
- * Handler Registration:
- * Handlers are automatically registered via @nestjs/cqrs decorators:
- * - @CommandHandler(CommandClass)
- * - @QueryHandler(QueryClass)
- * - @EventsHandler(EventClass)
- *
- * Usage in Feature Modules:
- * ```typescript
- * @Module({
- *   imports: [SharedCqrsModule],
- *   providers: [
- *     CreateUserHandler,
- *     GetUserHandler,
- *   ],
- * })
- * export class UserModule {}
- * ```
+ * EVENT_BUS_TOKEN provider: factory selects AmqpEventBus when AMQP_URL is set,
+ * otherwise falls back to in-process EventBus (dev/test without RabbitMQ).
  */
 @Global()
 @Module({
-  imports: [CqrsModule],
+  imports: [CqrsModule, ConfigModule],
   providers: [
-    // Infrastructure implementations (Adapters)
     NestCommandBus,
     NestQueryBus,
     EventBus,
-    // Idempotency support for commands
+    AmqpConnection,
+    AmqpEventBus,
     IdempotencyService,
-    // Provide interfaces using implementation classes (Dependency Inversion)
     {
       provide: COMMAND_BUS_TOKEN,
       useExisting: NestCommandBus,
@@ -56,18 +38,20 @@ export { COMMAND_BUS_TOKEN, QUERY_BUS_TOKEN, EVENT_BUS_TOKEN };
     },
     {
       provide: EVENT_BUS_TOKEN,
-      useExisting: EventBus,
+      useFactory: (config: ConfigService, amqpBus: AmqpEventBus, inProcessBus: EventBus) => {
+        return config.get<string>('AMQP_URL') ? amqpBus : inProcessBus;
+      },
+      inject: [ConfigService, AmqpEventBus, EventBus],
     },
   ],
   exports: [
-    // Export CqrsModule for decorators
     CqrsModule,
-    // Export concrete implementations
     NestCommandBus,
     NestQueryBus,
     EventBus,
+    AmqpConnection,
+    AmqpEventBus,
     IdempotencyService,
-    // Export interface tokens
     COMMAND_BUS_TOKEN,
     QUERY_BUS_TOKEN,
     EVENT_BUS_TOKEN,

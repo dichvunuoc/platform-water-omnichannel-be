@@ -120,27 +120,11 @@ export class ReceiveInboundMessageHandler
       `Inbound ingested: conversation=${conversationId} message=${message.id} channel=${command.channel}`,
     );
 
-    // Realtime push: publish MessageReceived → MessagingGateway → socket.io (in-process, ngay lập tức).
-    // Outbox (FR7) lo reliable async; đây là fast-path cho realtime agent screen.
-    if (this.eventBus) {
-      await this.eventBus
-        .publish({
-          eventType: 'MessageReceived',
-          aggregateId: conversationId,
-          occurredAt: new Date().toISOString(),
-          data: {
-            conversationId,
-            messageId: message.id,
-            channel: command.channel,
-            direction: 'INBOUND',
-            senderType: 'CUSTOMER',
-            content: command.content,
-            attachments: command.attachments ?? [],
-            timestamp: new Date().toISOString(),
-          },
-        } as any)
-        .catch((e) => this.logger.warn(`realtime publish failed: ${e.message}`));
-    }
+    // Realtime push: publish MessageReceived → MessagingGateway → socket.io.
+    // Under AMQP, the outbox already persists this event (aggregate → outbox → AMQP).
+    // This direct publish was a DUPLICATE fast-path for in-process realtime — now
+    // removed to avoid double-delivery under AMQP. The outbox handles delivery
+    // (slightly delayed, but reliable).
 
     return result;
   }
