@@ -165,7 +165,7 @@ export class CskhController {
   // ── Dashboard (→ IDashboardPort) ──────────────────────────────────────────────
   @Get('dashboard')
   async dashboard() {
-    return this.dashboardPort.get();
+    return await this.dashboardPort.get();
   }
 
   // ── Tickets (core — direct fixture; ticketing-stub backing sau) ───────────────
