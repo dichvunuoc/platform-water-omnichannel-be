@@ -29,11 +29,15 @@ export class TicketClosedCsatHandler implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.subscribe('TicketClosed', async (event: any) => {
-      await this.handleCsat(event).catch((e) =>
-        this.logger.error(`CSAT trigger failed: ${e.message}`),
-      );
-    });
+    this.eventBus.subscribe(
+      'TicketClosed',
+      async (event: any) => {
+        await this.handleCsat(event).catch((e) =>
+          this.logger.error(`CSAT trigger failed: ${e.message}`),
+        );
+      },
+      { queueName: 'TicketClosed.csat', durable: true },
+    );
   }
 
   private async handleCsat(event: any): Promise<void> {

@@ -22,11 +22,15 @@ export class ConversationStartedTicketHandler implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.subscribe('ConversationStarted', async (event: any) => {
-      await this.handleConversationStarted(event).catch((e) =>
-        this.logger.error(`Auto-ticket failed: ${e.message}`),
-      );
-    });
+    this.eventBus.subscribe(
+      'ConversationStarted',
+      async (event: any) => {
+        await this.handleConversationStarted(event).catch((e) =>
+          this.logger.error(`Auto-ticket failed: ${e.message}`),
+        );
+      },
+      { queueName: 'ConversationStarted.ticket-handler', durable: true },
+    );
   }
 
   private async handleConversationStarted(event: any): Promise<void> {

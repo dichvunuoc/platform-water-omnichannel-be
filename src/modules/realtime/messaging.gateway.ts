@@ -52,18 +52,27 @@ export class MessagingGateway
    * causing a crash if an event fired during startup.
    */
   onModuleInit(): void {
-    this.eventBus.subscribe('MessageReceived', async (event: any) => {
-      this.handleMessageReceived(event);
-    });
+    // Realtime = per-instance (autoDelete): each pod needs its OWN queue so all
+    // pods' socket.io pools receive the event (fanout, not competing consumers).
+    const instance = `${process.pid}`;
 
-    this.eventBus.subscribe('ConversationStarted', async (event: any) => {
-      this.handleConversationStarted(event);
-    });
+    this.eventBus.subscribe(
+      'MessageReceived',
+      async (event: any) => { this.handleMessageReceived(event); },
+      { queueName: `MessageReceived.realtime.${instance}`, durable: false, autoDelete: true },
+    );
 
-    // FR25 — SLA warning events from the Ticketing service (story 3-3)
-    this.eventBus.subscribe('SlaWarning', async (event: any) => {
-      this.handleSlaWarning(event);
-    });
+    this.eventBus.subscribe(
+      'ConversationStarted',
+      async (event: any) => { this.handleConversationStarted(event); },
+      { queueName: `ConversationStarted.realtime.${instance}`, durable: false, autoDelete: true },
+    );
+
+    this.eventBus.subscribe(
+      'SlaWarning',
+      async (event: any) => { this.handleSlaWarning(event); },
+      { queueName: `SlaWarning.realtime.${instance}`, durable: false, autoDelete: true },
+    );
   }
 
   // ─── Connection lifecycle ───
