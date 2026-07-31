@@ -29,6 +29,10 @@ export { COMMAND_BUS_TOKEN, QUERY_BUS_TOKEN, EVENT_BUS_TOKEN };
     AmqpEventBus,
     IdempotencyService,
     {
+      provide: 'AMQP_CONNECTION',
+      useExisting: AmqpConnection,
+    },
+    {
       provide: COMMAND_BUS_TOKEN,
       useExisting: NestCommandBus,
     },
@@ -55,6 +59,7 @@ export { COMMAND_BUS_TOKEN, QUERY_BUS_TOKEN, EVENT_BUS_TOKEN };
     COMMAND_BUS_TOKEN,
     QUERY_BUS_TOKEN,
     EVENT_BUS_TOKEN,
+    'AMQP_CONNECTION',
   ],
 })
 export class SharedCqrsModule {}
