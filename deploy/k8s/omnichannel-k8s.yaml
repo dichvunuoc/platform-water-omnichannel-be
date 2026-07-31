@@ -1,0 +1,134 @@
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: omnichannel-demo
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: omnichannel-be
+  namespace: omnichannel-demo
+  labels:
+    app: omnichannel-be
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: omnichannel-be
+  template:
+    metadata:
+      labels:
+        app: omnichannel-be
+    spec:
+      containers:
+        - name: omnichannel-be
+          # TODO: Thay bằng registry/image thật sau khi build (CI hoặc manual)
+          image: omnichannel-be:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4001
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "4001"
+            # ⚠️ Thay bằng giá trị thật (nên dùng Secret trong production)
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: omnichannel-secrets
+                  key: database-url
+                  optional: true
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: omnichannel-secrets
+                  key: redis-url
+                  optional: true
+            - name: AMQP_URL
+              valueFrom:
+                secretKeyRef:
+                  name: omnichannel-secrets
+                  key: amqp-url
+                  optional: true
+            - name: NOTIFICATION_GRPC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: omnichannel-secrets
+                  key: notification-grpc-url
+                  optional: true
+            - name: NOTIFICATION_TENANT_ID
+              value: "tnt_hawaco"
+            - name: AUTH_ENABLED
+              value: "false"
+            - name: CSKH_BFF_URL
+              value: ""  # Mock adapter khi chưa có .NET BFF
+          # k3s Readiness Probe — Pod nhận traffic chỉ khi /health/ready trả 200
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 4001
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+          # k3s Liveness Probe — restart Pod nếu /health/live fail liên tục
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 4001
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: omnichannel-be-svc
+  namespace: omnichannel-demo
+spec:
+  selector:
+    app: omnichannel-be
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 4001
+---
+# Ingress — wildcard *.dichvunuoc.vn (no DNS ticket needed per k3s access memory)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: omnichannel-be-ingress
+  namespace: omnichannel-demo
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+    - host: omnichannel.dichvunuoc.vn
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: omnichannel-be-svc
+                port:
+                  number: 80
+---
+# Secret template — tạo trước khi apply (thay giá trị thật)
+# kubectl create secret generic omnichannel-secrets \
+#   --namespace=omnichannel-demo \
+#   --from-literal=database-url='postgresql://user:pass@pg-host:5432/db' \
+#   --from-literal=redis-url='redis://redis-host:6379' \
+#   --from-literal=amqp-url='amqp://user:pass@rabbitmq-host:5672' \
+#   --from-literal=notification-grpc-url='notification-be-rs:8081'
