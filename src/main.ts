@@ -36,9 +36,9 @@ async function bootstrap() {
   // Enable graceful shutdown hooks
   app.enableShutdownHooks();
 
-  // CORS cho FE dev (localhost:4322) — Phase 1 E2E inbox đa kênh.
-  await app.register(fastifyCors, {
-    origin: ['http://localhost:4322'],
+  // CORS cho FE dev + k3s ingress
+  await app.register(fastifyCors as any, {
+    origin: true, // Cho phép tất cả origin (MVP; restrict sau)
     credentials: true,
   });
 
