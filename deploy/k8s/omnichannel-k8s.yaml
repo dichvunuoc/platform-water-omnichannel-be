@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: omnichannel-be
-          # TODO: Thay bằng registry/image thật sau khi build (CI hoặc manual)
+          # Build local trên server: docker build -t omnichannel-be:latest .
           image: omnichannel-be:latest
           imagePullPolicy: IfNotPresent
           ports:
@@ -35,38 +35,40 @@ spec:
               value: "production"
             - name: PORT
               value: "4001"
-            # ⚠️ Thay bằng giá trị thật (nên dùng Secret trong production)
+            # DB: platform-core/postgres (namespace platform-core)
             - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: omnichannel-secrets
-                  key: database-url
-                  optional: true
+              value: "postgresql://platform:change-me-pg@postgres.platform-core.svc:5432/omnichannel"
+            - name: DB_HOST
+              value: "postgres.platform-core.svc"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              value: "platform"
+            - name: DB_PASSWORD
+              value: "change-me-pg"
+            - name: DB_NAME
+              value: "omnichannel"
+            # Redis: platform-core/redis
             - name: REDIS_URL
-              valueFrom:
-                secretKeyRef:
-                  name: omnichannel-secrets
-                  key: redis-url
-                  optional: true
+              value: "redis://redis.platform-core.svc:6379"
+            - name: REDIS_HOST
+              value: "redis.platform-core.svc"
+            - name: REDIS_PORT
+              value: "6379"
+            # RabbitMQ: platform-core/rabbitmq
             - name: AMQP_URL
-              valueFrom:
-                secretKeyRef:
-                  name: omnichannel-secrets
-                  key: amqp-url
-                  optional: true
+              value: "amqp://platform:change-me-rmq@rabbitmq.platform-core.svc:5672"
+            # Notification gRPC (nếu chạy cùng cluster)
             - name: NOTIFICATION_GRPC_URL
-              valueFrom:
-                secretKeyRef:
-                  name: omnichannel-secrets
-                  key: notification-grpc-url
-                  optional: true
+              value: "notification-be-rs.platform-core.svc:8081"
             - name: NOTIFICATION_TENANT_ID
               value: "tnt_hawaco"
+            # Auth: MVP dev mode (AUTH_ENABLED=false)
             - name: AUTH_ENABLED
               value: "false"
+            # Customer 360: chưa có .NET BFF → Mock adapter
             - name: CSKH_BFF_URL
-              value: ""  # Mock adapter khi chưa có .NET BFF
-          # k3s Readiness Probe — Pod nhận traffic chỉ khi /health/ready trả 200
+              value: ""
           readinessProbe:
             httpGet:
               path: /health/ready
@@ -74,7 +76,6 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 10
             failureThreshold: 3
-          # k3s Liveness Probe — restart Pod nếu /health/live fail liên tục
           livenessProbe:
             httpGet:
               path: /health/live
@@ -104,7 +105,7 @@ spec:
       port: 80
       targetPort: 4001
 ---
-# Ingress — wildcard *.dichvunuoc.vn (no DNS ticket needed per k3s access memory)
+# Ingress — wildcard *.dichvunuoc.vn + TLS reuse
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -114,7 +115,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   rules:
-    - host: omnichannel.dichvunuoc.vn
+    - host: omnichannel-be-dev.dichvunuoc.vn
       http:
         paths:
           - path: /
@@ -124,11 +125,3 @@ spec:
                 name: omnichannel-be-svc
                 port:
                   number: 80
----
-# Secret template — tạo trước khi apply (thay giá trị thật)
-# kubectl create secret generic omnichannel-secrets \
-#   --namespace=omnichannel-demo \
-#   --from-literal=database-url='postgresql://user:pass@pg-host:5432/db' \
-#   --from-literal=redis-url='redis://redis-host:6379' \
-#   --from-literal=amqp-url='amqp://user:pass@rabbitmq-host:5672' \
-#   --from-literal=notification-grpc-url='notification-be-rs:8081'
