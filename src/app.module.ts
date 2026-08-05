@@ -1,6 +1,8 @@
 import { Global, Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import {
   SharedCqrsModule,
   LoggingModule,
@@ -27,6 +29,8 @@ import { TicketingModule } from './modules/ticketing/ticketing.module';
     ConfigModule.forRoot({ isGlobal: true }),
     // @nestjs/schedule (SlaWorkerService @Cron — phải ở root level)
     ScheduleModule.forRoot(),
+    // Rate limiting: 100 req/10s per IP (webhook flood protection)
+    ThrottlerModule.forRoot([{ ttl: 10000, limit: 100 }]),
     // Structured Logging with Pino
     LoggingModule,
     // Request Context with Correlation ID for distributed tracing
@@ -56,6 +60,10 @@ import { TicketingModule } from './modules/ticketing/ticketing.module';
     // Ticketing & SLA (Phase 2 — real Ticket aggregate + SLA dual-clock worker)
     TicketingModule,
     // Ticketing Stub — REMOVED (Phase 2 real ticketing wired)
+  ],
+  providers: [
+    // Global rate limit guard (429 Too Many Requests when > 100 req/10s per IP)
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule implements NestModule {
