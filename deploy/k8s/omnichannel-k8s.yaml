@@ -5,6 +5,35 @@ kind: Namespace
 metadata:
   name: omnichannel-demo
 ---
+# ConfigMap — config KHÔNG nhạy cảm (hosts/ports/URLs không creds + flags).
+# Creds (DATABASE_URL, DB_PASSWORD, AMQP_URL) nằm ở Secret `omnichannel-be-secret`,
+# tạo server-side từ env của deployment live (không commit giá trị thật vào repo/GitHub).
+# Tạo Secret: xem scripts/ hoặc comment dưới Deployment.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: omnichannel-be-config
+  namespace: omnichannel-demo
+data:
+  NODE_ENV: "production"
+  PORT: "4001"
+  # DB (drizzle-kit migrate đọc DB_HOST/PORT/USER/NAME đây + DB_PASSWORD từ Secret)
+  DB_HOST: "postgres.platform-core.svc"
+  DB_PORT: "5432"
+  DB_USER: "platform"
+  DB_NAME: "omnichannel"
+  # Redis: platform-core/redis (không creds)
+  REDIS_URL: "redis://redis.platform-core.svc:6379"
+  REDIS_HOST: "redis.platform-core.svc"
+  REDIS_PORT: "6379"
+  # Notification gRPC (cùng cluster)
+  NOTIFICATION_GRPC_URL: "notification-be-rs.platform-core.svc:8081"
+  NOTIFICATION_TENANT_ID: "tnt_hawaco"
+  # Auth: MVP dev mode (AUTH_ENABLED=false)
+  AUTH_ENABLED: "false"
+  # Customer 360: chưa có .NET BFF → Mock adapter
+  CSKH_BFF_URL: ""
+---
 # Deployment
 apiVersion: apps/v1
 kind: Deployment
@@ -14,7 +43,12 @@ metadata:
   labels:
     app: omnichannel-be
 spec:
-  replicas: 1
+  replicas: 3                       # HA: 3 replica across 2 node (1× tino-32 + 2× tino-12) — khớp state live hiện tại
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0                   # không tạo pod thừa → tránh 2 initContainer migrate chạy song song
+      maxUnavailable: 1             # rollout tuần tự (1 pod cũ tắt → 1 pod mới lên)
   selector:
     matchLabels:
       app: omnichannel-be
@@ -23,52 +57,47 @@ spec:
       labels:
         app: omnichannel-be
     spec:
+      imagePullSecrets:
+        # registry-dev-pull: pull-secret canonical của cluster (đã có demo/platform-core,
+        # copy sang omnichannel-demo 2026-08-06). Dùng chung cho initContainer + container.
+        - name: registry-dev-pull
+      # Lan tỏa pod across node — khi tino-32 (control-plane) sập, pod vẫn chạy trên tino-12.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: omnichannel-be
+                topologyKey: kubernetes.io/hostname
+      # initContainer migrate — TẠM DISABLE.
+      # DB đã migrate out-of-band (outbox_status + full schema đã tồn tại) nên `drizzle-kit migrate`
+      # chạy lại 0000/0001 → "type already exists". Journal __drizzle_migrations không baseline khớp
+      # (hash algorithm của drizzle ≠ sha256sum files). Init này không thêm giá trị hiện tại (DB đã current).
+      # KHI THÊM migration mới (0002+): tính hash đúng bằng chính drizzle-orm (hoặc migrate thủ công),
+      # baseline __drizzle_migrations, rồi bỏ comment block này + xóa maxSurge:0 nếu muốn song song.
+      # initContainers:
+      #   - name: migrate
+      #     image: registry-dev.dichvunuoc.vn/omnichannel-be:latest
+      #     imagePullPolicy: Always
+      #     command: ["npx", "drizzle-kit", "migrate"]
+      #     envFrom:
+      #       - configMapRef:
+      #           name: omnichannel-be-config
+      #       - secretRef:
+      #           name: omnichannel-be-secret
       containers:
         - name: omnichannel-be
-          # Build local trên server: docker build -t omnichannel-be:latest .
-          image: omnichannel-be:latest
-          imagePullPolicy: IfNotPresent
+          image: registry-dev.dichvunuoc.vn/omnichannel-be:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 4001
-          env:
-            - name: NODE_ENV
-              value: "production"
-            - name: PORT
-              value: "4001"
-            # DB: platform-core/postgres (namespace platform-core)
-            - name: DATABASE_URL
-              value: "postgresql://platform:change-me-pg@postgres.platform-core.svc:5432/omnichannel"
-            - name: DB_HOST
-              value: "postgres.platform-core.svc"
-            - name: DB_PORT
-              value: "5432"
-            - name: DB_USER
-              value: "platform"
-            - name: DB_PASSWORD
-              value: "change-me-pg"
-            - name: DB_NAME
-              value: "omnichannel"
-            # Redis: platform-core/redis
-            - name: REDIS_URL
-              value: "redis://redis.platform-core.svc:6379"
-            - name: REDIS_HOST
-              value: "redis.platform-core.svc"
-            - name: REDIS_PORT
-              value: "6379"
-            # RabbitMQ: platform-core/rabbitmq
-            - name: AMQP_URL
-              value: "amqp://platform:change-me-rmq@rabbitmq.platform-core.svc:5672"
-            # Notification gRPC (nếu chạy cùng cluster)
-            - name: NOTIFICATION_GRPC_URL
-              value: "notification-be-rs.platform-core.svc:8081"
-            - name: NOTIFICATION_TENANT_ID
-              value: "tnt_hawaco"
-            # Auth: MVP dev mode (AUTH_ENABLED=false)
-            - name: AUTH_ENABLED
-              value: "false"
-            # Customer 360: chưa có .NET BFF → Mock adapter
-            - name: CSKH_BFF_URL
-              value: ""
+          envFrom:
+            - configMapRef:
+                name: omnichannel-be-config
+            - secretRef:
+                name: omnichannel-be-secret   # DATABASE_URL, DB_PASSWORD, AMQP_URL — tạo server-side
           readinessProbe:
             httpGet:
               path: /health/ready

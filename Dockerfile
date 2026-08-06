@@ -5,8 +5,11 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
+# bun cho install (khớp bun.lock — packageManager=bun; package-lock.json đã stale),
+# node cho runtime (bun --compile vỡ @nestjs/websockets).
+RUN npm install -g bun
 COPY package.json bun.lock ./
-RUN npm install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 COPY . .
 RUN npx nest build
@@ -20,11 +23,18 @@ RUN groupadd -g 1001 nodejs && \
 
 WORKDIR /app
 
-# Install runtime deps (tsconfig-paths for path aliases at runtime)
+# node_modules copy nguyên từ builder (bun install đã có tsconfig-paths + drizzle-kit + tất cả deps).
+# KHÔNG chạy `npm install ... --omit=dev` ở đây — nó PRUNE devDeps (drizzle-kit) → initContainer migrate fail.
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-RUN npm install tsconfig-paths --omit=dev
+
+# Proto file cho NotificationGrpcAdapter (load runtime từ /app/src/libs/shared/proto/notification.proto).
+COPY --from=builder --chown=nodejs:nodejs /app/src/libs/shared/proto ./src/libs/shared/proto
+
+# Migrations + drizzle config cho initContainer "migrate" (npx drizzle-kit migrate).
+COPY --from=builder --chown=nodejs:nodejs /app/drizzle ./drizzle
+COPY --from=builder --chown=nodejs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
 
 USER nodejs
 

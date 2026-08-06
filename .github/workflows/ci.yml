@@ -38,3 +38,21 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+
+      # ── Push image lên registry nội bộ (chỉ trên push, bỏ qua PR) ──
+      # Yêu cầu:
+      #  - registry-dev.dichvunuoc.vn phải reachable từ GitHub runner (qua ingress wildcard *.dichvunuoc.vn).
+      #    Nếu registry chỉ internal (không expose ra internet), dùng fallback build+push từ water-dev
+      #    bằng scripts/build-push.sh — CI push sẽ fail ở bước login.
+      #  - Repo secrets: REGISTRY_USER, REGISTRY_PASS (creds docker login từ admin).
+      - name: Login to internal registry
+        if: github.event_name == 'push'
+        run: echo "${{ secrets.REGISTRY_PASS }}" | docker login registry-dev.dichvunuoc.vn -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+
+      - name: Push image to internal registry
+        if: github.event_name == 'push'
+        run: |
+          docker tag nestjs-app:${{ github.sha }} registry-dev.dichvunuoc.vn/omnichannel-be:${{ github.sha }}
+          docker tag nestjs-app:${{ github.sha }} registry-dev.dichvunuoc.vn/omnichannel-be:latest
+          docker push registry-dev.dichvunuoc.vn/omnichannel-be:${{ github.sha }}
+          docker push registry-dev.dichvunuoc.vn/omnichannel-be:latest
