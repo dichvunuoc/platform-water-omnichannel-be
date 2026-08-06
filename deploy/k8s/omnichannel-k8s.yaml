@@ -71,22 +71,21 @@ spec:
                   matchLabels:
                     app: omnichannel-be
                 topologyKey: kubernetes.io/hostname
-      # initContainer migrate — TẠM DISABLE.
-      # DB đã migrate out-of-band (outbox_status + full schema đã tồn tại) nên `drizzle-kit migrate`
-      # chạy lại 0000/0001 → "type already exists". Journal __drizzle_migrations không baseline khớp
-      # (hash algorithm của drizzle ≠ sha256sum files). Init này không thêm giá trị hiện tại (DB đã current).
-      # KHI THÊM migration mới (0002+): tính hash đúng bằng chính drizzle-orm (hoặc migrate thủ công),
-      # baseline __drizzle_migrations, rồi bỏ comment block này + xóa maxSurge:0 nếu muốn song song.
-      # initContainers:
-      #   - name: migrate
-      #     image: registry-dev.dichvunuoc.vn/omnichannel-be:latest
-      #     imagePullPolicy: Always
-      #     command: ["npx", "drizzle-kit", "migrate"]
-      #     envFrom:
-      #       - configMapRef:
-      #           name: omnichannel-be-config
-      #       - secretRef:
-      #           name: omnichannel-be-secret
+      # initContainer migrate — auto-run drizzle-kit migrate trước app (idempotent).
+      # Baseline 2026-08-06: drizzle.__drizzle_migrations đã seed hash 0000
+      # (c07ad2a0… = sha256 raw SQL, verify bằng chính readMigrationFiles của drizzle).
+      # drizzle-kit migrate hiện no-op (exit 0, 0 row mới). Khi thêm migration 0002+,
+      # initContainer tự apply → __drizzle_migrations theo dõi đúng.
+      initContainers:
+        - name: migrate
+          image: registry-dev.dichvunuoc.vn/omnichannel-be:latest
+          imagePullPolicy: Always
+          command: ["npx", "drizzle-kit", "migrate"]
+          envFrom:
+            - configMapRef:
+                name: omnichannel-be-config
+            - secretRef:
+                name: omnichannel-be-secret
       containers:
         - name: omnichannel-be
           image: registry-dev.dichvunuoc.vn/omnichannel-be:latest
