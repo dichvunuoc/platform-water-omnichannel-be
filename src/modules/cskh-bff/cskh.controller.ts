@@ -36,9 +36,12 @@ import { CloseConversationCommand } from '../messaging/application/commands/clos
 import { ArchiveConversationCommand } from '../messaging/application/commands/archive-conversation.command';
 import { CUSTOMER_360_PORT_TOKEN } from '../customer-360/customer-360.tokens';
 import type { ICustomer360Port } from '../customer-360/customer-360.port';
+import { TICKET_REPOSITORY_TOKEN } from '../ticketing/constants';
+import type { ITicketRepository } from '../ticketing/domain/repositories/ticket.repository.interface';
 import {
   mapInboxItem,
   mapConversationDetail,
+  mapTicket,
   type InboxPageDto,
   type ConversationDetailDto,
 } from './cskh.dto';
@@ -69,6 +72,7 @@ export class CskhController {
     @Inject(CONVERSATION_READ_DAO_TOKEN) private readonly readDao: ConversationReadDao,
     @Inject(COMMAND_BUS_TOKEN) private readonly commandBus: ICommandBus,
     @Inject(CUSTOMER_360_PORT_TOKEN) private readonly customer360: ICustomer360Port,
+    @Inject(TICKET_REPOSITORY_TOKEN) private readonly ticketRepo: ITicketRepository,
   ) {}
 
   /** Fire-and-forget notification — không block nghiệp vụ khi noti fail. */
@@ -190,7 +194,7 @@ export class CskhController {
     return await this.dashboardPort.get();
   }
 
-  // ── Tickets (core — direct fixture; ticketing-stub backing sau) ───────────────
+  // ── Tickets (Phase 2b: real TicketRepository → mapTicket → TicketDto) ──────
   @Get('tickets')
   async listTickets(
     @Query('status') status?: string,
@@ -201,18 +205,18 @@ export class CskhController {
     @Query('page') page: string = '1',
     @Query('pageSize') pageSize: string = '20',
   ): Promise<TicketListDto> {
-    let items = cskhTickets.slice();
-    if (status) items = items.filter((t) => t.status.toLowerCase() === status!.toLowerCase());
-    if (channel) items = items.filter((t) => t.channel.toLowerCase() === channel!.toLowerCase());
-    if (topic) items = items.filter((t) => t.topic.toLowerCase() === topic!.toLowerCase());
-    if (priority) items = items.filter((t) => t.priority.toLowerCase() === priority!.toLowerCase());
+    const tickets = await this.ticketRepo.findAll();
+    let items = tickets.map((t) => mapTicket(t));
+    if (status) items = items.filter((t) => t.status === status.toLowerCase());
+    if (channel) items = items.filter((t) => t.channel === channel.toLowerCase());
+    if (topic) items = items.filter((t) => t.topic === topic.toLowerCase());
+    if (priority) items = items.filter((t) => t.priority === priority.toLowerCase());
     if (q) {
       const ql = q.toLowerCase();
       items = items.filter(
         (t) =>
           t.name.toLowerCase().includes(ql) ||
           t.code.toLowerCase().includes(ql) ||
-          t.maHb.toLowerCase().includes(ql) ||
           t.preview.toLowerCase().includes(ql),
       );
     }
@@ -223,27 +227,41 @@ export class CskhController {
 
   @Get('tickets/:id')
   async getTicket(@Param('id') id: string): Promise<Ticket> {
-    const t = cskhTickets.find((x) => x.id === id);
-    if (!t) throw new NotFoundException('Không tìm thấy phiếu.');
-    return t;
+    const ticket = await this.ticketRepo.getById(id);
+    if (!ticket) throw new NotFoundException('Không tìm thấy phiếu.');
+    let conversation: ConversationDetail | null = null;
+    const profile = ticket.customerId
+      ? await this.customer360.getProfile(ticket.customerId).catch(() => null)
+      : null;
+    if (ticket.conversationId) {
+      conversation = await this.readDao.findById(ticket.conversationId).catch(() => null);
+    }
+    const agentName = ticket.assignee
+      ? cskhCatalogs.agents.find((a) => a.id === ticket.assignee)?.name ?? '—'
+      : '—';
+    return mapTicket(ticket, { profile, conversation, agentName });
   }
 
   @Post('tickets/:id/reply')
   @HttpCode(HttpStatus.OK)
   async reply(@Param('id') id: string, @Body() body: { text: string }): Promise<Ticket> {
-    const t = cskhTickets.find((x) => x.id === id);
-    if (!t) throw new NotFoundException('Không tìm thấy phiếu.');
-    t.messages.push({ from: 'agent', text: body.text, time: nowTime() });
-    return t;
+    const ticket = await this.ticketRepo.getById(id);
+    if (!ticket) throw new NotFoundException('Không tìm thấy phiếu.');
+    if (ticket.conversationId) {
+      await this.commandBus
+        .execute(new SendReplyCommand(ticket.conversationId, 'agent-mvp', body.text, []))
+        .catch(() => null);
+    }
+    return mapTicket(ticket);
   }
 
   @Post('tickets/:id/assign')
   @HttpCode(HttpStatus.OK)
   async assign(@Param('id') id: string, @Body() body: { agent: string }): Promise<Ticket> {
-    const t = cskhTickets.find((x) => x.id === id);
-    if (!t) throw new NotFoundException('Không tìm thấy phiếu.');
-    t.agent = body.agent;
-    return t;
+    // Phase 2b: return mapped ticket (state persist = 2c qua reassign command)
+    const ticket = await this.ticketRepo.getById(id);
+    if (!ticket) throw new NotFoundException('Không tìm thấy phiếu.');
+    return mapTicket(ticket, { agentName: body.agent });
   }
 
   @Post('tickets/:id/status')
@@ -252,26 +270,25 @@ export class CskhController {
     if (!VALID_STATUSES.has(body.status.toLowerCase())) {
       throw new BadRequestException({ code: 'INVALID_STATUS', message: 'Trạng thái không hợp lệ.' });
     }
-    const t = cskhTickets.find((x) => x.id === id);
-    if (!t) throw new NotFoundException('Không tìm thấy phiếu.');
-    t.status = body.status.toLowerCase();
-    return t;
+    // Phase 2b: return mapped ticket (state persist = 2c qua AdvanceStageCommand)
+    const ticket = await this.ticketRepo.getById(id);
+    if (!ticket) throw new NotFoundException('Không tìm thấy phiếu.');
+    return mapTicket(ticket);
   }
 
   @Post('tickets/:id/resolve')
   @HttpCode(HttpStatus.OK)
   async resolve(@Param('id') id: string): Promise<Ticket> {
-    const t = cskhTickets.find((x) => x.id === id);
-    if (!t) throw new NotFoundException('Không tìm thấy phiếu.');
-    t.status = 'resolved';
-    t.slaLeftH = null;
+    // Phase 2b: return mapped ticket + CSAT noti (state persist = 2c)
+    const ticket = await this.ticketRepo.getById(id);
+    if (!ticket) throw new NotFoundException('Không tìm thấy phiếu.');
     this.fireNoti({
       templateKey: 'cskh.csat_request',
-      recipients: [{ phone: t.phone }],
-      data: { ticketCode: t.code, customerName: t.name },
-      idempotencyKey: `cskh.csat:${t.id}`,
+      recipients: [{ phone: 'N/A' }],
+      data: { ticketCode: ticket.id, customerName: 'Khách' },
+      idempotencyKey: `cskh.csat:${ticket.id}`,
     });
-    return t;
+    return mapTicket(ticket);
   }
 
   // ── Incidents (→ IIncidentPort) ───────────────────────────────────────────────
