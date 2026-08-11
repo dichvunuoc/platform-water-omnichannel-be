@@ -16,6 +16,7 @@ import { KnowledgeModule } from '../knowledge/knowledge.module';
 import { ChatbotModule } from '../chatbot/chatbot.module';
 import { BroadcastModule } from '../broadcast/broadcast.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
+import { TicketingModule } from '../ticketing/ticketing.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { DashboardModule } from '../dashboard/dashboard.module';
     ChatbotModule,
     BroadcastModule,
     DashboardModule,
+    TicketingModule,
   ],
   controllers: [CskhController],
 })
