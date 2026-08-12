@@ -206,7 +206,14 @@ export class CskhController {
     @Query('pageSize') pageSize: string = '20',
   ): Promise<TicketListDto> {
     const tickets = await this.ticketRepo.findAll();
-    let items = tickets.map((t) => mapTicket(t));
+    let items = await Promise.all(
+      tickets.map(async (t) => {
+        const conversation = t.conversationId
+          ? await this.readDao.findById(t.conversationId).catch(() => null)
+          : null;
+        return mapTicket(t, { conversation });
+      }),
+    );
     if (status) items = items.filter((t) => t.status === status.toLowerCase());
     if (channel) items = items.filter((t) => t.channel === channel.toLowerCase());
     if (topic) items = items.filter((t) => t.topic === topic.toLowerCase());
