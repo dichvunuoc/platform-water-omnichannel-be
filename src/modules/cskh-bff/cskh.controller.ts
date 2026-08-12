@@ -38,6 +38,7 @@ import { CUSTOMER_360_PORT_TOKEN } from '../customer-360/customer-360.tokens';
 import type { ICustomer360Port } from '../customer-360/customer-360.port';
 import { TICKET_REPOSITORY_TOKEN } from '../ticketing/constants';
 import type { ITicketRepository } from '../ticketing/domain/repositories/ticket.repository.interface';
+import { AdvanceStageCommand } from '../ticketing/application/commands/advance-stage.command';
 import {
   mapInboxItem,
   mapConversationDetail,
@@ -206,12 +207,23 @@ export class CskhController {
     @Query('pageSize') pageSize: string = '20',
   ): Promise<TicketListDto> {
     const tickets = await this.ticketRepo.findAll();
+    // Phase 2c: Customer360 batch (dedupe → Promise.all, tránh N+1)
+    const customerIds = [...new Set(tickets.map((t) => t.customerId).filter(Boolean))] as string[];
+    const profiles = await Promise.all(
+      customerIds.map((id) => this.customer360.getProfile(id).catch(() => null)),
+    );
+    const profileMap = new Map(customerIds.map((id, i) => [id, profiles[i]]));
+    // Enrich each ticket: conversation (preview) + Customer360 (name) + agent
     let items = await Promise.all(
       tickets.map(async (t) => {
         const conversation = t.conversationId
           ? await this.readDao.findById(t.conversationId).catch(() => null)
           : null;
-        return mapTicket(t, { conversation });
+        const profile = t.customerId ? profileMap.get(t.customerId) : null;
+        const agentName = t.assignee
+          ? cskhCatalogs.agents.find((a) => a.id === t.assignee)?.name ?? '—'
+          : '—';
+        return mapTicket(t, { conversation, profile, agentName });
       }),
     );
     if (status) items = items.filter((t) => t.status === status.toLowerCase());
@@ -277,7 +289,15 @@ export class CskhController {
     if (!VALID_STATUSES.has(body.status.toLowerCase())) {
       throw new BadRequestException({ code: 'INVALID_STATUS', message: 'Trạng thái không hợp lệ.' });
     }
-    // Phase 2b: return mapped ticket (state persist = 2c qua AdvanceStageCommand)
+    // Phase 2c: dispatch AdvanceStageCommand (real state persist)
+    const STAGE_REVERSE: Record<string, string> = {
+      new: 'RECEIVED', progress: 'IN_PROGRESS', waiting: 'WAITING',
+      resolved: 'RESOLVED', closed: 'CLOSED',
+    };
+    const targetStage = STAGE_REVERSE[body.status.toLowerCase()];
+    if (targetStage) {
+      await this.commandBus.execute(new AdvanceStageCommand(id, targetStage as any));
+    }
     const ticket = await this.ticketRepo.getById(id);
     if (!ticket) throw new NotFoundException('Không tìm thấy phiếu.');
     return mapTicket(ticket);
@@ -286,7 +306,8 @@ export class CskhController {
   @Post('tickets/:id/resolve')
   @HttpCode(HttpStatus.OK)
   async resolve(@Param('id') id: string): Promise<Ticket> {
-    // Phase 2b: return mapped ticket + CSAT noti (state persist = 2c)
+    // Phase 2c: dispatch AdvanceStageCommand(RESOLVED) + CSAT noti
+    await this.commandBus.execute(new AdvanceStageCommand(id, 'RESOLVED' as any));
     const ticket = await this.ticketRepo.getById(id);
     if (!ticket) throw new NotFoundException('Không tìm thấy phiếu.');
     this.fireNoti({
