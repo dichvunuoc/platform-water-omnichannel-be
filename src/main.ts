@@ -27,6 +27,10 @@ async function bootstrap() {
     new FastifyAdapter(),
     {
       bufferLogs: true,
+      // Giữ raw body bytes cho WebhookHmacGuard (sha256 theo bytes — serialize
+      // lại object đã parse KHÔNG byte-stable). Fastify vẫn parse JSON như thường,
+      // chỉ thêm buffer request.rawBody.
+      rawBody: true,
     },
   );
 

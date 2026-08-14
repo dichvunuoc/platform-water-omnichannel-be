@@ -1,0 +1,151 @@
+# NetworkPolicy cho omnichannel-be (ns omnichannel-demo) — LỚP SÂU sau HMAC.
+#
+# ⚠️ CHƯA APPLY — áp riêng (file tách khỏi omnichannel-k8s.yaml để rollback độc
+# lập) SAU khi deploy HMAC guard + caller signing (P1→P2 của rollout), và SAU khi
+# chốt các giá trị VERIFY-ME dưới đây bằng lệnh read-only qua `ssh water-dev`.
+#
+# HMAC guard (WebhookHmacGuard) là CONTROL CHÍNH của IDOR (NP không đóng public
+# path — ingress vẫn phải mở cho staff FE). NP chỉ chặn pod-đến-pod từ namespace
+# lạ + giảm blast radius khi secret leak.
+#
+# ── PRE-APPLY CHECKLIST (read-only, không đoán) ───────────────────────────────
+# 1. Node IPs cho ipBlock (ingress-nginx hostNetwork + kubelet probes đến với
+#    NODE IP — thiếu = pods NotReady = brick):
+#      kubectl get nodes -o wide          # INTERNAL-IP của tino-32 + tino-12
+# 2. RabbitMQ: AMQP_URL sống trong server-side Secret — svc nội bộ hay public IP
+#    qua TCP listener (đoán sai = outbox silently không drain):
+#      kubectl -n omnichannel-demo get secret omnichannel-be-secret \
+#        -o jsonpath='{.data.AMQP_URL}' | base64 -d
+#    → nội bộ: đổi rule RABBITMQ thành namespaceSelector platform-core +
+#      podSelector app: rabbitmq. Public (180.93.137.109): giữ ipBlock như dưới.
+# 3. Label notification-be-rs:
+#      kubectl -n platform-core get deploy -o wide --show-labels | grep notification
+# 4. KEYCLOAK_* có trong Secret không (nếu có → thêm egress Keycloak 443).
+#
+# ── SMOKE SAU APPLY (thứ tự bắt buộc) ─────────────────────────────────────────
+# (a) kubectl -n omnichannel-demo get pods   — 3/3 Ready (ipBlock probe đúng)
+# (b) https://omnichannel-be-dev.dichvunuoc.vn — staff FE vẫn load (public path)
+# (c) chat round-trip app BFF → /webhooks/app vẫn 200 (rule demo-ns đúng)
+# (d) log không có amqp reconnect loop (egress đúng — lỗi này im lặng)
+#
+# ── ROLLBACK (instant, không restart) ────────────────────────────────────────
+#   kubectl -n omnichannel-demo delete networkpolicy \
+#     omnichannel-be-default-deny omnichannel-be-allow-ingress omnichannel-be-allow-egress
+---
+# 1) Default-deny — scoped THEO APP, không bao giờ podSelector:{} (base template
+#    bug đã biết: {} chọn mọi pod trong namespace → brick cả ns shared).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: omnichannel-be-default-deny
+  namespace: omnichannel-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: omnichannel-be
+  policyTypes: [Ingress, Egress]
+---
+# 2) Allow-ingress (TCP 4001):
+#    (a) PUBLIC path — ingress-nginx trên cluster này là hostNetwork DaemonSet →
+#        traffic đến với NODE IP (pod/namespace selector không match). Cùng ipBlock
+#        cũng cover kubelet readiness/liveness probes từ cả 2 node.
+#    (b) Chat wire từ app BFF — cross-namespace: namespaceSelector + podSelector
+#        PHẢI cùng MỘT from-item (tách ra thành 2 from = OR qua namespace).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: omnichannel-be-allow-ingress
+  namespace: omnichannel-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: omnichannel-be
+  policyTypes: [Ingress]
+  ingress:
+    # VERIFY-ME(1): thay bằng INTERNAL-IP thật của 2 node (kubectl get nodes -o wide)
+    - from:
+        - ipBlock: { cidr: 10.0.0.32/32 } # VERIFY: tino-32 node IP
+        - ipBlock: { cidr: 10.0.0.12/32 } # VERIFY: tino-12 node IP
+      ports:
+        - protocol: TCP
+          port: 4001
+    # app BFF chat wire (ns demo, pod app-tu-phuc-vu → svc omnichannel-be-svc:80→4001)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: demo
+          podSelector:
+            matchLabels:
+              app: app-tu-phuc-vu
+      ports:
+        - protocol: TCP
+          port: 4001
+---
+# 3) Allow-egress — đúng dependency đã verify trong ConfigMap (DB/Redis/notification
+#    đều ở ns platform-core, cross-namespace ⇒ namespaceSelector + podSelector).
+#    KHÔNG có 443 ở v1: Zalo outbound đang stub, CSKH_BFF_URL rỗng (mock) — thêm
+#    lại khi kênh thật bật.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: omnichannel-be-allow-egress
+  namespace: omnichannel-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: omnichannel-be
+  policyTypes: [Egress]
+  egress:
+    # DNS (coredns) — thiếu = mọi svc DNS resolve chết
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Postgres (platform-core)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: platform-core
+          podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Redis (platform-core) — rate-limit + pub/sub socket.io
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: platform-core
+          podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    # notification-be-rs gRPC (platform-core) — VERIFY-ME(3): label deployment thật
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: platform-core
+          podSelector:
+            matchLabels:
+              app: notification-be-rs # VERIFY: label từ kubectl get deploy --show-labels
+      ports:
+        - protocol: TCP
+          port: 8081
+    # RabbitMQ (AMQP — outbox/CQRS bus). VERIFY-ME(2): đọc AMQP_URL từ Secret;
+    # nếu nội bộ (…platform-core.svc:5672) đổi thành ns+pod selector app: rabbitmq.
+    - to:
+        - ipBlock: { cidr: 180.93.137.109/32 } # VERIFY: public VPS IP nếu AMQP qua TCP listener
+      ports:
+        - protocol: TCP
+          port: 5672

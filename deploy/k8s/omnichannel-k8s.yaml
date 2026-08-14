@@ -6,8 +6,11 @@ metadata:
   name: omnichannel-demo
 ---
 # ConfigMap — config KHÔNG nhạy cảm (hosts/ports/URLs không creds + flags).
-# Creds (DATABASE_URL, DB_PASSWORD, AMQP_URL) nằm ở Secret `omnichannel-be-secret`,
-# tạo server-side từ env của deployment live (không commit giá trị thật vào repo/GitHub).
+# Creds (DATABASE_URL, DB_PASSWORD, AMQP_URL, WEBHOOK_HMAC_SECRET) nằm ở Secret
+# `omnichannel-be-secret`, tạo server-side từ env của deployment live (không commit
+# giá trị thật vào repo/GitHub). WEBHOOK_HMAC_SECRET = HMAC secret cho /webhooks/*
+# (WebhookHmacGuard) — PATCH server-side cùng giá trị CSKH_WEBHOOK_HMAC_SECRET
+# của app-tu-phuc-vu (k8s/overlays/demo/secret.yaml).
 # Tạo Secret: xem scripts/ hoặc comment dưới Deployment.
 apiVersion: v1
 kind: ConfigMap
@@ -139,9 +142,11 @@ kind: Ingress
 metadata:
   name: omnichannel-be-ingress
   namespace: omnichannel-demo
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
+  # Cluster k3s này dùng ingress-nginx (Traefik disabled khi build cluster) —
+  # annotation traefik cũ là inert, đã xóa. TLS: wildcard *.dichvunuoc.vn served
+  # bởi default-ssl-certificate của ingress-nginx → không cần tls: block.
+  ingressClassName: nginx
   rules:
     - host: omnichannel-be-dev.dichvunuoc.vn
       http:

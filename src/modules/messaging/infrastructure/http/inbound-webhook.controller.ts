@@ -1,16 +1,49 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Post, Query, UseGuards } from '@nestjs/common';
+import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { randomUUID } from 'crypto';
 import type { ICommandBus } from 'src/libs/core/application';
 import { COMMAND_BUS_TOKEN } from 'src/libs/core/constants';
+import { WebhookHmacGuard } from 'src/libs/shared/security';
 import { ChannelEnum } from '../../domain';
 import { ReceiveInboundMessageCommand } from '../../application/commands';
 import { InboundMessageDto } from '../../application/dtos';
 import { ConversationReadDao } from '../persistence/read/conversation-read-dao';
 
+// --- Native App (mobile push) payload ---
+// class-validator DTO (không còn interface trần): global pipe (whitelist +
+// forbidNonWhitelisted) giờ 400 khi thiếu userId/messageId — đóng bucket
+// customerChannelId='unknown' mà interface cũ để lọt (userId là identity duy nhất
+// của channel APP → không được phép thiếu).
+export class AppWebhookPayloadDto {
+  @IsString()
+  @IsNotEmpty()
+  userId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  messageId!: string;
+
+  @IsOptional()
+  @IsString()
+  text?: string;
+
+  @IsOptional()
+  @IsArray()
+  attachments?: { url: string }[];
+}
+
+
 /**
  * Inbound Webhook Controller
  *
  * The public ingress for partner channel webhooks (FR1/FR2, NFR4).
+ *
+ * AUTH: class-level WebhookHmacGuard — mọi /webhooks/* yêu cầu HMAC v1 của
+ * internal caller đã share secret (app BFF). Trước đây các route này hoàn toàn
+ * không auth + reachable từ internet → impersonation + thread disclosure (userId
+ * là identity duy nhất). Provider webhook có verification riêng (Zalo/FB) sẽ
+ * @SkipWebhookHmac() khi build kênh đó. Chi tiết scheme: guard header comment +
+ * app-tu-phuc-vu docs/cskh-chat-webhook-auth.md.
  *
  * Resilience design (NFR4 — ack within 200ms, independent of downstream):
  *   The handler only does a fast DB write + outbox; downstream consumers
@@ -21,6 +54,7 @@ import { ConversationReadDao } from '../persistence/read/conversation-read-dao';
  * dispatching the command. (Normalizers live alongside this controller; routes
  * are per channel so partners hit their dedicated endpoint.)
  */
+@UseGuards(WebhookHmacGuard)
 @Controller('webhooks')
 export class InboundWebhookController {
   constructor(
@@ -106,7 +140,7 @@ export class InboundWebhookController {
    */
   @Post('app')
   @HttpCode(HttpStatus.OK)
-  async receiveApp(@Body() raw: AppWebhookRaw) {
+  async receiveApp(@Body() raw: AppWebhookPayloadDto) {
     const dto = appToDto(raw);
     const result = await this.commandBus.execute(
       new ReceiveInboundMessageCommand(
@@ -158,7 +192,7 @@ interface ZaloWebhookRaw {
   trackingId?: string;
 }
 
-function zaloToDto(raw: ZaloWebhookRaw): InboundMessageDto {
+export function zaloToDto(raw: ZaloWebhookRaw): InboundMessageDto {
   const dto = new InboundMessageDto();
   dto.channel = ChannelEnum.ZALO;
   dto.customerChannelId = raw.sender?.id ?? 'unknown';
@@ -168,19 +202,11 @@ function zaloToDto(raw: ZaloWebhookRaw): InboundMessageDto {
   return dto;
 }
 
-// --- Native App (mobile push) payload ---
-interface AppWebhookRaw {
-  userId: string;
-  messageId: string;
-  text?: string;
-  attachments?: { url: string }[];
-}
-
-function appToDto(raw: AppWebhookRaw): InboundMessageDto {
+export function appToDto(raw: AppWebhookPayloadDto): InboundMessageDto {
   const dto = new InboundMessageDto();
   dto.channel = ChannelEnum.APP;
-  dto.customerChannelId = raw.userId ?? 'unknown';
-  dto.externalMessageId = raw.messageId ?? randomUUID();
+  dto.customerChannelId = raw.userId;
+  dto.externalMessageId = raw.messageId;
   dto.content = raw.text ?? '';
   dto.attachments = (raw.attachments ?? []).map((a) => a.url);
   return dto;
@@ -201,7 +227,7 @@ interface FacebookWebhookRaw {
   }>;
 }
 
-function facebookToDto(raw: FacebookWebhookRaw): InboundMessageDto {
+export function facebookToDto(raw: FacebookWebhookRaw): InboundMessageDto {
   const dto = new InboundMessageDto();
   dto.channel = ChannelEnum.FACEBOOK;
   const msg = raw.entry?.[0]?.messaging?.[0];
@@ -224,7 +250,7 @@ interface EmailWebhookRaw {
   attachments?: { url: string }[];
 }
 
-function emailToDto(raw: EmailWebhookRaw): InboundMessageDto {
+export function emailToDto(raw: EmailWebhookRaw): InboundMessageDto {
   const dto = new InboundMessageDto();
   dto.channel = ChannelEnum.EMAIL;
   dto.customerChannelId = raw.from ?? 'unknown';
