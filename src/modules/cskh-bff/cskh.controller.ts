@@ -207,25 +207,14 @@ export class CskhController {
     @Query('pageSize') pageSize: string = '20',
   ): Promise<TicketListDto> {
     const tickets = await this.ticketRepo.findAll();
-    // Phase 2c: Customer360 batch (dedupe → Promise.all, tránh N+1)
-    const customerIds = [...new Set(tickets.map((t) => t.customerId).filter(Boolean))] as string[];
-    const profiles = await Promise.all(
-      customerIds.map((id) => this.customer360.getProfile(id).catch(() => null)),
-    );
-    const profileMap = new Map(customerIds.map((id, i) => [id, profiles[i]]));
-    // Enrich each ticket: conversation (preview) + Customer360 (name) + agent
-    let items = await Promise.all(
-      tickets.map(async (t) => {
-        const conversation = t.conversationId
-          ? await this.readDao.findById(t.conversationId).catch(() => null)
-          : null;
-        const profile = t.customerId ? profileMap.get(t.customerId) : null;
-        const agentName = t.assignee
-          ? cskhCatalogs.agents.find((a) => a.id === t.assignee)?.name ?? '—'
-          : '—';
-        return mapTicket(t, { conversation, profile, agentName });
-      }),
-    );
+    // FAST: chỉ map ticket metadata (không enrich conversation/Customer360 — N+1 fix)
+    // Detail enrichment (messages + customer360) chỉ ở getTicket/:id (single ticket)
+    let items = tickets.map((t) => {
+      const agentName = t.assignee
+        ? cskhCatalogs.agents.find((a) => a.id === t.assignee)?.name ?? '—'
+        : '—';
+      return mapTicket(t, { agentName });
+    });
     if (status) items = items.filter((t) => t.status === status.toLowerCase());
     if (channel) items = items.filter((t) => t.channel === channel.toLowerCase());
     if (topic) items = items.filter((t) => t.topic === topic.toLowerCase());
