@@ -22,13 +22,19 @@ import { MemoryCacheService } from './memory-cache.service';
         if (redisUrl) {
           const match = redisUrl.match(/^redis:\/\/(?:(.+)@)?([^:]+):(\d+)(?:\/(\d+))?/);
           if (match) {
-            const [, password, host, portStr, dbStr] = match;
+            const [, userinfo, host, portStr, dbStr] = match;
+            // userinfo = "password" (redis://:pass@host) hoặc "user:pass" — regex
+            // greedily captures CẢ chuỗi trước '@'. Lấy phần sau ':' ĐẦU TIÊN làm
+            // password (fix NOAUTH: capture cũ cho redis://:p@… thành ":p" → sai).
+            const password = userinfo
+              ? userinfo.replace(/^[^:]*:/, '') || undefined
+              : undefined;
             logger.log(`Redis cache configured: ${host}:${portStr}`);
             return new RedisCacheService({
               redis: {
                 host,
                 port: parseInt(portStr, 10),
-                password: password || undefined,
+                password,
                 db: dbStr ? parseInt(dbStr, 10) : 0,
                 keyPrefix: 'omnicare',
               },
