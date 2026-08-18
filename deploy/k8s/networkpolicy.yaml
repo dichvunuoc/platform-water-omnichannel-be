@@ -62,10 +62,11 @@ spec:
       app: omnichannel-be
   policyTypes: [Ingress]
   ingress:
-    # VERIFY-ME(1): thay bằng INTERNAL-IP thật của 2 node (kubectl get nodes -o wide)
+    # Node IPs VERIFIED 2026-08-18 (kubectl get nodes -o wide): ingress-nginx hostNetwork
+    # + kubelet probes đến với NODE IP — thiếu ipBlock này = pods NotReady.
     - from:
-        - ipBlock: { cidr: 10.0.0.32/32 } # VERIFY: tino-32 node IP
-        - ipBlock: { cidr: 10.0.0.12/32 } # VERIFY: tino-12 node IP
+        - ipBlock: { cidr: 180.93.137.109/32 } # tino-32
+        - ipBlock: { cidr: 103.142.24.14/32 }  # tino-12
       ports:
         - protocol: TCP
           port: 4001
@@ -131,7 +132,7 @@ spec:
       ports:
         - protocol: TCP
           port: 6379
-    # notification-be-rs gRPC (platform-core) — VERIFY-ME(3): label deployment thật
+    # notification-be-rs gRPC (platform-core) — label VERIFIED: app=notification-be-rs
     - to:
         - namespaceSelector:
             matchLabels:
@@ -142,10 +143,15 @@ spec:
       ports:
         - protocol: TCP
           port: 8081
-    # RabbitMQ (AMQP — outbox/CQRS bus). VERIFY-ME(2): đọc AMQP_URL từ Secret;
-    # nếu nội bộ (…platform-core.svc:5672) đổi thành ns+pod selector app: rabbitmq.
+    # RabbitMQ (AMQP — outbox/CQRS bus). VERIFIED 2026-08-18: AMQP_URL =
+    # rabbitmq.platform-core.svc:5672 (nội bộ) → ns+podSelector, không ipBlock.
     - to:
-        - ipBlock: { cidr: 180.93.137.109/32 } # VERIFY: public VPS IP nếu AMQP qua TCP listener
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: platform-core
+          podSelector:
+            matchLabels:
+              app: rabbitmq
       ports:
         - protocol: TCP
           port: 5672
