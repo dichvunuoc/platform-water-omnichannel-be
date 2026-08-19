@@ -25,7 +25,11 @@ data:
   DB_PORT: "5432"
   DB_USER: "platform"
   DB_NAME: "omnichannel"
-  # Redis: platform-core/redis (không creds)
+  # Redis: platform-core/redis — CÓ password (requirepass, trong platform-core/redis-secret).
+  # ⚠️ LIVE: REDIS_URL đã được patch server-side kèm password nhúng trong URL (không commit
+  # password vào git). Nếu apply manifest này NGUYÊN VĂN → mất pass → NOAUTH 500 (bug PR #8
+  # đã trả giá). Trước khi apply: re-patch REDIS_URL server-side HOẶC chuyển hẳn REDIS_URL
+  # (có pass) sang Secret — TODO improvement #2.
   REDIS_URL: "redis://redis.platform-core.svc:6379"
   REDIS_HOST: "redis.platform-core.svc"
   REDIS_PORT: "6379"
@@ -65,34 +69,19 @@ spec:
         # copy sang omnichannel-demo 2026-08-06). Dùng chung cho initContainer + container.
         - name: registry-dev-pull
       # Lan tỏa pod across node — khi tino-32 (control-plane) sập, pod vẫn chạy trên tino-12.
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app: omnichannel-be
-                topologyKey: kubernetes.io/hostname
-      # initContainer migrate — auto-run drizzle-kit migrate trước app (idempotent).
-      # Baseline 2026-08-06: drizzle.__drizzle_migrations đã seed hash 0000
-      # (c07ad2a0… = sha256 raw SQL, verify bằng chính readMigrationFiles của drizzle).
-      # drizzle-kit migrate hiện no-op (exit 0, 0 row mới). Khi thêm migration 0002+,
-      # initContainer tự apply → __drizzle_migrations theo dõi đúng.
-      initContainers:
-        - name: migrate
-          image: registry-dev.dichvunuoc.vn/omnichannel-be:latest
-          imagePullPolicy: Always
-          command: ["npx", "drizzle-kit", "migrate"]
-          envFrom:
-            - configMapRef:
-                name: omnichannel-be-config
-            - secretRef:
-                name: omnichannel-be-secret
+      # (initContainer migrate ĐÃ GỠ khỏi live 2026-08-18: patch từng làm rớt
+      #  `command` → init chạy nguyên app, kẹt Init:0/1 vĩnh viễn. Khi thêm lại
+      #  PHẢI đủ `command: ["npx","drizzle-kit","migrate"]` + envFrom như container chính.)
+      # PIN 1 node (mirror live): chưa có SSH key cho tino-12 → image chỉ nằm trên
+      # tino-32. MẤT HA — bỏ pin khi có registry creds hoặc key tino-12.
+      # (affinity đã gỡ cho khớp live — conflict với node pin.)
+      nodeName: tino-32
       containers:
         - name: omnichannel-be
-          image: registry-dev.dichvunuoc.vn/omnichannel-be:latest
-          imagePullPolicy: Always
+          # Tag PIN theo deploy thật 2026-08-18 (image import node qua k3s ctr —
+          # registry push chưa có creds; đổi tag = phải import lại node + update đây).
+          image: registry-dev.dichvunuoc.vn/omnichannel-be:62d32cb
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 4001
           envFrom:

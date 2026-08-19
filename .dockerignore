@@ -10,3 +10,4 @@ nest-app-binary
 docker-compose.yml
 Dockerfile
 .dockerignore
+.claude
