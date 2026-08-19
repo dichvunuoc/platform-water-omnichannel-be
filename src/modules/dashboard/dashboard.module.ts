@@ -6,7 +6,11 @@
 import { Module } from '@nestjs/common';
 import { MessagingModule } from '../messaging/messaging.module';
 import { TicketingModule } from '../ticketing/ticketing.module';
-import { DASHBOARD_PORT_TOKEN, MockDashboardAdapter, RealDashboardAdapter } from './dashboard.adapter';
+import {
+  DASHBOARD_PORT_TOKEN,
+  MockDashboardAdapter,
+  RealDashboardAdapter,
+} from './dashboard.adapter';
 
 @Module({
   imports: [MessagingModule, TicketingModule],

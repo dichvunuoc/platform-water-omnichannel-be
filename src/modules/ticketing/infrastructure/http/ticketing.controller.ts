@@ -1,9 +1,20 @@
 import {
-  Controller, Get, Post, Param, Body, HttpCode, HttpStatus, Inject, NotFoundException,
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  NotFoundException,
 } from '@nestjs/common';
 import type { ICommandBus } from 'src/libs/core/application';
 import { COMMAND_BUS_TOKEN } from 'src/libs/core/constants';
-import { CreateTicketCommand, AdvanceStageCommand } from '../../application/commands';
+import {
+  CreateTicketCommand,
+  AdvanceStageCommand,
+} from '../../application/commands';
 import { CreateTicketDto, AdvanceStageDto } from '../../application/dtos';
 import type { ITicketRepository } from '../../domain';
 import { TICKET_REPOSITORY_TOKEN } from '../../constants';
@@ -22,7 +33,13 @@ export class TicketingController {
   @Get('kanban')
   async getKanban() {
     const open = await this.repo.findOpenTickets();
-    const stages = ['RECEIVED', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED'] as const;
+    const stages = [
+      'RECEIVED',
+      'IN_PROGRESS',
+      'WAITING',
+      'RESOLVED',
+      'CLOSED',
+    ] as const;
     const grouped: any = { total: 0, slaBreachedCount: 0, slaWarningCount: 0 };
     for (const s of stages) grouped[s] = [];
 
@@ -31,7 +48,8 @@ export class TicketingController {
       grouped[ticket.stage.value]?.push(this.enrich(ticket));
       grouped.total++;
       if (ticket.resolveRemainingMs < 0) grouped.slaBreachedCount++;
-      else if (ticket.resolveRemainingMs < 30 * 60 * 1000) grouped.slaWarningCount++;
+      else if (ticket.resolveRemainingMs < 30 * 60 * 1000)
+        grouped.slaWarningCount++;
     }
     return grouped;
   }
@@ -70,10 +88,7 @@ export class TicketingController {
 
   @Post(':id/advance')
   @HttpCode(HttpStatus.OK)
-  async advanceStage(
-    @Param('id') id: string,
-    @Body() dto: AdvanceStageDto,
-  ) {
+  async advanceStage(@Param('id') id: string, @Body() dto: AdvanceStageDto) {
     await this.commandBus.execute(new AdvanceStageCommand(id, dto.newStage));
     return { ok: true, ticketId: id, stage: dto.newStage };
   }
@@ -101,8 +116,15 @@ export class TicketingController {
       escalationLevel: ticket.escalationLevel,
       reopenedFromCsat: ticket.reopenedFromCsat,
       slaRemainingMs: isResolved ? 0 : remainingMs,
-      slaColor: isResolved ? 'gray' : remainingMs <= 0 ? 'red' : remainingMs < 30 * 60 * 1000 ? 'yellow' : 'green',
-      slaWarning: !isResolved && remainingMs < 30 * 60 * 1000 && remainingMs > 0,
+      slaColor: isResolved
+        ? 'gray'
+        : remainingMs <= 0
+          ? 'red'
+          : remainingMs < 30 * 60 * 1000
+            ? 'yellow'
+            : 'green',
+      slaWarning:
+        !isResolved && remainingMs < 30 * 60 * 1000 && remainingMs > 0,
       slaBreached: !isResolved && remainingMs <= 0,
     };
   }

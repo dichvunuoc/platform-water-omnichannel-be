@@ -21,7 +21,8 @@ export class MockAiVisionAdapter implements IAiVisionPort {
     return {
       tag: 'Vỡ / bể ống',
       confidence: 0.97,
-      rationale: 'Phát hiện cột nước phun + vũng ngập lớn → khả năng vỡ ống cấp 1',
+      rationale:
+        'Phát hiện cột nước phun + vũng ngập lớn → khả năng vỡ ống cấp 1',
     };
   }
 }
@@ -38,7 +39,8 @@ export class MockAudioAiAdapter implements IAudioAiPort {
   async transcribe(audioUrl: string) {
     this.logger.debug(`Mock Audio AI transcribe: ${audioUrl}`);
     return {
-      transcript: 'Cháu chào cô, công ty nước xin báo cáo tình hình xử lý sự cố vỡ ống tại phường Hòa Bình. Đội hiện trường đã có mặt và đang tiến hành sửa chữa.',
+      transcript:
+        'Cháu chào cô, công ty nước xin báo cáo tình hình xử lý sự cố vỡ ống tại phường Hòa Bình. Đội hiện trường đã có mặt và đang tiến hành sửa chữa.',
       confidence: 0.92,
     };
   }

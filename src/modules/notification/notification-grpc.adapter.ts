@@ -32,7 +32,10 @@ export class NotificationGrpcAdapter implements INotificationPort {
     private readonly tokens: KeycloakSaTokenService,
   ) {
     this.grpcUrl = this.config.get<string>('NOTIFICATION_GRPC_URL');
-    this.tenantId = this.config.get<string>('NOTIFICATION_TENANT_ID', 'tnt_hawaco');
+    this.tenantId = this.config.get<string>(
+      'NOTIFICATION_TENANT_ID',
+      'tnt_hawaco',
+    );
     if (this.grpcUrl) this.initClient();
   }
 
@@ -74,7 +77,9 @@ export class NotificationGrpcAdapter implements INotificationPort {
     }
 
     const token = await this.tokens.getToken().catch((err: Error) => {
-      this.logger.warn(`SA token unavailable, sending without auth: ${err.message}`);
+      this.logger.warn(
+        `SA token unavailable, sending without auth: ${err.message}`,
+      );
       return null;
     });
     const metadata = new grpc.Metadata();
@@ -95,13 +100,15 @@ export class NotificationGrpcAdapter implements INotificationPort {
     };
 
     return new Promise<NotificationSendResult>((resolve) => {
-      (this.client as unknown as {
-        Send: (
-          req: unknown,
-          meta: grpc.Metadata,
-          cb: (e: Error | null, r: unknown) => void,
-        ) => void;
-      }).Send(request, metadata, (err, reply) => {
+      (
+        this.client as unknown as {
+          Send: (
+            req: unknown,
+            meta: grpc.Metadata,
+            cb: (e: Error | null, r: unknown) => void,
+          ) => void;
+        }
+      ).Send(request, metadata, (err, reply) => {
         if (err) {
           this.logger.warn(
             `gRPC Send failed (templateKey=${req.templateKey}): ${err.message}`,
@@ -113,7 +120,11 @@ export class NotificationGrpcAdapter implements INotificationPort {
         this.logger.log(
           `Noti sent: ${r.notification_id} (${r.status}) templateKey=${req.templateKey}`,
         );
-        resolve({ sent: true, notificationId: r.notification_id, status: r.status });
+        resolve({
+          sent: true,
+          notificationId: r.notification_id,
+          status: r.status,
+        });
       });
     });
   }

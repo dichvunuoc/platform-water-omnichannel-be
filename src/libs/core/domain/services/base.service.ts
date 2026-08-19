@@ -8,5 +8,4 @@ import { Injectable } from '@nestjs/common';
 export abstract class BaseService {
   // Common service utilities và patterns
   // Subclasses can extend this for domain-specific services
-  
 }

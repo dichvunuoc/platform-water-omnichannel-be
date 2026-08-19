@@ -30,16 +30,20 @@ import { OUTBOUND_ADAPTERS_TOKEN } from '../../../../outbound-channel/outbound.t
  *  5. Fire-and-forget outbound channel send (non-blocking; failure → logged, not thrown).
  */
 @CommandHandler(SendReplyCommand)
-export class SendReplyHandler
-  implements ICommandHandler<SendReplyCommand, { messageId: string }>
-{
+export class SendReplyHandler implements ICommandHandler<
+  SendReplyCommand,
+  { messageId: string }
+> {
   private readonly logger = new Logger(SendReplyHandler.name);
 
   constructor(
     @Inject(CONVERSATION_REPOSITORY_TOKEN)
     private readonly conversationRepository: IConversationRepository,
     @Inject(OUTBOUND_ADAPTERS_TOKEN)
-    private readonly outboundAdapters: Map<ChannelEnum, IOutboundChannelAdapter>,
+    private readonly outboundAdapters: Map<
+      ChannelEnum,
+      IOutboundChannelAdapter
+    >,
     @Optional()
     @Inject(REQUEST_CONTEXT_TOKEN)
     private readonly requestContext?: IRequestContextProvider,
@@ -48,11 +52,17 @@ export class SendReplyHandler
   async execute(command: SendReplyCommand): Promise<{ messageId: string }> {
     const ctx = this.requestContext?.current();
     const metadata = ctx
-      ? { correlationId: ctx.correlationId, causationId: ctx.causationId, userId: command.agentId }
+      ? {
+          correlationId: ctx.correlationId,
+          causationId: ctx.causationId,
+          userId: command.agentId,
+        }
       : { userId: command.agentId };
 
     // 1. Load conversation
-    const conversation = await this.conversationRepository.getById(command.conversationId);
+    const conversation = await this.conversationRepository.getById(
+      command.conversationId,
+    );
     if (!conversation) {
       throw NotFoundException.entity('Conversation', command.conversationId);
     }
@@ -119,7 +129,9 @@ export class SendReplyHandler
   ): Promise<void> {
     const adapter = this.outboundAdapters.get(channel);
     if (!adapter) {
-      this.logger.warn(`No outbound adapter for channel ${channel} — skipping send`);
+      this.logger.warn(
+        `No outbound adapter for channel ${channel} — skipping send`,
+      );
       return;
     }
 
@@ -128,7 +140,9 @@ export class SendReplyHandler
       this.logger.warn(`Outbound send failed for ${channel}: ${result.error}`);
       // FR7: message is persisted + echoed. Retry consumer (future) can re-attempt.
     } else {
-      this.logger.debug(`Outbound sent: ${channel} → ${customerChannelId} extId=${result.externalId}`);
+      this.logger.debug(
+        `Outbound sent: ${channel} → ${customerChannelId} extId=${result.externalId}`,
+      );
     }
   }
 }

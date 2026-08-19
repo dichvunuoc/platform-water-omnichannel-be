@@ -15,9 +15,10 @@ import { ArchiveConversationCommand } from '../archive-conversation.command';
  * A conversation must be CLOSED before it can be ARCHIVED.
  */
 @CommandHandler(ArchiveConversationCommand)
-export class ArchiveConversationHandler
-  implements ICommandHandler<ArchiveConversationCommand, void>
-{
+export class ArchiveConversationHandler implements ICommandHandler<
+  ArchiveConversationCommand,
+  void
+> {
   private readonly logger = new Logger(ArchiveConversationHandler.name);
 
   constructor(
@@ -29,7 +30,9 @@ export class ArchiveConversationHandler
   ) {}
 
   async execute(command: ArchiveConversationCommand): Promise<void> {
-    const conversation = await this.conversationRepository.getById(command.conversationId);
+    const conversation = await this.conversationRepository.getById(
+      command.conversationId,
+    );
     if (!conversation) {
       throw NotFoundException.entity('Conversation', command.conversationId);
     }
@@ -41,6 +44,8 @@ export class ArchiveConversationHandler
     conversation.archive();
     await this.conversationRepository.save(conversation);
 
-    this.logger.log(`Conversation archived: ${command.conversationId} by agent ${command.agentId}`);
+    this.logger.log(
+      `Conversation archived: ${command.conversationId} by agent ${command.agentId}`,
+    );
   }
 }

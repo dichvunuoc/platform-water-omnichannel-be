@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ChannelEnum } from '../messaging/domain';
-import type { IOutboundChannelAdapter, OutboundResult } from './outbound-channel.port';
+import type {
+  IOutboundChannelAdapter,
+  OutboundResult,
+} from './outbound-channel.port';
 
 /**
  * Mock Outbound Adapter
@@ -22,7 +25,9 @@ export class MockOutboundAdapter implements IOutboundChannelAdapter {
     customerChannelId: string,
     content: string,
   ): Promise<OutboundResult> {
-    this.logger.debug(`Mock outbound [${this._channel}] → ${customerChannelId}: ${content.slice(0, 50)}...`);
+    this.logger.debug(
+      `Mock outbound [${this._channel}] → ${customerChannelId}: ${content.slice(0, 50)}...`,
+    );
     return { success: true, externalId: `mock-${this._channel}-${Date.now()}` };
   }
 }

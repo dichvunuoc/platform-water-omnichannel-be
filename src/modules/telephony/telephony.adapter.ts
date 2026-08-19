@@ -31,7 +31,9 @@ export class MockTelephonyAdapter implements ITelephonyPort {
     return cskhTelephony.log;
   }
   lookupPhone(phone: string): CallerProfile | null {
-    const t = cskhTickets.find((x) => x.phone.replace(/\s/g, '') === phone.replace(/\s/g, ''));
+    const t = cskhTickets.find(
+      (x) => x.phone.replace(/\s/g, '') === phone.replace(/\s/g, ''),
+    );
     if (!t) return null;
     return {
       phone: t.phone,

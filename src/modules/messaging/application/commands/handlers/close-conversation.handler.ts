@@ -15,9 +15,10 @@ import { CloseConversationCommand } from '../close-conversation.command';
  * (which is in the Ticketing service).
  */
 @CommandHandler(CloseConversationCommand)
-export class CloseConversationHandler
-  implements ICommandHandler<CloseConversationCommand, void>
-{
+export class CloseConversationHandler implements ICommandHandler<
+  CloseConversationCommand,
+  void
+> {
   private readonly logger = new Logger(CloseConversationHandler.name);
 
   constructor(
@@ -29,7 +30,9 @@ export class CloseConversationHandler
   ) {}
 
   async execute(command: CloseConversationCommand): Promise<void> {
-    const conversation = await this.conversationRepository.getById(command.conversationId);
+    const conversation = await this.conversationRepository.getById(
+      command.conversationId,
+    );
     if (!conversation) {
       throw NotFoundException.entity('Conversation', command.conversationId);
     }
@@ -37,6 +40,8 @@ export class CloseConversationHandler
     conversation.close();
     await this.conversationRepository.save(conversation);
 
-    this.logger.log(`Conversation closed: ${command.conversationId} by agent ${command.agentId}`);
+    this.logger.log(
+      `Conversation closed: ${command.conversationId} by agent ${command.agentId}`,
+    );
   }
 }

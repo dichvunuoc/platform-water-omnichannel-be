@@ -1,5 +1,10 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import type { IAiVisionPort, IAudioAiPort, INlpPort, AiInsight } from './ports/ai-vision.port';
+import type {
+  IAiVisionPort,
+  IAudioAiPort,
+  INlpPort,
+  AiInsight,
+} from './ports/ai-vision.port';
 
 /**
  * AI Insight Service (FR15)
@@ -43,7 +48,9 @@ export class AiInsightService {
    */
   async transcribeAudio(audioUrl: string): Promise<AiInsight | null> {
     try {
-      const result = await this.withTimeout(this.audioPort.transcribe(audioUrl));
+      const result = await this.withTimeout(
+        this.audioPort.transcribe(audioUrl),
+      );
       return {
         type: 'AUDIO',
         transcript: result.transcript,
@@ -79,9 +86,15 @@ export class AiInsightService {
   private withTimeout<T>(promise: Promise<T>): Promise<T> {
     let timer: ReturnType<typeof setTimeout>;
     return Promise.race([
-      promise.then((v) => { clearTimeout(timer); return v; }),
+      promise.then((v) => {
+        clearTimeout(timer);
+        return v;
+      }),
       new Promise<T>((_, reject) => {
-        timer = setTimeout(() => reject(new Error('AI_TIMEOUT')), this.TIMEOUT_MS);
+        timer = setTimeout(
+          () => reject(new Error('AI_TIMEOUT')),
+          this.TIMEOUT_MS,
+        );
       }),
     ]);
   }

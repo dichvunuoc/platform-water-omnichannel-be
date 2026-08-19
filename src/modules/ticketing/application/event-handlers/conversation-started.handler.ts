@@ -15,6 +15,8 @@ export class ConversationStartedTicketHandler {
   private readonly logger = new Logger('ConversationStartedTicketHandler');
 
   constructor() {
-    this.logger.log('DISABLED — ticket tạo thủ công qua FR19 (agent quyết định), không auto-create');
+    this.logger.log(
+      'DISABLED — ticket tạo thủ công qua FR19 (agent quyết định), không auto-create',
+    );
   }
 }

@@ -75,12 +75,20 @@ export class Message extends BaseEntity {
 
   static create(props: CreateMessageProps): Message {
     if (!props.conversationId) {
-      throw new DomainException('Conversation ID is required', 'CONVERSATION_ID_REQUIRED');
+      throw new DomainException(
+        'Conversation ID is required',
+        'CONVERSATION_ID_REQUIRED',
+      );
     }
     if (!props.content || props.content.trim().length === 0) {
       // Voice/call events may carry empty text (metadata-only); allow only for INBOUND voice.
-      if (!(props.channel.isVoice && props.direction === MessageDirection.INBOUND)) {
-        throw new DomainException('Message content is required', 'MESSAGE_CONTENT_REQUIRED');
+      if (
+        !(props.channel.isVoice && props.direction === MessageDirection.INBOUND)
+      ) {
+        throw new DomainException(
+          'Message content is required',
+          'MESSAGE_CONTENT_REQUIRED',
+        );
       }
     }
     return new Message(

@@ -29,9 +29,13 @@ export class Channel extends BaseValueObject {
     const upper =
       typeof value === 'string' ? (value.toUpperCase() as ChannelEnum) : value;
     if (!Object.values(ChannelEnum).includes(upper)) {
-      throw new DomainException(`Unsupported channel: ${value}`, 'INVALID_CHANNEL', {
-        value,
-      });
+      throw new DomainException(
+        `Unsupported channel: ${value}`,
+        'INVALID_CHANNEL',
+        {
+          value,
+        },
+      );
     }
     return new Channel(upper);
   }

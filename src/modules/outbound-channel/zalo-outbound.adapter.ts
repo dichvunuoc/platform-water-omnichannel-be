@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ChannelEnum } from '../messaging/domain';
-import type { IOutboundChannelAdapter, OutboundResult } from './outbound-channel.port';
+import type {
+  IOutboundChannelAdapter,
+  OutboundResult,
+} from './outbound-channel.port';
 
 /**
  * Zalo Outbound Adapter (wave-1 — real API call)
@@ -18,7 +21,8 @@ export class ZaloOutboundAdapter implements IOutboundChannelAdapter {
   readonly channel = ChannelEnum.ZALO;
 
   // MVP: Zalo OA API URL + token from env. For now, stub the actual HTTP call.
-  private readonly apiUrl = process.env.ZALO_OA_API_URL || 'https://openapi.zalo.me/v2.0/oa/message';
+  private readonly apiUrl =
+    process.env.ZALO_OA_API_URL || 'https://openapi.zalo.me/v2.0/oa/message';
   private readonly accessToken = process.env.ZALO_OA_ACCESS_TOKEN || '';
 
   async send(
@@ -32,7 +36,9 @@ export class ZaloOutboundAdapter implements IOutboundChannelAdapter {
       // Headers: { access_token: accessToken }
 
       if (!this.accessToken) {
-        this.logger.warn('Zalo OA access token not configured — outbound send stubbed');
+        this.logger.warn(
+          'Zalo OA access token not configured — outbound send stubbed',
+        );
         // Stub success for MVP (no real token in dev)
         return { success: true, externalId: `zalo-outbound-${Date.now()}` };
       }
@@ -46,7 +52,9 @@ export class ZaloOutboundAdapter implements IOutboundChannelAdapter {
       // if (!response.ok) return { success: false, error: `Zalo API ${response.status}` };
       // const data = await response.json();
 
-      this.logger.log(`Zalo outbound sent to ${customerChannelId}: ${content.slice(0, 50)}...`);
+      this.logger.log(
+        `Zalo outbound sent to ${customerChannelId}: ${content.slice(0, 50)}...`,
+      );
       return { success: true, externalId: `zalo-outbound-${Date.now()}` };
     } catch (err) {
       this.logger.error(`Zalo outbound failed: ${err}`);

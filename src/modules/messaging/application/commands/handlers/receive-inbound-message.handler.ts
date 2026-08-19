@@ -2,7 +2,10 @@ import { Inject, Optional, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import type { ICommandHandler } from 'src/libs/core/application';
 import type { IRequestContextProvider } from 'src/libs/core/common';
-import { REQUEST_CONTEXT_TOKEN, EVENT_BUS_TOKEN } from 'src/libs/core/constants';
+import {
+  REQUEST_CONTEXT_TOKEN,
+  EVENT_BUS_TOKEN,
+} from 'src/libs/core/constants';
 import type { IEventBus } from 'src/libs/core/infrastructure';
 import { CommandHandler, IdempotencyService } from 'src/libs/shared/cqrs';
 import {
@@ -32,9 +35,10 @@ import { ReceiveInboundMessageCommand } from '../receive-inbound-message.command
  * asynchronously, so they never block webhook acknowledgement.
  */
 @CommandHandler(ReceiveInboundMessageCommand)
-export class ReceiveInboundMessageHandler
-  implements ICommandHandler<ReceiveInboundMessageCommand, { conversationId: string; messageId: string }>
-{
+export class ReceiveInboundMessageHandler implements ICommandHandler<
+  ReceiveInboundMessageCommand,
+  { conversationId: string; messageId: string }
+> {
   private readonly logger = new Logger(ReceiveInboundMessageHandler.name);
 
   constructor(
@@ -55,16 +59,23 @@ export class ReceiveInboundMessageHandler
     // 0. Trace metadata (F.3 — correlationId flows into events)
     const ctx = this.requestContext?.current();
     const metadata = ctx
-      ? { correlationId: ctx.correlationId, causationId: ctx.causationId, userId: ctx.userId }
+      ? {
+          correlationId: ctx.correlationId,
+          causationId: ctx.causationId,
+          userId: ctx.userId,
+        }
       : undefined;
 
     // 1. Idempotency (FR3) — dedup on channel + externalMessageId
     const idempotencyKey = `${command.channel}:${command.externalMessageId}`;
-    const existing = await this.idempotency.getExisting<{ conversationId: string; messageId: string }>(
-      idempotencyKey,
-    );
+    const existing = await this.idempotency.getExisting<{
+      conversationId: string;
+      messageId: string;
+    }>(idempotencyKey);
     if (existing) {
-      this.logger.debug(`Idempotency HIT — dropping duplicate inbound: ${idempotencyKey}`);
+      this.logger.debug(
+        `Idempotency HIT — dropping duplicate inbound: ${idempotencyKey}`,
+      );
       return existing.result;
     }
 
@@ -97,7 +108,11 @@ export class ReceiveInboundMessageHandler
       // Conversation.create enqueues ConversationStarted + MessageReceived
       conversation = Conversation.create(
         conversationId,
-        { customerChannelId: command.customerChannelId, channel, firstMessage: message },
+        {
+          customerChannelId: command.customerChannelId,
+          channel,
+          firstMessage: message,
+        },
         metadata,
       );
     }
@@ -105,7 +120,11 @@ export class ReceiveInboundMessageHandler
     // 5. Optimistic idempotency: store BEFORE save to close the race window.
     //    If save fails, rollback the idempotency entry so retry can re-process.
     const result = { conversationId, messageId: message.id };
-    await this.idempotency.store(idempotencyKey, result, 'ReceiveInboundMessage');
+    await this.idempotency.store(
+      idempotencyKey,
+      result,
+      'ReceiveInboundMessage',
+    );
 
     try {
       // Save (repo writes aggregate + events to outbox in one tx — FR7/NFR9)

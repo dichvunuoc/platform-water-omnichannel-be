@@ -15,6 +15,12 @@ export interface TicketCreatedPayload {
 
 export class TicketCreatedEvent extends BaseDomainEvent<TicketCreatedPayload> {
   constructor(payload: TicketCreatedPayload) {
-    super(payload.ticketId, 'Ticket', 'TicketCreated', payload, payload.metadata);
+    super(
+      payload.ticketId,
+      'Ticket',
+      'TicketCreated',
+      payload,
+      payload.metadata,
+    );
   }
 }

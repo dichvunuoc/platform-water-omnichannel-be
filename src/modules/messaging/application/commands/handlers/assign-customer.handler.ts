@@ -17,9 +17,10 @@ import { AssignCustomerCommand } from '../assign-customer.command';
  * If identity can't be resolved, conversation retains null customerId (FR30 fallback).
  */
 @CommandHandler(AssignCustomerCommand)
-export class AssignCustomerHandler
-  implements ICommandHandler<AssignCustomerCommand, { resolved: boolean; customerId: string | null }>
-{
+export class AssignCustomerHandler implements ICommandHandler<
+  AssignCustomerCommand,
+  { resolved: boolean; customerId: string | null }
+> {
   private readonly logger = new Logger(AssignCustomerHandler.name);
 
   constructor(
@@ -36,7 +37,9 @@ export class AssignCustomerHandler
     command: AssignCustomerCommand,
   ): Promise<{ resolved: boolean; customerId: string | null }> {
     // 1. Load conversation
-    const conversation = await this.conversationRepository.getById(command.conversationId);
+    const conversation = await this.conversationRepository.getById(
+      command.conversationId,
+    );
     if (!conversation) {
       throw NotFoundException.entity('Conversation', command.conversationId);
     }
@@ -54,7 +57,9 @@ export class AssignCustomerHandler
     if (command.customerId) {
       conversation.assignCustomer(command.customerId);
       await this.conversationRepository.save(conversation);
-      this.logger.log(`Customer assigned (direct): conv=${conversation.id} customer=${command.customerId}`);
+      this.logger.log(
+        `Customer assigned (direct): conv=${conversation.id} customer=${command.customerId}`,
+      );
       return { resolved: true, customerId: command.customerId };
     }
 
@@ -76,7 +81,9 @@ export class AssignCustomerHandler
     conversation.assignCustomer(profile.id);
     await this.conversationRepository.save(conversation);
 
-    this.logger.log(`Identity resolved: conv=${conversation.id} → ${profile.name} (${profile.id})`);
+    this.logger.log(
+      `Identity resolved: conv=${conversation.id} → ${profile.name} (${profile.id})`,
+    );
     return { resolved: true, customerId: profile.id };
   }
 }

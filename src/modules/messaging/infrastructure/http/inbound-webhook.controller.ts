@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { randomUUID } from 'crypto';
 import type { ICommandBus } from 'src/libs/core/application';
@@ -31,7 +41,6 @@ export class AppWebhookPayloadDto {
   @IsArray()
   attachments?: { url: string }[];
 }
-
 
 /**
  * Inbound Webhook Controller
@@ -144,8 +153,11 @@ export class InboundWebhookController {
     const dto = appToDto(raw);
     const result = await this.commandBus.execute(
       new ReceiveInboundMessageCommand(
-        dto.channel, dto.customerChannelId, dto.externalMessageId,
-        dto.content ?? '', dto.attachments ?? [],
+        dto.channel,
+        dto.customerChannelId,
+        dto.externalMessageId,
+        dto.content ?? '',
+        dto.attachments ?? [],
       ),
     );
     return { ok: true, ...result };
@@ -160,8 +172,11 @@ export class InboundWebhookController {
     const dto = facebookToDto(raw);
     const result = await this.commandBus.execute(
       new ReceiveInboundMessageCommand(
-        dto.channel, dto.customerChannelId, dto.externalMessageId,
-        dto.content ?? '', dto.attachments ?? [],
+        dto.channel,
+        dto.customerChannelId,
+        dto.externalMessageId,
+        dto.content ?? '',
+        dto.attachments ?? [],
       ),
     );
     return { ok: true, ...result };
@@ -176,8 +191,11 @@ export class InboundWebhookController {
     const dto = emailToDto(raw);
     const result = await this.commandBus.execute(
       new ReceiveInboundMessageCommand(
-        dto.channel, dto.customerChannelId, dto.externalMessageId,
-        dto.content ?? '', dto.attachments ?? [],
+        dto.channel,
+        dto.customerChannelId,
+        dto.externalMessageId,
+        dto.content ?? '',
+        dto.attachments ?? [],
       ),
     );
     return { ok: true, ...result };

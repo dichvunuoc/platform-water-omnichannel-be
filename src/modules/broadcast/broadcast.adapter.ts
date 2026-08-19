@@ -5,7 +5,12 @@ import { cskhBroadcasts, type Broadcast } from '../cskh-bff/cskh-fixture';
 export const BROADCAST_PORT_TOKEN = 'CSKH_BROADCAST_PORT';
 export interface IBroadcastPort {
   list(): Broadcast[];
-  create(input: { title: string; channels: string[]; area: string; window: string }): Broadcast;
+  create(input: {
+    title: string;
+    channels: string[];
+    area: string;
+    window: string;
+  }): Broadcast;
   send(id: string): Broadcast;
 }
 
@@ -14,7 +19,12 @@ export class MockBroadcastAdapter implements IBroadcastPort {
   list(): Broadcast[] {
     return cskhBroadcasts;
   }
-  create(input: { title: string; channels: string[]; area: string; window: string }): Broadcast {
+  create(input: {
+    title: string;
+    channels: string[];
+    area: string;
+    window: string;
+  }): Broadcast {
     const newBc: Broadcast = {
       id: `bc${Date.now()}`,
       title: input.title,

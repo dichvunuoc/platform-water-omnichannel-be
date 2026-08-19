@@ -49,9 +49,12 @@ export const messagesTable = pgTable('messages', {
 /**
  * Relations
  */
-export const conversationsRelations = relations(conversationsTable, ({ many }) => ({
-  messages: many(messagesTable),
-}));
+export const conversationsRelations = relations(
+  conversationsTable,
+  ({ many }) => ({
+    messages: many(messagesTable),
+  }),
+);
 
 export const messagesRelations = relations(messagesTable, ({ one }) => ({
   conversation: one(conversationsTable, {

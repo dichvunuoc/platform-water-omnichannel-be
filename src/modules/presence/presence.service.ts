@@ -33,7 +33,9 @@ export class PresenceService {
     private readonly cache?: ICacheService,
   ) {
     if (!cache) {
-      this.logger.warn('PresenceService initialized without Redis — using in-memory fallback');
+      this.logger.warn(
+        'PresenceService initialized without Redis — using in-memory fallback',
+      );
     }
   }
 
@@ -53,7 +55,10 @@ export class PresenceService {
         await this.cache.delete(`${this.AVAILABLE_SET}:${agentId}`);
       }
     } else {
-      this.memoryStore.set(key, { status, expiresAt: Date.now() + this.TTL * 1000 });
+      this.memoryStore.set(key, {
+        status,
+        expiresAt: Date.now() + this.TTL * 1000,
+      });
       if (status === AgentStatus.AVAILABLE) {
         this.memoryAvailable.add(agentId);
       } else {
@@ -127,6 +132,9 @@ export class PresenceService {
 
   // --- In-memory fallback ---
 
-  private readonly memoryStore = new Map<string, { status: string; expiresAt: number }>();
+  private readonly memoryStore = new Map<
+    string,
+    { status: string; expiresAt: number }
+  >();
   private readonly memoryAvailable = new Set<string>();
 }

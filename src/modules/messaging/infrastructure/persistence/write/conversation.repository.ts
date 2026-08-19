@@ -1,6 +1,9 @@
 import { Injectable, Inject, Optional } from '@nestjs/common';
 import { eq, and, desc, sql } from 'drizzle-orm';
-import type { IEventBus, IOutboxRepository } from 'src/libs/core/infrastructure';
+import type {
+  IEventBus,
+  IOutboxRepository,
+} from 'src/libs/core/infrastructure';
 import { ConcurrencyException } from 'src/libs/core/common';
 import { OUTBOX_REPOSITORY_TOKEN } from 'src/libs/core/constants';
 import {
@@ -109,7 +112,9 @@ export class ConversationRepository
   }
 
   async delete(id: string): Promise<void> {
-    await this.db.delete(conversationsTable).where(eq(conversationsTable.id, id));
+    await this.db
+      .delete(conversationsTable)
+      .where(eq(conversationsTable.id, id));
   }
 
   async findActiveByCustomerChannel(
@@ -198,7 +203,9 @@ export class ConversationRepository
     };
   }
 
-  private toMessagesPersistence(aggregate: Conversation): InsertMessageRecord[] {
+  private toMessagesPersistence(
+    aggregate: Conversation,
+  ): InsertMessageRecord[] {
     return aggregate.messages.map((msg) => ({
       id: msg.id,
       conversationId: aggregate.id,

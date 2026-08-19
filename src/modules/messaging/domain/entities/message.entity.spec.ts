@@ -44,13 +44,27 @@ describe('Message Entity (OmniMessage)', () => {
 
     it('throws if conversationId is empty', () => {
       expect(() =>
-        Message.create({ id: 'msg-1', conversationId: '', channel: zalo, direction: MessageDirection.INBOUND, senderType: SenderType.CUSTOMER, content: 'hello' }),
+        Message.create({
+          id: 'msg-1',
+          conversationId: '',
+          channel: zalo,
+          direction: MessageDirection.INBOUND,
+          senderType: SenderType.CUSTOMER,
+          content: 'hello',
+        }),
       ).toThrow();
     });
 
     it('throws if content is empty (non-voice)', () => {
       expect(() =>
-        Message.create({ id: 'msg-1', conversationId: 'conv-1', channel: zalo, direction: MessageDirection.INBOUND, senderType: SenderType.CUSTOMER, content: '' }),
+        Message.create({
+          id: 'msg-1',
+          conversationId: 'conv-1',
+          channel: zalo,
+          direction: MessageDirection.INBOUND,
+          senderType: SenderType.CUSTOMER,
+          content: '',
+        }),
       ).toThrow();
     });
 
@@ -71,14 +85,25 @@ describe('Message Entity (OmniMessage)', () => {
 
     it('throws if content is whitespace-only', () => {
       expect(() =>
-        Message.create({ id: 'msg-1', conversationId: 'conv-1', channel: zalo, direction: MessageDirection.INBOUND, senderType: SenderType.CUSTOMER, content: '   ' }),
+        Message.create({
+          id: 'msg-1',
+          conversationId: 'conv-1',
+          channel: zalo,
+          direction: MessageDirection.INBOUND,
+          senderType: SenderType.CUSTOMER,
+          content: '   ',
+        }),
       ).toThrow();
     });
 
     it('defaults attachments to empty array if not provided', () => {
       const msg = Message.create({
-        id: 'msg-1', conversationId: 'conv-1', channel: zalo,
-        direction: MessageDirection.INBOUND, senderType: SenderType.CUSTOMER, content: 'hi',
+        id: 'msg-1',
+        conversationId: 'conv-1',
+        channel: zalo,
+        direction: MessageDirection.INBOUND,
+        senderType: SenderType.CUSTOMER,
+        content: 'hi',
       });
       expect(msg.attachments).toEqual([]);
     });
@@ -87,9 +112,13 @@ describe('Message Entity (OmniMessage)', () => {
   describe('attachments immutability', () => {
     it('returns a copy of attachments (readonly)', () => {
       const msg = Message.create({
-        id: 'msg-1', conversationId: 'conv-1', channel: zalo,
-        direction: MessageDirection.INBOUND, senderType: SenderType.CUSTOMER,
-        content: 'hi', attachments: ['url1', 'url2'],
+        id: 'msg-1',
+        conversationId: 'conv-1',
+        channel: zalo,
+        direction: MessageDirection.INBOUND,
+        senderType: SenderType.CUSTOMER,
+        content: 'hi',
+        attachments: ['url1', 'url2'],
       });
       const atts = msg.attachments;
       expect(atts).toEqual(['url1', 'url2']);

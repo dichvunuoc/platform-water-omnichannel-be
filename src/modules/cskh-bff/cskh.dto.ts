@@ -15,7 +15,14 @@ import type { CustomerProfile } from '../customer-360/customer-360.port';
 import { SLA_POLICIES } from '../ticketing/domain/value-objects/ticket-priority.value-object';
 
 // ─── FE-facing types ──────────────────────────────────────────────────────────
-export type ChannelCode = 'zalo' | 'app' | 'facebook' | 'email' | 'voip' | 'hotline' | 'web';
+export type ChannelCode =
+  | 'zalo'
+  | 'app'
+  | 'facebook'
+  | 'email'
+  | 'voip'
+  | 'hotline'
+  | 'web';
 export type ConvStatus = 'active' | 'closed' | 'archived';
 export type MessageFrom = 'cust' | 'agent' | 'bot' | 'sys';
 
@@ -63,13 +70,22 @@ export interface InboxPageDto {
 
 // ─── Enum maps ────────────────────────────────────────────────────────────────
 const CHANNEL_MAP: Record<string, ChannelCode> = {
-  ZALO: 'zalo', APP: 'app', FACEBOOK: 'facebook', EMAIL: 'email', VOIP: 'voip',
+  ZALO: 'zalo',
+  APP: 'app',
+  FACEBOOK: 'facebook',
+  EMAIL: 'email',
+  VOIP: 'voip',
 };
 const STATUS_MAP: Record<string, ConvStatus> = {
-  ACTIVE: 'active', CLOSED: 'closed', ARCHIVED: 'archived',
+  ACTIVE: 'active',
+  CLOSED: 'closed',
+  ARCHIVED: 'archived',
 };
 const SENDER_MAP: Record<string, MessageFrom> = {
-  CUSTOMER: 'cust', AGENT: 'agent', BOT: 'bot', SYSTEM: 'sys',
+  CUSTOMER: 'cust',
+  AGENT: 'agent',
+  BOT: 'bot',
+  SYSTEM: 'sys',
 };
 
 const mapChannel = (raw: string): ChannelCode => CHANNEL_MAP[raw] ?? 'app';
@@ -106,7 +122,9 @@ export function mapInboxItem(item: InboxItem): ConversationListItemDto {
   };
 }
 
-export function mapConversationDetail(detail: ConversationDetail): ConversationDetailDto {
+export function mapConversationDetail(
+  detail: ConversationDetail,
+): ConversationDetailDto {
   const last = detail.messages[detail.messages.length - 1];
   return {
     id: detail.id,
@@ -136,34 +154,58 @@ export function mapConversationDetail(detail: ConversationDetail): ConversationD
 // ─── Phase 2b: Ticket → TicketDto mapper + heuristic ─────────────────────────
 
 const STAGE_MAP: Record<string, string> = {
-  RECEIVED: 'new', IN_PROGRESS: 'progress', WAITING: 'waiting',
-  RESOLVED: 'resolved', CLOSED: 'closed',
+  RECEIVED: 'new',
+  IN_PROGRESS: 'progress',
+  WAITING: 'waiting',
+  RESOLVED: 'resolved',
+  CLOSED: 'closed',
 };
 const PRIORITY_MAP: Record<string, string> = {
-  P0: 'urgent', P1: 'high', P2: 'normal', P3: 'low',
+  P0: 'urgent',
+  P1: 'high',
+  P2: 'normal',
+  P3: 'low',
 };
 const TICKET_CHANNEL_MAP: Record<string, string> = {
-  ZALO: 'zalo', APP: 'app', FACEBOOK: 'facebook',
-  EMAIL: 'web', VOIP: 'hotline', HOTLINE: 'hotline', WEB: 'web',
+  ZALO: 'zalo',
+  APP: 'app',
+  FACEBOOK: 'facebook',
+  EMAIL: 'web',
+  VOIP: 'hotline',
+  HOTLINE: 'hotline',
+  WEB: 'web',
 };
 
 type TicketMsgFrom = 'cust' | 'agent' | 'bot' | 'sys';
 
 /** Keyword-based heuristic classifier (bridge đến Phase 2c real AI). */
 export function classifyHeuristic(text: string): {
-  topic: string; sentiment: string; matched: boolean; confidence: number;
+  topic: string;
+  sentiment: string;
+  matched: boolean;
+  confidence: number;
 } {
   const t = (text || '').toLowerCase();
   if (/vỡ|bể|ống|rò rỉ|nước phun|lênh láng/.test(t))
     return { topic: 'suco', sentiment: 'neg', matched: true, confidence: 92 };
   if (/đục|mùi|màu|bẩn|chất lượng/.test(t))
-    return { topic: 'chatluong', sentiment: 'neg', matched: true, confidence: 88 };
+    return {
+      topic: 'chatluong',
+      sentiment: 'neg',
+      matched: true,
+      confidence: 88,
+    };
   if (/hoá đơn|hóa đơn|tiền|công nợ|thanh toán/.test(t))
     return { topic: 'hoadon', sentiment: 'neu', matched: true, confidence: 85 };
   if (/lắp|mới|đấu nối|tháo/.test(t))
     return { topic: 'daunoi', sentiment: 'neu', matched: true, confidence: 80 };
   if (/đổi|cập nhật|thông tin|địa chỉ/.test(t))
-    return { topic: 'thongtin', sentiment: 'neu', matched: true, confidence: 75 };
+    return {
+      topic: 'thongtin',
+      sentiment: 'neu',
+      matched: true,
+      confidence: 75,
+    };
   if (/cảm ơn|thank/.test(t))
     return { topic: 'gopy', sentiment: 'pos', matched: true, confidence: 70 };
   if (/bức xúc|khiếu nại|phàn nàn/.test(t))
@@ -174,7 +216,12 @@ export function classifyHeuristic(text: string): {
 function normalizeCustType(raw?: string | null): string {
   if (!raw) return 'sh';
   const lower = raw.toLowerCase();
-  if (lower.includes('kinh doanh') || lower.includes('dịch vụ') || lower === 'kddv') return 'kddv';
+  if (
+    lower.includes('kinh doanh') ||
+    lower.includes('dịch vụ') ||
+    lower === 'kddv'
+  )
+    return 'kddv';
   return 'sh';
 }
 
@@ -188,7 +235,10 @@ function formatRelative(date: Date | string): string {
 }
 
 function mapTicketMessage(m: InternalMessage): {
-  from: TicketMsgFrom; text: string; time: string; photo?: string;
+  from: TicketMsgFrom;
+  text: string;
+  time: string;
+  photo?: string;
 } {
   const d = m.createdAt instanceof Date ? m.createdAt : new Date(m.createdAt);
   return {
@@ -214,13 +264,18 @@ export function mapTicket(
   } = {},
 ): TicketDtoShape {
   const now = Date.now();
-  const created = ticket.createdAt instanceof Date ? ticket.createdAt : new Date(ticket.createdAt);
-  const isResolved = ticket.stage.value === 'RESOLVED' || ticket.stage.value === 'CLOSED';
+  const created =
+    ticket.createdAt instanceof Date
+      ? ticket.createdAt
+      : new Date(ticket.createdAt);
+  const isResolved =
+    ticket.stage.value === 'RESOLVED' || ticket.stage.value === 'CLOSED';
   const remainingMs = ticket.resolveRemainingMs;
-  const slaTotalMs = SLA_POLICIES[ticket.priority.value]?.resolveMs ?? 24 * 3600000;
+  const slaTotalMs =
+    SLA_POLICIES[ticket.priority.value]?.resolveMs ?? 24 * 3600000;
   const lastMsgContent = opts.conversation?.messages?.length
     ? opts.conversation.messages[opts.conversation.messages.length - 1].content
-    : opts.lastMessage?.content ?? ticket.description ?? '';
+    : (opts.lastMessage?.content ?? ticket.description ?? '');
   const heur = classifyHeuristic(lastMsgContent);
 
   return {

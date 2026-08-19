@@ -14,9 +14,10 @@ import { Ticket, TicketPriority } from '../../../../ticketing/domain';
  * Loads conversation → creates Ticket via real TicketRepository → links conversation.
  */
 @CommandHandler(CreateTicketRequestCommand)
-export class CreateTicketRequestHandler
-  implements ICommandHandler<CreateTicketRequestCommand, { ok: true; ticketId: string }>
-{
+export class CreateTicketRequestHandler implements ICommandHandler<
+  CreateTicketRequestCommand,
+  { ok: true; ticketId: string }
+> {
   private readonly logger = new Logger(CreateTicketRequestHandler.name);
 
   constructor(
@@ -29,13 +30,17 @@ export class CreateTicketRequestHandler
   async execute(
     command: CreateTicketRequestCommand,
   ): Promise<{ ok: true; ticketId: string }> {
-    const conversation = await this.conversationRepository.getById(command.conversationId);
+    const conversation = await this.conversationRepository.getById(
+      command.conversationId,
+    );
     if (!conversation) {
       throw NotFoundException.entity('Conversation', command.conversationId);
     }
 
     if (conversation.ticketId) {
-      this.logger.debug(`Conversation ${command.conversationId} already linked to ticket ${conversation.ticketId}`);
+      this.logger.debug(
+        `Conversation ${command.conversationId} already linked to ticket ${conversation.ticketId}`,
+      );
       return { ok: true, ticketId: conversation.ticketId };
     }
 
@@ -46,7 +51,8 @@ export class CreateTicketRequestHandler
       conversationId: command.conversationId,
       customerId: conversation.customerId ?? undefined,
       channel: conversation.channel.value,
-      title: command.title ?? `Ticket from conversation ${command.conversationId}`,
+      title:
+        command.title ?? `Ticket from conversation ${command.conversationId}`,
       description: command.description,
       priority,
     });
@@ -56,7 +62,9 @@ export class CreateTicketRequestHandler
     conversation.linkTicket(ticket.id);
     await this.conversationRepository.save(conversation);
 
-    this.logger.log(`Ticket created + linked: conv=${command.conversationId} → ticket=${ticket.id}`);
+    this.logger.log(
+      `Ticket created + linked: conv=${command.conversationId} → ticket=${ticket.id}`,
+    );
     return { ok: true, ticketId: ticket.id };
   }
 }

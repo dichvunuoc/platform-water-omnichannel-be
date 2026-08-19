@@ -47,7 +47,10 @@ import {
   controllers: [InboundWebhookController, BffController],
   providers: [
     ConversationRepository,
-    { provide: CONVERSATION_REPOSITORY_TOKEN, useExisting: ConversationRepository },
+    {
+      provide: CONVERSATION_REPOSITORY_TOKEN,
+      useExisting: ConversationRepository,
+    },
     ConversationReadDao,
     { provide: CONVERSATION_READ_DAO_TOKEN, useExisting: ConversationReadDao },
 
