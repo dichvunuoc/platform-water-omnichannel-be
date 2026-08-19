@@ -1,21 +1,28 @@
 import { IsString, IsNotEmpty, IsOptional, IsArray } from 'class-validator';
 
 export class DispatchWorkOrderDto {
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   agentId!: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   incidentType!: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   priority!: string;
 
-  @IsString() @IsNotEmpty()
+  @IsString()
+  @IsNotEmpty()
   address!: string;
 
-  @IsOptional() @IsArray() @IsString({ each: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   photoUrls?: string[];
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   customerId?: string;
 }

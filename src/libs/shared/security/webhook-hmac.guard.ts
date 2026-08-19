@@ -49,13 +49,18 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { createHash, createHmac, timingSafeEqual } from 'crypto';
-import { SKIP_WEBHOOK_HMAC_KEY, SkipWebhookHmac } from './skip-webhook-hmac.decorator';
+import {
+  SKIP_WEBHOOK_HMAC_KEY,
+  SkipWebhookHmac,
+} from './skip-webhook-hmac.decorator';
 
 /** Replay window (giây) — signature hợp lệ trong ±5 phút. */
 export const WEBHOOK_HMAC_MAX_AGE_SECONDS = 300;
 
 /** Header Fastify value có thể là string[] — normalize về string đầu tiên. */
-function headerAsString(value: string | string[] | undefined): string | undefined {
+function headerAsString(
+  value: string | string[] | undefined,
+): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
@@ -66,10 +71,10 @@ export class WebhookHmacGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const skip = this.reflector.getAllAndOverride<boolean>(SKIP_WEBHOOK_HMAC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const skip = this.reflector.getAllAndOverride<boolean>(
+      SKIP_WEBHOOK_HMAC_KEY,
+      [context.getHandler(), context.getClass()],
+    );
     if (skip) return true;
 
     const req = context.switchToHttp().getRequest();
@@ -99,7 +104,9 @@ export class WebhookHmacGuard implements CanActivate {
       this.logger.warn(
         `Webhook timestamp outside ±${WEBHOOK_HMAC_MAX_AGE_SECONDS}s window (delta=${delta}s — replay hoặc clock skew). Path: ${target}`,
       );
-      throw new UnauthorizedException('Signature timestamp outside allowed window');
+      throw new UnauthorizedException(
+        'Signature timestamp outside allowed window',
+      );
     }
 
     // Canonical v1 — method + exact request-target + sha256(rawBody|'')

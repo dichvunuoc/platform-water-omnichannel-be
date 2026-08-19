@@ -58,20 +58,38 @@ export class MessagingGateway
 
     this.eventBus.subscribe(
       'MessageReceived',
-      async (event: any) => { this.handleMessageReceived(event); },
-      { queueName: `MessageReceived.realtime.${instance}`, durable: false, autoDelete: true },
+      async (event: any) => {
+        this.handleMessageReceived(event);
+      },
+      {
+        queueName: `MessageReceived.realtime.${instance}`,
+        durable: false,
+        autoDelete: true,
+      },
     );
 
     this.eventBus.subscribe(
       'ConversationStarted',
-      async (event: any) => { this.handleConversationStarted(event); },
-      { queueName: `ConversationStarted.realtime.${instance}`, durable: false, autoDelete: true },
+      async (event: any) => {
+        this.handleConversationStarted(event);
+      },
+      {
+        queueName: `ConversationStarted.realtime.${instance}`,
+        durable: false,
+        autoDelete: true,
+      },
     );
 
     this.eventBus.subscribe(
       'SlaWarning',
-      async (event: any) => { this.handleSlaWarning(event); },
-      { queueName: `SlaWarning.realtime.${instance}`, durable: false, autoDelete: true },
+      async (event: any) => {
+        this.handleSlaWarning(event);
+      },
+      {
+        queueName: `SlaWarning.realtime.${instance}`,
+        durable: false,
+        autoDelete: true,
+      },
     );
   }
 
@@ -111,7 +129,9 @@ export class MessagingGateway
 
   async handleDisconnect(client: Socket): Promise<void> {
     const agentId = client.data?.agentId;
-    this.logger.log(`Agent disconnected: ${agentId ?? 'unknown'} (socket: ${client.id})`);
+    this.logger.log(
+      `Agent disconnected: ${agentId ?? 'unknown'} (socket: ${client.id})`,
+    );
   }
 
   // ─── Event handlers (push to agents) ───
@@ -181,7 +201,7 @@ export class MessagingGateway
       conversationId: data.conversationId,
       slaDeadline: data.slaDeadline,
       remainingMs: data.remainingMs,
-      severity: data.severity,     // 'WARNING' | 'BREACHED'
+      severity: data.severity, // 'WARNING' | 'BREACHED'
       stage: data.stage,
       assignee: data.assignee,
       timestamp: event.occurredAt ?? Date.now(),

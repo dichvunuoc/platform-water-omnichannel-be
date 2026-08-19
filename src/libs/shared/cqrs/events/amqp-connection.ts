@@ -8,7 +8,12 @@
  * Lifecycle: connect() on module init, close() on destroy.
  * If AMQP_URL is unset, connect() returns null (caller falls back to in-process bus).
  */
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as amqp from 'amqplib';
 import type { ConfirmChannel } from 'amqplib';
@@ -29,7 +34,9 @@ export class AmqpConnection implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     if (!this.url) {
-      this.logger.log('AMQP_URL not set — AmqpConnection idle (in-process fallback)');
+      this.logger.log(
+        'AMQP_URL not set — AmqpConnection idle (in-process fallback)',
+      );
       return;
     }
     await this.connect();
@@ -59,10 +66,14 @@ export class AmqpConnection implements OnModuleInit, OnModuleDestroy {
       this.channel = await this.connection.createConfirmChannel();
 
       // Assert the topic exchange (durable, survives restart).
-      await this.channel!.assertExchange(EXCHANGE_NAME, 'topic', { durable: true });
+      await this.channel!.assertExchange(EXCHANGE_NAME, 'topic', {
+        durable: true,
+      });
       await this.channel!.prefetch(1);
 
-      this.logger.log(`Connected to RabbitMQ, exchange '${EXCHANGE_NAME}' asserted`);
+      this.logger.log(
+        `Connected to RabbitMQ, exchange '${EXCHANGE_NAME}' asserted`,
+      );
 
       // Reconnect on close.
       this.connection.on('close', () => {
@@ -75,16 +86,22 @@ export class AmqpConnection implements OnModuleInit, OnModuleDestroy {
         this.logger.error(`RabbitMQ connection error: ${err.message}`);
       });
     } catch (err) {
-      this.logger.error(`Failed to connect to RabbitMQ: ${(err as Error).message}`);
+      this.logger.error(
+        `Failed to connect to RabbitMQ: ${(err as Error).message}`,
+      );
       this.scheduleReconnect();
     }
   }
 
   private scheduleReconnect(): void {
     if (this.reconnectTimer) return;
-    this.reconnectTimer = setTimeout(async () => {
-      this.reconnectTimer = null;
-      if (this.url) await this.connect();
+    this.reconnectTimer = setTimeout(() => {
+      // void-wrapper: setTimeout callback phải trả void (no-misused-promises) —
+      // fire-and-forget reconnect, lỗi được logger xử lý bên trong connect().
+      void (async () => {
+        this.reconnectTimer = null;
+        if (this.url) await this.connect();
+      })();
     }, 5000);
   }
 }

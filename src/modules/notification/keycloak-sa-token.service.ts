@@ -20,7 +20,7 @@ export class KeycloakSaTokenService {
   isConfigured(): boolean {
     return Boolean(
       this.config.get<string>('KEYCLOAK_SA_CLIENT_ID') &&
-        this.config.get<string>('KEYCLOAK_SA_CLIENT_SECRET'),
+      this.config.get<string>('KEYCLOAK_SA_CLIENT_SECRET'),
     );
   }
 
@@ -29,10 +29,15 @@ export class KeycloakSaTokenService {
     const now = Date.now();
     if (this.token && now < this.expiresAt) return this.token;
 
-    const base = this.config.get<string>('KEYCLOAK_URL', 'http://localhost:8080');
+    const base = this.config.get<string>(
+      'KEYCLOAK_URL',
+      'http://localhost:8080',
+    );
     const realm = this.config.get<string>('KEYCLOAK_REALM', 'water-platform');
     const clientId = this.config.get<string>('KEYCLOAK_SA_CLIENT_ID') as string;
-    const clientSecret = this.config.get<string>('KEYCLOAK_SA_CLIENT_SECRET') as string;
+    const clientSecret = this.config.get<string>(
+      'KEYCLOAK_SA_CLIENT_SECRET',
+    ) as string;
     const endpoint = `${base}/realms/${realm}/protocol/openid-connect/token`;
 
     const res = await fetch(endpoint, {
@@ -49,7 +54,10 @@ export class KeycloakSaTokenService {
       this.logger.error(`Keycloak SA token failed: ${res.status} ${detail}`);
       throw new Error(`Keycloak SA token failed: ${res.status}`);
     }
-    const body = (await res.json()) as { access_token: string; expires_in: number };
+    const body = (await res.json()) as {
+      access_token: string;
+      expires_in: number;
+    };
     this.token = body.access_token;
     this.expiresAt = now + Math.max(0, (body.expires_in ?? 60) - 10) * 1000;
     return this.token;

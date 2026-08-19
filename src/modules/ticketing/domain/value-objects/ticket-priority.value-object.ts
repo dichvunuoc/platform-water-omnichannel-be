@@ -9,15 +9,26 @@ export enum TicketPriorityEnum {
 
 export type SlaSchedule = '24/7' | 'BUSINESS_HOURS';
 
-export const SLA_POLICIES: Record<TicketPriorityEnum, {
-  ackMs: number;
-  resolveMs: number;
-  schedule: SlaSchedule;
-}> = {
-  P0: { ackMs: 1 * 3600 * 1000,      resolveMs: 4 * 3600 * 1000,        schedule: '24/7' },
-  P1: { ackMs: 2 * 3600 * 1000,      resolveMs: 8 * 3600 * 1000,        schedule: '24/7' },
-  P2: { ackMs: 24 * 3600 * 1000,     resolveMs: 7 * 24 * 3600 * 1000,  schedule: 'BUSINESS_HOURS' },
-  P3: { ackMs: 48 * 3600 * 1000,     resolveMs: 14 * 24 * 3600 * 1000, schedule: 'BUSINESS_HOURS' },
+export const SLA_POLICIES: Record<
+  TicketPriorityEnum,
+  {
+    ackMs: number;
+    resolveMs: number;
+    schedule: SlaSchedule;
+  }
+> = {
+  P0: { ackMs: 1 * 3600 * 1000, resolveMs: 4 * 3600 * 1000, schedule: '24/7' },
+  P1: { ackMs: 2 * 3600 * 1000, resolveMs: 8 * 3600 * 1000, schedule: '24/7' },
+  P2: {
+    ackMs: 24 * 3600 * 1000,
+    resolveMs: 7 * 24 * 3600 * 1000,
+    schedule: 'BUSINESS_HOURS',
+  },
+  P3: {
+    ackMs: 48 * 3600 * 1000,
+    resolveMs: 14 * 24 * 3600 * 1000,
+    schedule: 'BUSINESS_HOURS',
+  },
 };
 
 export class TicketPriority extends BaseValueObject {
@@ -29,9 +40,14 @@ export class TicketPriority extends BaseValueObject {
   }
 
   static create(value: TicketPriorityEnum | string): TicketPriority {
-    const upper = (typeof value === 'string' ? value.toUpperCase() : value) as TicketPriorityEnum;
+    const upper = (
+      typeof value === 'string' ? value.toUpperCase() : value
+    ) as TicketPriorityEnum;
     if (!Object.values(TicketPriorityEnum).includes(upper)) {
-      throw new DomainException(`Invalid ticket priority: ${value}`, 'INVALID_PRIORITY');
+      throw new DomainException(
+        `Invalid ticket priority: ${value}`,
+        'INVALID_PRIORITY',
+      );
     }
     return new TicketPriority(upper);
   }

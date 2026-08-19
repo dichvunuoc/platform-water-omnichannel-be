@@ -1,4 +1,8 @@
-import { AggregateRoot, DomainException, type IEventMetadata } from 'src/libs/core/domain';
+import {
+  AggregateRoot,
+  DomainException,
+  type IEventMetadata,
+} from 'src/libs/core/domain';
 import { TicketId } from '../value-objects/ticket-id.value-object';
 import {
   TicketPriority,
@@ -66,7 +70,11 @@ export class Ticket extends AggregateRoot {
 
   // ─── Factory ───
 
-  static create(id: string, props: CreateTicketProps, metadata?: IEventMetadata): Ticket {
+  static create(
+    id: string,
+    props: CreateTicketProps,
+    metadata?: IEventMetadata,
+  ): Ticket {
     const ticket = new Ticket(id);
     ticket._ticketId = TicketId.create(id);
     ticket._conversationId = props.conversationId ?? null;
@@ -228,7 +236,8 @@ export class Ticket extends AggregateRoot {
 
     // 30-day limit
     if (this._closedAt) {
-      const daysSinceClose = (Date.now() - this._closedAt.getTime()) / (24 * 3600 * 1000);
+      const daysSinceClose =
+        (Date.now() - this._closedAt.getTime()) / (24 * 3600 * 1000);
       if (daysSinceClose > 30) {
         throw new DomainException(
           `Cannot reopen: ticket closed ${Math.floor(daysSinceClose)} days ago (limit: 30 days)`,
@@ -279,35 +288,73 @@ export class Ticket extends AggregateRoot {
 
   // ─── Getters ───
 
-  get ticketId(): TicketId { return this._ticketId; }
-  get conversationId(): string | null { return this._conversationId; }
-  get customerId(): string | null { return this._customerId; }
-  get channel(): string { return this._channel; }
-  get title(): string { return this._title; }
-  get description(): string { return this._description; }
-  get priority(): TicketPriority { return this._priority; }
-  get stage(): TicketStage { return this._stage; }
-  get assignee(): string | null { return this._assignee; }
-  get parentId(): string | null { return this._parentId; }
-  get escalated(): boolean { return this._escalated; }
-  get escalationLevel(): EscalationLevel { return this._escalationLevel; }
-  get reopenedFromCsat(): boolean { return this._reopenedFromCsat; }
-  get ackDeadline(): Date { return this._ackDeadline; }
-  get resolveDeadline(): Date { return this._resolveDeadline; }
-  get acknowledgedAt(): Date | null { return this._acknowledgedAt; }
-  get closedAt(): Date | null { return this._closedAt; }
+  get ticketId(): TicketId {
+    return this._ticketId;
+  }
+  get conversationId(): string | null {
+    return this._conversationId;
+  }
+  get customerId(): string | null {
+    return this._customerId;
+  }
+  get channel(): string {
+    return this._channel;
+  }
+  get title(): string {
+    return this._title;
+  }
+  get description(): string {
+    return this._description;
+  }
+  get priority(): TicketPriority {
+    return this._priority;
+  }
+  get stage(): TicketStage {
+    return this._stage;
+  }
+  get assignee(): string | null {
+    return this._assignee;
+  }
+  get parentId(): string | null {
+    return this._parentId;
+  }
+  get escalated(): boolean {
+    return this._escalated;
+  }
+  get escalationLevel(): EscalationLevel {
+    return this._escalationLevel;
+  }
+  get reopenedFromCsat(): boolean {
+    return this._reopenedFromCsat;
+  }
+  get ackDeadline(): Date {
+    return this._ackDeadline;
+  }
+  get resolveDeadline(): Date {
+    return this._resolveDeadline;
+  }
+  get acknowledgedAt(): Date | null {
+    return this._acknowledgedAt;
+  }
+  get closedAt(): Date | null {
+    return this._closedAt;
+  }
 
   get isAckBreached(): boolean {
     return !this._acknowledgedAt && this._ackDeadline.getTime() < Date.now();
   }
   get isResolveBreached(): boolean {
-    return this._resolveDeadline.getTime() < Date.now() && !this._stage.isResolved;
+    return (
+      this._resolveDeadline.getTime() < Date.now() && !this._stage.isResolved
+    );
   }
   get ackRemainingMs(): number {
     return this._acknowledgedAt ? 0 : this._ackDeadline.getTime() - Date.now();
   }
   get resolveRemainingMs(): number {
-    return this._stage.isResolved ? 0 : this._resolveDeadline.getTime() - Date.now();
+    return this._stage.isResolved
+      ? 0
+      : this._resolveDeadline.getTime() - Date.now();
   }
 }
 

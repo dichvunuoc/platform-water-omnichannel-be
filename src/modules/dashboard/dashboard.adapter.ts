@@ -50,12 +50,18 @@ export class RealDashboardAdapter implements IDashboardPort {
       const ch = (item.channel || 'unknown').toLowerCase();
       channelMap.set(ch, (channelMap.get(ch) ?? 0) + 1);
     }
-    const volByChannel = Array.from(channelMap.entries()).map(([ch, n]) => ({ ch, n }));
+    const volByChannel = Array.from(channelMap.entries()).map(([ch, n]) => ({
+      ch,
+      n,
+    }));
 
     // Hourly distribution (từ createdAt hour of day)
     const hourly = new Array(24).fill(0);
     for (const item of inboxPage.items) {
-      const d = item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt);
+      const d =
+        item.createdAt instanceof Date
+          ? item.createdAt
+          : new Date(item.createdAt);
       if (!isNaN(d.getTime())) hourly[d.getHours()]++;
     }
 

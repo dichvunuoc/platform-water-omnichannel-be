@@ -1,5 +1,9 @@
 import { AiInsightService } from './ai-insight.service';
-import type { IAiVisionPort, IAudioAiPort, INlpPort } from './ports/ai-vision.port';
+import type {
+  IAiVisionPort,
+  IAudioAiPort,
+  INlpPort,
+} from './ports/ai-vision.port';
 
 function createMockPorts() {
   const vision: IAiVisionPort = {
@@ -29,20 +33,26 @@ describe('AiInsightService', () => {
     const { vision, audio, nlp } = createMockPorts();
     const svc = new AiInsightService(vision, audio, nlp);
 
-    const insight = await svc.classifyImage('https://cdn.example.com/photo.jpg');
+    const insight = await svc.classifyImage(
+      'https://cdn.example.com/photo.jpg',
+    );
 
     expect(insight).not.toBeNull();
     expect(insight!.type).toBe('VISION');
     expect(insight!.tag).toBe('Vỡ / bể ống');
     expect(insight!.confidence).toBe(0.97);
-    expect(vision.classify).toHaveBeenCalledWith('https://cdn.example.com/photo.jpg');
+    expect(vision.classify).toHaveBeenCalledWith(
+      'https://cdn.example.com/photo.jpg',
+    );
   });
 
   it('transcribeAudio returns AUDIO insight', async () => {
     const { vision, audio, nlp } = createMockPorts();
     const svc = new AiInsightService(vision, audio, nlp);
 
-    const insight = await svc.transcribeAudio('https://cdn.example.com/call.wav');
+    const insight = await svc.transcribeAudio(
+      'https://cdn.example.com/call.wav',
+    );
 
     expect(insight).not.toBeNull();
     expect(insight!.type).toBe('AUDIO');
@@ -73,9 +83,14 @@ describe('AiInsightService', () => {
   it('returns null on timeout (3s circuit-breaker)', async () => {
     const { vision, audio, nlp } = createMockPorts();
     // Simulate a slow AI that never resolves within the timeout
-    vision.classify = jest.fn().mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({ tag: 'late', confidence: 0.5 }), 5000)),
-    );
+    vision.classify = jest
+      .fn()
+      .mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve({ tag: 'late', confidence: 0.5 }), 5000),
+          ),
+      );
     const svc = new AiInsightService(vision, audio, nlp);
 
     const insight = await svc.classifyImage('slow-url');

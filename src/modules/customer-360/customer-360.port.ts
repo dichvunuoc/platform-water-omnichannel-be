@@ -4,7 +4,10 @@
  */
 export interface ICustomer360Port {
   /** Resolve a channel identifier to a global customer profile. */
-  resolveIdentity(channel: string, customerChannelId: string): Promise<CustomerProfile | null>;
+  resolveIdentity(
+    channel: string,
+    customerChannelId: string,
+  ): Promise<CustomerProfile | null>;
 
   /** Fetch full profile by global customer ID. */
   getProfile(customerId: string): Promise<CustomerProfile | null>;

@@ -1,7 +1,15 @@
-import { Channel, Conversation, ConversationStatus, MessageDirection, SenderType } from '../../../domain';
+import {
+  Channel,
+  Conversation,
+  ConversationStatus,
+  MessageDirection,
+  SenderType,
+} from '../../../domain';
 
 // Mock factory
-function createMockConversation(overrides: Partial<Conversation> = {}): Conversation {
+function createMockConversation(
+  overrides: Partial<Conversation> = {},
+): Conversation {
   const conv = Conversation.create('conv-reply-1', {
     customerChannelId: 'zalo-user-789',
     channel: Channel.zalo(),
@@ -21,11 +29,19 @@ function createMockRepo(conv: Conversation | null = createMockConversation()) {
 }
 
 function createMockAdapters() {
-  const mockSend = jest.fn().mockResolvedValue({ success: true, externalId: 'ext-1' });
+  const mockSend = jest
+    .fn()
+    .mockResolvedValue({ success: true, externalId: 'ext-1' });
   return {
     map: new Map([
       ['ZALO', { send: mockSend, channel: 'ZALO' }],
-      ['APP', { send: jest.fn().mockResolvedValue({ success: true }), channel: 'APP' }],
+      [
+        'APP',
+        {
+          send: jest.fn().mockResolvedValue({ success: true }),
+          channel: 'APP',
+        },
+      ],
     ]),
     mockSend,
   };
@@ -48,7 +64,11 @@ describe('SendReplyHandler', () => {
 
     const handler = new SendReplyHandler(repo, map);
     const result = await handler.execute(
-      new SendReplyCommand('conv-reply-1', 'agent-001', 'Cảm ơn bác đã báo, đội hiện trường đang đến'),
+      new SendReplyCommand(
+        'conv-reply-1',
+        'agent-001',
+        'Cảm ơn bác đã báo, đội hiện trường đang đến',
+      ),
     );
 
     expect(result.messageId).toBeDefined();
@@ -57,7 +77,9 @@ describe('SendReplyHandler', () => {
     expect(savedConv.messages.length).toBe(1);
     expect(savedConv.messages[0].direction).toBe(MessageDirection.OUTBOUND);
     expect(savedConv.messages[0].senderType).toBe(SenderType.AGENT);
-    expect(savedConv.messages[0].content).toBe('Cảm ơn bác đã báo, đội hiện trường đang đến');
+    expect(savedConv.messages[0].content).toBe(
+      'Cảm ơn bác đã báo, đội hiện trường đang đến',
+    );
   });
 
   it('fires outbound channel send (fire-and-forget)', async () => {
@@ -66,7 +88,9 @@ describe('SendReplyHandler', () => {
     const { map, mockSend } = createMockAdapters();
 
     const handler = new SendReplyHandler(repo, map);
-    await handler.execute(new SendReplyCommand('conv-reply-1', 'agent-001', 'reply text'));
+    await handler.execute(
+      new SendReplyCommand('conv-reply-1', 'agent-001', 'reply text'),
+    );
 
     // Give fire-and-forget a tick to resolve
     await new Promise((r) => setTimeout(r, 50));
@@ -92,7 +116,9 @@ describe('SendReplyHandler', () => {
     const handler = new SendReplyHandler(repo, map);
 
     await expect(
-      handler.execute(new SendReplyCommand('conv-reply-1', 'agent-001', 'text')),
+      handler.execute(
+        new SendReplyCommand('conv-reply-1', 'agent-001', 'text'),
+      ),
     ).rejects.toThrow('not active');
   });
 });

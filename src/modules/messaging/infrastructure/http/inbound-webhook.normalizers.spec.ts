@@ -47,27 +47,38 @@ describe('Channel Normalizers', () => {
 
   describe('AppWebhookPayloadDto — class-validator (global pipe dựa vào đây)', () => {
     it('body thiếu userId → validation error (identity không được phép thiếu)', async () => {
-      const errors = await validate(Object.assign(new AppWebhookPayloadDto(), { messageId: 'm1' }));
+      const errors = await validate(
+        Object.assign(new AppWebhookPayloadDto(), { messageId: 'm1' }),
+      );
       expect(errors.length).toBeGreaterThan(0);
       expect(errors[0].property).toBe('userId');
     });
 
     it('body thiếu messageId → validation error (idempotency key của receiver)', async () => {
-      const errors = await validate(Object.assign(new AppWebhookPayloadDto(), { userId: 'u1' }));
+      const errors = await validate(
+        Object.assign(new AppWebhookPayloadDto(), { userId: 'u1' }),
+      );
       expect(errors.length).toBeGreaterThan(0);
       expect(errors[0].property).toBe('messageId');
     });
 
     it('body đủ field → pass', async () => {
       const errors = await validate(
-        Object.assign(new AppWebhookPayloadDto(), { userId: 'u1', messageId: 'm1', text: 'hi' }),
+        Object.assign(new AppWebhookPayloadDto(), {
+          userId: 'u1',
+          messageId: 'm1',
+          text: 'hi',
+        }),
       );
       expect(errors).toEqual([]);
     });
 
     it('userId rỗng string → validation error (IsNotEmpty)', async () => {
       const errors = await validate(
-        Object.assign(new AppWebhookPayloadDto(), { userId: '', messageId: 'm1' }),
+        Object.assign(new AppWebhookPayloadDto(), {
+          userId: '',
+          messageId: 'm1',
+        }),
       );
       expect(errors.length).toBeGreaterThan(0);
     });
@@ -86,7 +97,10 @@ describe('Channel Normalizers', () => {
     });
 
     it('missing message text → empty content', () => {
-      const dto = zaloToDto({ sender: { id: 'z1' }, message: { msg_id: 'msg-002' } });
+      const dto = zaloToDto({
+        sender: { id: 'z1' },
+        message: { msg_id: 'msg-002' },
+      });
       expect(dto.content).toBe('');
     });
   });
@@ -127,7 +141,11 @@ describe('Channel Normalizers', () => {
     });
 
     it('fallback subject khi thiếu textBody', () => {
-      const dto = emailToDto({ from: 'a@b.c', messageId: 'm', subject: 'Chủ đề' });
+      const dto = emailToDto({
+        from: 'a@b.c',
+        messageId: 'm',
+        subject: 'Chủ đề',
+      });
       expect(dto.content).toBe('Chủ đề');
     });
   });

@@ -7,7 +7,9 @@ import {
 } from '../../domain';
 
 describe('Ticket Aggregate', () => {
-  const createTestTicket = (priority: TicketPriorityEnum = TicketPriorityEnum.P0) =>
+  const createTestTicket = (
+    priority: TicketPriorityEnum = TicketPriorityEnum.P0,
+  ) =>
     Ticket.create('SC-TEST01', {
       channel: 'ZALO',
       title: 'Vỡ ống nước',
@@ -29,9 +31,11 @@ describe('Ticket Aggregate', () => {
     it('enqueues TicketCreated event with SLA deadlines', () => {
       const t = createTestTicket(TicketPriorityEnum.P0);
       const events = t.getDomainEvents();
-      expect(events.some(e => e.eventType === 'TicketCreated')).toBe(true);
+      expect(events.some((e) => e.eventType === 'TicketCreated')).toBe(true);
       expect(t.ackDeadline.getTime()).toBeGreaterThan(Date.now());
-      expect(t.resolveDeadline.getTime()).toBeGreaterThan(t.ackDeadline.getTime());
+      expect(t.resolveDeadline.getTime()).toBeGreaterThan(
+        t.ackDeadline.getTime(),
+      );
     });
 
     it('P0 SLA: ack=1h, resolve=4h, schedule=24/7', () => {
@@ -76,12 +80,14 @@ describe('Ticket Aggregate', () => {
       t.advanceStage(TicketStageEnum.IN_PROGRESS);
       t.advanceStage(TicketStageEnum.CLOSED);
       const events = t.getDomainEvents();
-      expect(events.some(e => e.eventType === 'TicketClosed')).toBe(true);
+      expect(events.some((e) => e.eventType === 'TicketClosed')).toBe(true);
     });
 
     it('rejects invalid transition: RECEIVED → CLOSED directly', () => {
       const t = createTestTicket();
-      expect(() => t.advanceStage(TicketStageEnum.CLOSED)).toThrow('Invalid transition');
+      expect(() => t.advanceStage(TicketStageEnum.CLOSED)).toThrow(
+        'Invalid transition',
+      );
     });
 
     it('RESOLVED → IN_PROGRESS allowed (reopen path)', () => {

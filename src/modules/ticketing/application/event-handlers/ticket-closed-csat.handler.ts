@@ -14,7 +14,10 @@
 import { Injectable, Logger, Inject, OnModuleInit } from '@nestjs/common';
 import type { IEventBus } from 'src/libs/core/infrastructure';
 import { EVENT_BUS_TOKEN } from 'src/libs/core/constants';
-import type { INotificationPort, NotificationSendRequest } from '../../../notification/notification.port';
+import type {
+  INotificationPort,
+  NotificationSendRequest,
+} from '../../../notification/notification.port';
 import { NOTIFICATION_PORT_TOKEN } from '../../../notification/notification.tokens';
 import type { ITicketRepository } from '../../domain';
 import { TICKET_REPOSITORY_TOKEN } from '../../constants';
@@ -25,7 +28,8 @@ export class TicketClosedCsatHandler implements OnModuleInit {
 
   constructor(
     @Inject(EVENT_BUS_TOKEN) private readonly eventBus: IEventBus,
-    @Inject(NOTIFICATION_PORT_TOKEN) private readonly notifications: INotificationPort,
+    @Inject(NOTIFICATION_PORT_TOKEN)
+    private readonly notifications: INotificationPort,
   ) {}
 
   onModuleInit(): void {
@@ -45,7 +49,9 @@ export class TicketClosedCsatHandler implements OnModuleInit {
     const ticketId = data.ticketId ?? event.aggregateId;
     const conversationId = data.conversationId;
 
-    this.logger.log(`Ticket closed: ${ticketId} (conv=${conversationId}) → triggering CSAT survey`);
+    this.logger.log(
+      `Ticket closed: ${ticketId} (conv=${conversationId}) → triggering CSAT survey`,
+    );
 
     // FR42: Gửi CSAT survey qua notification-be-rs (template cskh.csat_request)
     // Phone: tạm dùng placeholder '0900000000' (real: resolve từ conversation.customerId → Customer360)
@@ -62,9 +68,13 @@ export class TicketClosedCsatHandler implements OnModuleInit {
 
     const result = await this.notifications.send(req);
     if (result.sent) {
-      this.logger.log(`CSAT survey sent: ticket=${ticketId} (${result.status ?? 'sent'})`);
+      this.logger.log(
+        `CSAT survey sent: ticket=${ticketId} (${result.status ?? 'sent'})`,
+      );
     } else {
-      this.logger.warn(`CSAT survey failed: ticket=${ticketId} (${result.error ?? 'unknown'})`);
+      this.logger.warn(
+        `CSAT survey failed: ticket=${ticketId} (${result.error ?? 'unknown'})`,
+      );
     }
   }
 }

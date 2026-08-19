@@ -7,10 +7,7 @@ import {
 } from 'src/libs/shared';
 import type { ICacheService } from 'src/libs/core/infrastructure';
 import { CACHE_SERVICE_TOKEN } from 'src/libs/core/constants';
-import {
-  conversationsTable,
-  messagesTable,
-} from '../drizzle/schema';
+import { conversationsTable, messagesTable } from '../drizzle/schema';
 import { ChannelEnum } from '../../../domain';
 
 /**
@@ -162,7 +159,9 @@ export class ConversationReadDao extends BaseReadDao {
           ORDER BY ${messagesTable.conversationId}, ${messagesTable.createdAt} DESC`,
     );
 
-    const lastMsgRows = (lastMessages.rows || []) as Array<typeof messagesTable.$inferSelect>;
+    const lastMsgRows = (lastMessages.rows || []) as Array<
+      typeof messagesTable.$inferSelect
+    >;
 
     // Group + pick last message per conversation
     const lastMsgMap = new Map<string, typeof messagesTable.$inferSelect>();

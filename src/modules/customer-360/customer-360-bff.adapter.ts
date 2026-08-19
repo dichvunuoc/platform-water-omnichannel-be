@@ -1,9 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type {
-  ICustomer360Port,
-  CustomerProfile,
-} from './customer-360.port';
+import type { ICustomer360Port, CustomerProfile } from './customer-360.port';
 
 /**
  * Customer 360 BFF adapter — lấy profile qua .NET `water-business-cskh-bff`

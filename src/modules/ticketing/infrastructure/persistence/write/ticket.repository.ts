@@ -14,7 +14,10 @@ import {
   type ITicketRepository,
   type EscalationLevel,
 } from '../../../domain';
-import { ticketsTable, type InsertTicketRecord } from '../drizzle/schema/ticketing.schema';
+import {
+  ticketsTable,
+  type InsertTicketRecord,
+} from '../drizzle/schema/ticketing.schema';
 
 export class TicketRepository
   extends BaseAggregateRepository<Ticket>

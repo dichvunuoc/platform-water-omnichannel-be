@@ -18,7 +18,13 @@ describe('Channel Value Object', () => {
     });
 
     it('supports all 5 channels', () => {
-      const channels = [ChannelEnum.ZALO, ChannelEnum.APP, ChannelEnum.FACEBOOK, ChannelEnum.EMAIL, ChannelEnum.VOIP];
+      const channels = [
+        ChannelEnum.ZALO,
+        ChannelEnum.APP,
+        ChannelEnum.FACEBOOK,
+        ChannelEnum.EMAIL,
+        ChannelEnum.VOIP,
+      ];
       for (const c of channels) {
         expect(Channel.create(c).value).toBe(c);
       }

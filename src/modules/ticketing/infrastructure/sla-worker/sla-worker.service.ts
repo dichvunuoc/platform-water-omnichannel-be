@@ -76,7 +76,10 @@ export class SlaWorkerService {
             assignee: ticket.assignee,
           });
           breaches++;
-        } else if (ackRemaining < 30 * 60 * 1000 && !this.ackWarned.has(ticket.id)) {
+        } else if (
+          ackRemaining < 30 * 60 * 1000 &&
+          !this.ackWarned.has(ticket.id)
+        ) {
           this.ackWarned.add(ticket.id);
           await this.emitEvent('SlaWarning', {
             ticketId: ticket.id,
@@ -115,7 +118,10 @@ export class SlaWorkerService {
           });
           breaches++;
         }
-      } else if (resolveRemaining < 30 * 60 * 1000 && !this.resolveWarned.has(ticket.id)) {
+      } else if (
+        resolveRemaining < 30 * 60 * 1000 &&
+        !this.resolveWarned.has(ticket.id)
+      ) {
         this.resolveWarned.add(ticket.id);
         await this.emitEvent('SlaWarning', {
           ticketId: ticket.id,
@@ -132,7 +138,9 @@ export class SlaWorkerService {
     }
 
     if (warnings > 0 || breaches > 0) {
-      this.logger.warn(`SLA scan complete: ${tickets.length} open tickets, ${warnings} warnings, ${breaches} breaches`);
+      this.logger.warn(
+        `SLA scan complete: ${tickets.length} open tickets, ${warnings} warnings, ${breaches} breaches`,
+      );
     }
   }
 

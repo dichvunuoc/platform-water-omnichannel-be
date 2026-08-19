@@ -14,7 +14,10 @@ import { ChannelEnum } from '../messaging/domain';
         const map = new Map<string, any>();
         map.set(ChannelEnum.ZALO, zalo);
         map.set(ChannelEnum.APP, new MockOutboundAdapter(ChannelEnum.APP));
-        map.set(ChannelEnum.FACEBOOK, new MockOutboundAdapter(ChannelEnum.FACEBOOK));
+        map.set(
+          ChannelEnum.FACEBOOK,
+          new MockOutboundAdapter(ChannelEnum.FACEBOOK),
+        );
         map.set(ChannelEnum.EMAIL, new MockOutboundAdapter(ChannelEnum.EMAIL));
         return map;
       },

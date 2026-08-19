@@ -17,9 +17,22 @@ import { SendReplyCommand } from '../../application/commands/send-reply.command'
 import { CloseConversationCommand } from '../../application/commands/close-conversation.command';
 import { ArchiveConversationCommand } from '../../application/commands/archive-conversation.command';
 import { CreateTicketRequestCommand } from '../../application/commands/create-ticket-request.command';
-import { ReplyDto, UpdatePresenceDto, CloseConversationDto, ClassifyImageDto, TranscribeAudioDto, ClassifyIntentDto, CreateTicketDto, DispatchWorkOrderDto, SubmitCsatDto } from '../../application/dtos';
+import {
+  ReplyDto,
+  UpdatePresenceDto,
+  CloseConversationDto,
+  ClassifyImageDto,
+  TranscribeAudioDto,
+  ClassifyIntentDto,
+  CreateTicketDto,
+  DispatchWorkOrderDto,
+  SubmitCsatDto,
+} from '../../application/dtos';
 import { DispatchWorkOrderCommand } from '../../application/commands/dispatch-work-order.command';
-import { PresenceService, AgentStatus } from '../../../presence/presence.service';
+import {
+  PresenceService,
+  AgentStatus,
+} from '../../../presence/presence.service';
 import { TicketViewService } from '../../application/ticket-view.service';
 import { AiInsightService } from '../../../ai-insight/ai-insight.service';
 import { AssignCustomerCommand } from '../../application/commands/assign-customer.command';
@@ -143,12 +156,14 @@ export class BffController {
    * and fire-and-forget sends to the channel adapter.
    */
   @Post('conversations/:id/reply')
-  async reply(
-    @Param('id') id: string,
-    @Body() body: ReplyDto,
-  ) {
+  async reply(@Param('id') id: string, @Body() body: ReplyDto) {
     const result = await this.commandBus.execute(
-      new SendReplyCommand(id, body.agentId, body.content, body.attachments ?? []),
+      new SendReplyCommand(
+        id,
+        body.agentId,
+        body.content,
+        body.attachments ?? [],
+      ),
     );
     return { ok: true, ...result };
   }
@@ -163,10 +178,7 @@ export class BffController {
    * service's job — NOT here.
    */
   @Post('conversations/:id/create-ticket')
-  async createTicket(
-    @Param('id') id: string,
-    @Body() body: CreateTicketDto,
-  ) {
+  async createTicket(@Param('id') id: string, @Body() body: CreateTicketDto) {
     const result = await this.commandBus.execute(
       new CreateTicketRequestCommand(
         id,
@@ -176,7 +188,11 @@ export class BffController {
         body.fastForwardSla,
       ),
     );
-    return { ok: true, ticketId: result.ticketId, ticketUrl: `/tickets/${result.ticketId}` };
+    return {
+      ok: true,
+      ticketId: result.ticketId,
+      ticketUrl: `/tickets/${result.ticketId}`,
+    };
   }
 
   // ─── Ticket Kanban + SLA (FR20/FR60 — Epic 3, read side) ───
@@ -195,7 +211,7 @@ export class BffController {
    */
   @Get('tickets/:ticketId')
   async getTicket(@Param('ticketId') ticketId: string) {
-    const view = this.ticketViewService.getTicketView(ticketId);
+    const view = await this.ticketViewService.getTicketView(ticketId); // await: getTicketView async — thiếu await làm if(!view) check Promise (luôn truthy) → 404 chết
     if (!view) {
       throw new NotFoundException(`Ticket ${ticketId} not found`);
     }
@@ -294,9 +310,7 @@ export class BffController {
    */
   @Post('conversations/:id/resolve-identity')
   async resolveIdentity(@Param('id') id: string) {
-    const result = await this.commandBus.execute(
-      new AssignCustomerCommand(id),
-    );
+    const result = await this.commandBus.execute(new AssignCustomerCommand(id));
     return { ok: true, ...result };
   }
 
@@ -339,10 +353,16 @@ export class BffController {
       totalTickets: kanban.total,
       slaBreachedCount: kanban.slaBreachedCount,
       slaWarningCount: kanban.slaWarningCount,
-      slaComplianceRate: kanban.total > 0
-        ? Math.round(((kanban.total - kanban.slaBreachedCount) / kanban.total) * 1000) / 10
-        : 100,
-      openTickets: kanban.RECEIVED.length + kanban.IN_PROGRESS.length + kanban.WAITING.length,
+      slaComplianceRate:
+        kanban.total > 0
+          ? Math.round(
+              ((kanban.total - kanban.slaBreachedCount) / kanban.total) * 1000,
+            ) / 10
+          : 100,
+      openTickets:
+        kanban.RECEIVED.length +
+        kanban.IN_PROGRESS.length +
+        kanban.WAITING.length,
       received: kanban.RECEIVED.length,
       inProgress: kanban.IN_PROGRESS.length,
       waiting: kanban.WAITING.length,
@@ -364,7 +384,7 @@ export class BffController {
     @Param('ticketId') ticketId: string,
     @Body() body: { newStage: string },
   ) {
-    const ticket = this.ticketViewService.getTicketView(ticketId);
+    const ticket = await this.ticketViewService.getTicketView(ticketId); // await: getTicketView async — thiếu await làm if(!view) check Promise (luôn truthy) → 404 chết
     if (!ticket) {
       throw new NotFoundException(`Ticket ${ticketId} not found`);
     }
@@ -376,7 +396,7 @@ export class BffController {
     @Param('ticketId') ticketId: string,
     @Body() body: { assignee: string },
   ) {
-    const ticket = this.ticketViewService.getTicketView(ticketId);
+    const ticket = await this.ticketViewService.getTicketView(ticketId); // await: getTicketView async — thiếu await làm if(!view) check Promise (luôn truthy) → 404 chết
     if (!ticket) {
       throw new NotFoundException(`Ticket ${ticketId} not found`);
     }
@@ -406,8 +426,13 @@ export class BffController {
   ) {
     const result = await this.commandBus.execute(
       new DispatchWorkOrderCommand(
-        id, body.agentId, body.incidentType, body.priority,
-        body.address, body.photoUrls ?? [], body.customerId,
+        id,
+        body.agentId,
+        body.incidentType,
+        body.priority,
+        body.address,
+        body.photoUrls ?? [],
+        body.customerId,
       ),
     );
     return { ok: true, ...result };
@@ -452,7 +477,9 @@ export class BffController {
       recordingUrl: `https://cdn.omnicare.vn/recordings/${callId}.mp3`,
       duration: 185,
       consentGiven: true,
-      retainedUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+      retainedUntil: new Date(
+        Date.now() + 90 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
     };
   }
 
@@ -464,20 +491,57 @@ export class BffController {
   @Get('kb/search')
   async kbSearch(@Query('q') query: string = '') {
     const articles = [
-      { id: 'kb-001', title: 'Biểu giá nước sinh hoạt', snippet: 'Bậc thang 4 mức: 0-10m³: 5.900đ; 10-20m³: 7.800đ...', tags: ['hóa đơn', 'biểu giá'] },
-      { id: 'kb-002', title: 'Cách đọc chỉ số đồng hồ nước', snippet: 'Đọc 4-5 chữ số đen từ trái qua phải...', tags: ['đồng hồ', 'chỉ số'] },
-      { id: 'kb-003', title: 'Lịch cắt nước dự kiến P. Hòa Bình', snippet: 'Ngày 20/06: 08:00-12:00, đường Lê Lợi...', tags: ['cắt nước', 'Hòa Bình'] },
-      { id: 'kb-004', title: 'Báo sự cố vỡ ống nước', snippet: 'Gọi 1900 hoặc Zalo OA kèm ảnh hiện trường...', tags: ['sự cố', 'vỡ ống'] },
-      { id: 'kb-005', title: 'Tra cứu công nợ hóa đơn', snippet: 'Nhập mã khách hàng hoặc SĐT trên My Công ty App...', tags: ['công nợ', 'tra cứu'] },
+      {
+        id: 'kb-001',
+        title: 'Biểu giá nước sinh hoạt',
+        snippet: 'Bậc thang 4 mức: 0-10m³: 5.900đ; 10-20m³: 7.800đ...',
+        tags: ['hóa đơn', 'biểu giá'],
+      },
+      {
+        id: 'kb-002',
+        title: 'Cách đọc chỉ số đồng hồ nước',
+        snippet: 'Đọc 4-5 chữ số đen từ trái qua phải...',
+        tags: ['đồng hồ', 'chỉ số'],
+      },
+      {
+        id: 'kb-003',
+        title: 'Lịch cắt nước dự kiến P. Hòa Bình',
+        snippet: 'Ngày 20/06: 08:00-12:00, đường Lê Lợi...',
+        tags: ['cắt nước', 'Hòa Bình'],
+      },
+      {
+        id: 'kb-004',
+        title: 'Báo sự cố vỡ ống nước',
+        snippet: 'Gọi 1900 hoặc Zalo OA kèm ảnh hiện trường...',
+        tags: ['sự cố', 'vỡ ống'],
+      },
+      {
+        id: 'kb-005',
+        title: 'Tra cứu công nợ hóa đơn',
+        snippet: 'Nhập mã khách hàng hoặc SĐT trên My Công ty App...',
+        tags: ['công nợ', 'tra cứu'],
+      },
     ];
 
     const q = query.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
     const results = q
-      ? articles.filter(a => {
-          const title = a.title.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-          const snippet = a.snippet.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-          const tags = a.tags.map(t => t.normalize('NFD').replace(/[̀-ͯ]/g, ''));
-          return title.includes(q) || snippet.includes(q) || tags.some(t => t.includes(q));
+      ? articles.filter((a) => {
+          const title = a.title
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '');
+          const snippet = a.snippet
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '');
+          const tags = a.tags.map((t) =>
+            t.normalize('NFD').replace(/[̀-ͯ]/g, ''),
+          );
+          return (
+            title.includes(q) ||
+            snippet.includes(q) ||
+            tags.some((t) => t.includes(q))
+          );
         })
       : articles;
 

@@ -4,7 +4,10 @@ import { MockFieldTeamAdapter } from './mock-field-team.adapter';
 import { FIELD_TEAM_PORT_TOKEN } from './field-team.tokens';
 
 @Module({
-  providers: [MockFieldTeamAdapter, { provide: FIELD_TEAM_PORT_TOKEN, useExisting: MockFieldTeamAdapter }],
+  providers: [
+    MockFieldTeamAdapter,
+    { provide: FIELD_TEAM_PORT_TOKEN, useExisting: MockFieldTeamAdapter },
+  ],
   exports: [FIELD_TEAM_PORT_TOKEN],
 })
 export class FieldTeamModule {}

@@ -42,7 +42,11 @@ export { COMMAND_BUS_TOKEN, QUERY_BUS_TOKEN, EVENT_BUS_TOKEN };
     },
     {
       provide: EVENT_BUS_TOKEN,
-      useFactory: (config: ConfigService, amqpBus: AmqpEventBus, inProcessBus: EventBus) => {
+      useFactory: (
+        config: ConfigService,
+        amqpBus: AmqpEventBus,
+        inProcessBus: EventBus,
+      ) => {
         return config.get<string>('AMQP_URL') ? amqpBus : inProcessBus;
       },
       inject: [ConfigService, AmqpEventBus, EventBus],

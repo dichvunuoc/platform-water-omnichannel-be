@@ -1,13 +1,6 @@
 import { Channel } from '../value-objects/channel.value-object';
-import {
-  Conversation,
-  ConversationStatus,
-} from './conversation.entity';
-import {
-  Message,
-  MessageDirection,
-  SenderType,
-} from './message.entity';
+import { Conversation, ConversationStatus } from './conversation.entity';
+import { Message, MessageDirection, SenderType } from './message.entity';
 
 describe('Conversation Aggregate', () => {
   const channel = Channel.zalo();
@@ -41,7 +34,9 @@ describe('Conversation Aggregate', () => {
         channel,
       });
       const events = conv.getDomainEvents();
-      expect(events.some((e) => e.eventType === 'ConversationStarted')).toBe(true);
+      expect(events.some((e) => e.eventType === 'ConversationStarted')).toBe(
+        true,
+      );
     });
 
     it('with firstMessage: enqueues ConversationStarted + MessageReceived', () => {
@@ -53,7 +48,9 @@ describe('Conversation Aggregate', () => {
       });
       expect(conv.messages.length).toBe(1);
       const events = conv.getDomainEvents();
-      expect(events.some((e) => e.eventType === 'ConversationStarted')).toBe(true);
+      expect(events.some((e) => e.eventType === 'ConversationStarted')).toBe(
+        true,
+      );
       expect(events.some((e) => e.eventType === 'MessageReceived')).toBe(true);
     });
 
@@ -80,7 +77,9 @@ describe('Conversation Aggregate', () => {
 
       const events = conv.getDomainEvents();
       expect(events.some((e) => e.eventType === 'MessageReceived')).toBe(true);
-      const receivedEvent = events.find((e) => e.eventType === 'MessageReceived');
+      const receivedEvent = events.find(
+        (e) => e.eventType === 'MessageReceived',
+      );
       expect(receivedEvent?.aggregateId).toBe('conv-1');
     });
 
@@ -102,9 +101,7 @@ describe('Conversation Aggregate', () => {
         channel,
       });
       conv.close();
-      expect(() => conv.receiveMessage(makeMessage('msg-x'))).toThrow(
-        'CLOSED',
-      );
+      expect(() => conv.receiveMessage(makeMessage('msg-x'))).toThrow('CLOSED');
     });
   });
 

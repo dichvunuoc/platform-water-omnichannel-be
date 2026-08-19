@@ -9,7 +9,9 @@ function createActiveConversation(): Conversation {
   return conv;
 }
 
-function createMockRepo(conv: Conversation | null = createActiveConversation()) {
+function createMockRepo(
+  conv: Conversation | null = createActiveConversation(),
+) {
   return {
     save: jest.fn().mockResolvedValue(undefined),
     getById: jest.fn().mockResolvedValue(conv),
@@ -24,8 +26,10 @@ describe('CloseConversationHandler', () => {
   let CloseConversationCommand: any;
 
   beforeAll(() => {
-    CloseConversationHandler = require('./close-conversation.handler').CloseConversationHandler;
-    CloseConversationCommand = require('../close-conversation.command').CloseConversationCommand;
+    CloseConversationHandler =
+      require('./close-conversation.handler').CloseConversationHandler;
+    CloseConversationCommand =
+      require('../close-conversation.command').CloseConversationCommand;
   });
 
   it('closes an ACTIVE conversation', async () => {
@@ -33,7 +37,9 @@ describe('CloseConversationHandler', () => {
     const repo = createMockRepo(conv);
     const handler = new CloseConversationHandler(repo);
 
-    await handler.execute(new CloseConversationCommand('conv-close-1', 'agent-001'));
+    await handler.execute(
+      new CloseConversationCommand('conv-close-1', 'agent-001'),
+    );
 
     expect(repo.save).toHaveBeenCalledTimes(1);
     expect(conv.status).toBe(ConversationStatus.CLOSED);
@@ -54,8 +60,10 @@ describe('ArchiveConversationHandler', () => {
   let ArchiveConversationCommand: any;
 
   beforeAll(() => {
-    ArchiveConversationHandler = require('./archive-conversation.handler').ArchiveConversationHandler;
-    ArchiveConversationCommand = require('../archive-conversation.command').ArchiveConversationCommand;
+    ArchiveConversationHandler =
+      require('./archive-conversation.handler').ArchiveConversationHandler;
+    ArchiveConversationCommand =
+      require('../archive-conversation.command').ArchiveConversationCommand;
   });
 
   it('closes then archives an ACTIVE conversation', async () => {
@@ -63,7 +71,9 @@ describe('ArchiveConversationHandler', () => {
     const repo = createMockRepo(conv);
     const handler = new ArchiveConversationHandler(repo);
 
-    await handler.execute(new ArchiveConversationCommand('conv-close-1', 'agent-001'));
+    await handler.execute(
+      new ArchiveConversationCommand('conv-close-1', 'agent-001'),
+    );
 
     expect(repo.save).toHaveBeenCalledTimes(1);
     expect(conv.status).toBe(ConversationStatus.ARCHIVED);
@@ -75,7 +85,9 @@ describe('ArchiveConversationHandler', () => {
     const repo = createMockRepo(conv);
     const handler = new ArchiveConversationHandler(repo);
 
-    await handler.execute(new ArchiveConversationCommand('conv-close-1', 'agent-001'));
+    await handler.execute(
+      new ArchiveConversationCommand('conv-close-1', 'agent-001'),
+    );
 
     expect(conv.status).toBe(ConversationStatus.ARCHIVED);
   });

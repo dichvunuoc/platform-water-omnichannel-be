@@ -1,4 +1,8 @@
-import { AggregateRoot, DomainException, type IEventMetadata } from 'src/libs/core/domain';
+import {
+  AggregateRoot,
+  DomainException,
+  type IEventMetadata,
+} from 'src/libs/core/domain';
 import { Channel } from '../value-objects/channel.value-object';
 import { Message, MessageDirection, SenderType } from './message.entity';
 import { MessageReceivedEvent } from '../events/message-received.event';
@@ -138,7 +142,10 @@ export class Conversation extends AggregateRoot {
    */
   assignCustomer(customerId: string): void {
     if (!customerId) {
-      throw new DomainException('customerId is required', 'CUSTOMER_ID_REQUIRED');
+      throw new DomainException(
+        'customerId is required',
+        'CUSTOMER_ID_REQUIRED',
+      );
     }
     // Idempotent: no-op if already assigned to the same customer (outbox
     // at-least-once retries can re-publish ConversationStarted).
@@ -190,7 +197,10 @@ export class Conversation extends AggregateRoot {
 
   // --- Helpers ---
 
-  private emitMessageReceived(message: Message, metadata?: IEventMetadata): void {
+  private emitMessageReceived(
+    message: Message,
+    metadata?: IEventMetadata,
+  ): void {
     this.addDomainEvent(
       new MessageReceivedEvent({
         conversationId: this.id,

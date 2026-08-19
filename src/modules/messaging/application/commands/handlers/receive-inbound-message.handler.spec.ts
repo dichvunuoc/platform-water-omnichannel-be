@@ -12,13 +12,17 @@ import { ReceiveInboundMessageHandler } from './receive-inbound-message.handler'
 /**
  * Mock factory for IConversationRepository
  */
-function createMockRepo(overrides: Partial<IConversationRepository> = {}): IConversationRepository {
+function createMockRepo(
+  overrides: Partial<IConversationRepository> = {},
+): IConversationRepository {
   return {
     save: jest.fn().mockResolvedValue(undefined),
     getById: jest.fn().mockResolvedValue(null),
     delete: jest.fn().mockResolvedValue(undefined),
     findActiveByCustomerChannel: jest.fn().mockResolvedValue(null),
-    findActiveConversations: jest.fn().mockResolvedValue({ items: [], total: 0 }),
+    findActiveConversations: jest
+      .fn()
+      .mockResolvedValue({ items: [], total: 0 }),
     ...overrides,
   } as unknown as IConversationRepository;
 }
@@ -64,7 +68,8 @@ describe('ReceiveInboundMessageHandler', () => {
 
     // Creates conversation (save called)
     expect(mockRepo.save).toHaveBeenCalledTimes(1);
-    const savedConv = (mockRepo.save as jest.Mock).mock.calls[0][0] as Conversation;
+    const savedConv = (mockRepo.save as jest.Mock).mock
+      .calls[0][0] as Conversation;
     expect(savedConv.customerChannelId).toBe(customerChannelId);
     expect(savedConv.messages.length).toBe(1); // the first message
     expect(savedConv.messages[0].content).toBe(content);
@@ -73,7 +78,10 @@ describe('ReceiveInboundMessageHandler', () => {
     // Stores idempotency result
     expect(mockIdempotency.store).toHaveBeenCalledWith(
       `${channel}:${externalMessageId}`,
-      expect.objectContaining({ conversationId: savedConv.id, messageId: expect.any(String) }),
+      expect.objectContaining({
+        conversationId: savedConv.id,
+        messageId: expect.any(String),
+      }),
       'ReceiveInboundMessage',
     );
 
@@ -117,7 +125,8 @@ describe('ReceiveInboundMessageHandler', () => {
 
     // Saves the EXISTING conversation (not a new one)
     expect(mockRepo.save).toHaveBeenCalledTimes(1);
-    const savedConv = (mockRepo.save as jest.Mock).mock.calls[0][0] as Conversation;
+    const savedConv = (mockRepo.save as jest.Mock).mock
+      .calls[0][0] as Conversation;
     expect(savedConv.id).toBe('conv-existing-1');
     expect(savedConv.messages.length).toBe(1); // the new message appended
 

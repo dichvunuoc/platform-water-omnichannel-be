@@ -10,9 +10,10 @@ import { TICKET_REPOSITORY_TOKEN } from '../../../constants';
 import { CreateTicketCommand } from '../create-ticket.command';
 
 @CommandHandler(CreateTicketCommand)
-export class CreateTicketHandler
-  implements ICommandHandler<CreateTicketCommand, { ticketId: string }>
-{
+export class CreateTicketHandler implements ICommandHandler<
+  CreateTicketCommand,
+  { ticketId: string }
+> {
   private readonly logger = new Logger(CreateTicketHandler.name);
 
   constructor(

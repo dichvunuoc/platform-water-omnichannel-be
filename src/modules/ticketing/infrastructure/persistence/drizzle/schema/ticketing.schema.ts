@@ -1,4 +1,11 @@
-import { pgTable, varchar, integer, timestamp, boolean, text } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  varchar,
+  integer,
+  timestamp,
+  boolean,
+  text,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const ticketsTable = pgTable('tickets', {
@@ -17,7 +24,9 @@ export const ticketsTable = pgTable('tickets', {
   acknowledgedAt: timestamp('acknowledged_at'),
   closedAt: timestamp('closed_at'),
   escalated: boolean('escalated').default(false).notNull(),
-  escalationLevel: varchar('escalation_level', { length: 20 }).default('NONE').notNull(),
+  escalationLevel: varchar('escalation_level', { length: 20 })
+    .default('NONE')
+    .notNull(),
   reopenedFromCsat: boolean('reopened_from_csat').default(false).notNull(),
   version: integer('version').notNull().default(1),
   createdAt: timestamp('created_at').notNull().defaultNow(),

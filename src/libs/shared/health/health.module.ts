@@ -3,7 +3,10 @@ import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
 import { DatabaseHealthIndicator } from './indicators/database.health-indicator';
 import { RedisHealthIndicator } from './indicators/redis.health-indicator';
-import { AmqpHealthIndicator, AMQP_CONNECTION_TOKEN } from './indicators/amqp.health-indicator';
+import {
+  AmqpHealthIndicator,
+  AMQP_CONNECTION_TOKEN,
+} from './indicators/amqp.health-indicator';
 
 /**
  * Health Check Module

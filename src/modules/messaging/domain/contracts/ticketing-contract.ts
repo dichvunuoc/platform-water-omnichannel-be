@@ -11,7 +11,12 @@
 export type TicketPriority = 'P0' | 'P1' | 'P2' | 'P3';
 
 /** Ticket workflow stages. */
-export type TicketStage = 'RECEIVED' | 'IN_PROGRESS' | 'WAITING' | 'RESOLVED' | 'CLOSED';
+export type TicketStage =
+  | 'RECEIVED'
+  | 'IN_PROGRESS'
+  | 'WAITING'
+  | 'RESOLVED'
+  | 'CLOSED';
 
 /** SLA severity for warning events. */
 export type SlaSeverity = 'WARNING' | 'BREACHED' | 'OK';

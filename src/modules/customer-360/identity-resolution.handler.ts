@@ -25,7 +25,8 @@ export class IdentityResolutionHandler implements OnModuleInit {
 
   constructor(
     @Inject(EVENT_BUS_TOKEN) private readonly eventBus: IEventBus,
-    @Inject(CUSTOMER_360_PORT_TOKEN) private readonly customer360: ICustomer360Port,
+    @Inject(CUSTOMER_360_PORT_TOKEN)
+    private readonly customer360: ICustomer360Port,
     @Inject(COMMAND_BUS_TOKEN) private readonly commandBus: ICommandBus,
   ) {}
 
@@ -51,7 +52,10 @@ export class IdentityResolutionHandler implements OnModuleInit {
       `Resolving identity: conv=${conversationId} channel=${channel} ccid=${customerChannelId}`,
     );
 
-    const profile = await this.customer360.resolveIdentity(channel, customerChannelId);
+    const profile = await this.customer360.resolveIdentity(
+      channel,
+      customerChannelId,
+    );
 
     if (profile) {
       // FR31 — link resolved customerId to conversation

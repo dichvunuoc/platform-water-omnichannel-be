@@ -7,8 +7,10 @@
  */
 import { createHash, createHmac } from 'crypto';
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
-import { WebhookHmacGuard, WEBHOOK_HMAC_MAX_AGE_SECONDS } from './webhook-hmac.guard';
-
+import {
+  WebhookHmacGuard,
+  WEBHOOK_HMAC_MAX_AGE_SECONDS,
+} from './webhook-hmac.guard';
 
 const SECRET = 'test-webhook-secret-0123456789abcdef';
 const BODY = JSON.stringify({ userId: 'u1', messageId: 'm1', text: 'hi' });
@@ -110,7 +112,9 @@ describe('WebhookHmacGuard', () => {
 
   it('cho qua khi route có @SkipWebhookHmac metadata (escape hatch provider)', () => {
     const guard = makeGuard(true);
-    expect(guard.canActivate(mockContext({ timestamp: '', signature: '' }))).toBe(true);
+    expect(
+      guard.canActivate(mockContext({ timestamp: '', signature: '' })),
+    ).toBe(true);
   });
 
   // ── Fail-closed: secret unset ───────────────────────────────────────────────
@@ -118,7 +122,9 @@ describe('WebhookHmacGuard', () => {
   it('secret unset → 403 ForbiddenException (config alarm, KHÔNG phải 401)', () => {
     delete process.env.WEBHOOK_HMAC_SECRET;
     const guard = makeGuard();
-    expect(() => guard.canActivate(mockContext({}))).toThrow(ForbiddenException);
+    expect(() => guard.canActivate(mockContext({}))).toThrow(
+      ForbiddenException,
+    );
   });
 
   // ── Header / timestamp ──────────────────────────────────────────────────────
@@ -133,7 +139,9 @@ describe('WebhookHmacGuard', () => {
   it('thiếu x-timestamp → 401', () => {
     const guard = makeGuard();
     expect(() =>
-      guard.canActivate(mockContext({ signature: sign(now(), 'POST', '/webhooks/app', BODY) })),
+      guard.canActivate(
+        mockContext({ signature: sign(now(), 'POST', '/webhooks/app', BODY) }),
+      ),
     ).toThrow(UnauthorizedException);
   });
 
@@ -194,7 +202,9 @@ describe('WebhookHmacGuard', () => {
     expect(() =>
       guard.canActivate(
         mockContext({
-          rawBody: Buffer.from(JSON.stringify({ userId: 'ATTACKER', messageId: 'm1' })),
+          rawBody: Buffer.from(
+            JSON.stringify({ userId: 'ATTACKER', messageId: 'm1' }),
+          ),
           timestamp: String(ts),
           signature: sign(ts, 'POST', '/webhooks/app', BODY),
         }),

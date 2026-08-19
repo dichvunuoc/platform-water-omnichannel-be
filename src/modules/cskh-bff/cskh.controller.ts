@@ -13,14 +13,35 @@ import {
   Logger,
 } from '@nestjs/common';
 import { NOTIFICATION_PORT_TOKEN } from '../notification/notification.tokens';
-import type { INotificationPort, NotificationSendRequest } from '../notification/notification.port';
-import { INCIDENT_PORT_TOKEN, type IIncidentPort } from '../incident/incident.adapter';
-import { TELEPHONY_PORT_TOKEN, type ITelephonyPort } from '../telephony/telephony.adapter';
+import type {
+  INotificationPort,
+  NotificationSendRequest,
+} from '../notification/notification.port';
+import {
+  INCIDENT_PORT_TOKEN,
+  type IIncidentPort,
+} from '../incident/incident.adapter';
+import {
+  TELEPHONY_PORT_TOKEN,
+  type ITelephonyPort,
+} from '../telephony/telephony.adapter';
 import { CSAT_PORT_TOKEN, type ICsatPort } from '../csat/csat.adapter';
-import { KNOWLEDGE_PORT_TOKEN, type IKnowledgePort } from '../knowledge/knowledge.adapter';
-import { CHATBOT_PORT_TOKEN, type IChatbotPort } from '../chatbot/chatbot.adapter';
-import { BROADCAST_PORT_TOKEN, type IBroadcastPort } from '../broadcast/broadcast.adapter';
-import { DASHBOARD_PORT_TOKEN, type IDashboardPort } from '../dashboard/dashboard.adapter';
+import {
+  KNOWLEDGE_PORT_TOKEN,
+  type IKnowledgePort,
+} from '../knowledge/knowledge.adapter';
+import {
+  CHATBOT_PORT_TOKEN,
+  type IChatbotPort,
+} from '../chatbot/chatbot.adapter';
+import {
+  BROADCAST_PORT_TOKEN,
+  type IBroadcastPort,
+} from '../broadcast/broadcast.adapter';
+import {
+  DASHBOARD_PORT_TOKEN,
+  type IDashboardPort,
+} from '../dashboard/dashboard.adapter';
 import {
   cskhCatalogs,
   cskhTickets,
@@ -28,7 +49,10 @@ import {
   type TicketListDto,
 } from './cskh-fixture';
 import { CONVERSATION_READ_DAO_TOKEN } from '../messaging/constants/tokens';
-import type { ConversationReadDao, ConversationDetail } from '../messaging/infrastructure/persistence/read/conversation-read-dao';
+import type {
+  ConversationReadDao,
+  ConversationDetail,
+} from '../messaging/infrastructure/persistence/read/conversation-read-dao';
 import type { ICommandBus } from 'src/libs/core/application';
 import { COMMAND_BUS_TOKEN } from 'src/libs/core/constants';
 import { SendReplyCommand } from '../messaging/application/commands/send-reply.command';
@@ -62,18 +86,25 @@ export class CskhController {
   private readonly logger = new Logger(CskhController.name);
 
   constructor(
-    @Inject(NOTIFICATION_PORT_TOKEN) private readonly notifications: INotificationPort,
+    @Inject(NOTIFICATION_PORT_TOKEN)
+    private readonly notifications: INotificationPort,
     @Inject(INCIDENT_PORT_TOKEN) private readonly incidents: IIncidentPort,
     @Inject(TELEPHONY_PORT_TOKEN) private readonly telephony: ITelephonyPort,
     @Inject(CSAT_PORT_TOKEN) private readonly csatPort: ICsatPort,
-    @Inject(KNOWLEDGE_PORT_TOKEN) private readonly knowledgePort: IKnowledgePort,
+    @Inject(KNOWLEDGE_PORT_TOKEN)
+    private readonly knowledgePort: IKnowledgePort,
     @Inject(CHATBOT_PORT_TOKEN) private readonly chatbotPort: IChatbotPort,
-    @Inject(BROADCAST_PORT_TOKEN) private readonly broadcastPort: IBroadcastPort,
-    @Inject(DASHBOARD_PORT_TOKEN) private readonly dashboardPort: IDashboardPort,
-    @Inject(CONVERSATION_READ_DAO_TOKEN) private readonly readDao: ConversationReadDao,
+    @Inject(BROADCAST_PORT_TOKEN)
+    private readonly broadcastPort: IBroadcastPort,
+    @Inject(DASHBOARD_PORT_TOKEN)
+    private readonly dashboardPort: IDashboardPort,
+    @Inject(CONVERSATION_READ_DAO_TOKEN)
+    private readonly readDao: ConversationReadDao,
     @Inject(COMMAND_BUS_TOKEN) private readonly commandBus: ICommandBus,
-    @Inject(CUSTOMER_360_PORT_TOKEN) private readonly customer360: ICustomer360Port,
-    @Inject(TICKET_REPOSITORY_TOKEN) private readonly ticketRepo: ITicketRepository,
+    @Inject(CUSTOMER_360_PORT_TOKEN)
+    private readonly customer360: ICustomer360Port,
+    @Inject(TICKET_REPOSITORY_TOKEN)
+    private readonly ticketRepo: ITicketRepository,
   ) {}
 
   /** Fire-and-forget notification — không block nghiệp vụ khi noti fail. */
@@ -81,7 +112,9 @@ export class CskhController {
     this.notifications
       .send(req)
       .catch((e) =>
-        this.logger.warn(`noti templateKey=${req.templateKey} failed: ${e.message}`),
+        this.logger.warn(
+          `noti templateKey=${req.templateKey} failed: ${e.message}`,
+        ),
       );
   }
 
@@ -94,7 +127,8 @@ export class CskhController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ): Promise<InboxPageDto> {
-    const filter: { channel?: string; status?: string; customerId?: string } = {};
+    const filter: { channel?: string; status?: string; customerId?: string } =
+      {};
     if (channel) filter.channel = channel.toUpperCase();
     if (status) filter.status = status.toUpperCase();
     if (customerId) filter.customerId = customerId;
@@ -120,7 +154,10 @@ export class CskhController {
   /** POST /conversations/:id/close — đóng hội thoại (FR18). */
   @Post('conversations/:id/close')
   @HttpCode(HttpStatus.OK)
-  async closeConversation(@Param('id') id: string, @Body() body: { agentId?: string }) {
+  async closeConversation(
+    @Param('id') id: string,
+    @Body() body: { agentId?: string },
+  ) {
     await this.commandBus.execute(
       new CloseConversationCommand(id, body.agentId ?? 'agent-mvp'),
     );
@@ -130,7 +167,10 @@ export class CskhController {
   /** POST /conversations/:id/archive — lưu trữ hội thoại (FR18, yêu cầu CLOSED trước). */
   @Post('conversations/:id/archive')
   @HttpCode(HttpStatus.OK)
-  async archiveConversation(@Param('id') id: string, @Body() body: { agentId?: string }) {
+  async archiveConversation(
+    @Param('id') id: string,
+    @Body() body: { agentId?: string },
+  ) {
     await this.commandBus.execute(
       new ArchiveConversationCommand(id, body.agentId ?? 'agent-mvp'),
     );
@@ -153,7 +193,9 @@ export class CskhController {
   }
 
   /** Map detail + enrich Customer360 (Task B7) qua ICustomer360Port; fallback stub khi chưa resolve. */
-  private async enrichedDetail(detail: ConversationDetail): Promise<ConversationDetailDto> {
+  private async enrichedDetail(
+    detail: ConversationDetail,
+  ): Promise<ConversationDetailDto> {
     const dto = mapConversationDetail(detail);
     const profile =
       (await this.customer360
@@ -179,8 +221,16 @@ export class CskhController {
   // ── Health ────────────────────────────────────────────────────────────────────
   @Get('health')
   @HttpCode(HttpStatus.OK)
-  async health(): Promise<{ status: string; service: string; timestamp: string }> {
-    return { status: 'ok', service: 'cskh-bff', timestamp: new Date().toISOString() };
+  async health(): Promise<{
+    status: string;
+    service: string;
+    timestamp: string;
+  }> {
+    return {
+      status: 'ok',
+      service: 'cskh-bff',
+      timestamp: new Date().toISOString(),
+    };
   }
 
   // ── Catalogs (reference data, direct) ─────────────────────────────────────────
@@ -211,14 +261,16 @@ export class CskhController {
     // Detail enrichment (messages + customer360) chỉ ở getTicket/:id (single ticket)
     let items = tickets.map((t) => {
       const agentName = t.assignee
-        ? cskhCatalogs.agents.find((a) => a.id === t.assignee)?.name ?? '—'
+        ? (cskhCatalogs.agents.find((a) => a.id === t.assignee)?.name ?? '—')
         : '—';
       return mapTicket(t, { agentName });
     });
     if (status) items = items.filter((t) => t.status === status.toLowerCase());
-    if (channel) items = items.filter((t) => t.channel === channel.toLowerCase());
+    if (channel)
+      items = items.filter((t) => t.channel === channel.toLowerCase());
     if (topic) items = items.filter((t) => t.topic === topic.toLowerCase());
-    if (priority) items = items.filter((t) => t.priority === priority.toLowerCase());
+    if (priority)
+      items = items.filter((t) => t.priority === priority.toLowerCase());
     if (q) {
       const ql = q.toLowerCase();
       items = items.filter(
@@ -230,7 +282,12 @@ export class CskhController {
     }
     const p = Number(page);
     const ps = Number(pageSize);
-    return { items: items.slice((p - 1) * ps, p * ps), total: items.length, page: p, pageSize: ps };
+    return {
+      items: items.slice((p - 1) * ps, p * ps),
+      total: items.length,
+      page: p,
+      pageSize: ps,
+    };
   }
 
   @Get('tickets/:id')
@@ -242,22 +299,34 @@ export class CskhController {
       ? await this.customer360.getProfile(ticket.customerId).catch(() => null)
       : null;
     if (ticket.conversationId) {
-      conversation = await this.readDao.findById(ticket.conversationId).catch(() => null);
+      conversation = await this.readDao
+        .findById(ticket.conversationId)
+        .catch(() => null);
     }
     const agentName = ticket.assignee
-      ? cskhCatalogs.agents.find((a) => a.id === ticket.assignee)?.name ?? '—'
+      ? (cskhCatalogs.agents.find((a) => a.id === ticket.assignee)?.name ?? '—')
       : '—';
     return mapTicket(ticket, { profile, conversation, agentName });
   }
 
   @Post('tickets/:id/reply')
   @HttpCode(HttpStatus.OK)
-  async reply(@Param('id') id: string, @Body() body: { text: string }): Promise<Ticket> {
+  async reply(
+    @Param('id') id: string,
+    @Body() body: { text: string },
+  ): Promise<Ticket> {
     const ticket = await this.ticketRepo.getById(id);
     if (!ticket) throw new NotFoundException('Không tìm thấy phiếu.');
     if (ticket.conversationId) {
       await this.commandBus
-        .execute(new SendReplyCommand(ticket.conversationId, 'agent-mvp', body.text, []))
+        .execute(
+          new SendReplyCommand(
+            ticket.conversationId,
+            'agent-mvp',
+            body.text,
+            [],
+          ),
+        )
         .catch(() => null);
     }
     return mapTicket(ticket);
@@ -265,7 +334,10 @@ export class CskhController {
 
   @Post('tickets/:id/assign')
   @HttpCode(HttpStatus.OK)
-  async assign(@Param('id') id: string, @Body() body: { agent: string }): Promise<Ticket> {
+  async assign(
+    @Param('id') id: string,
+    @Body() body: { agent: string },
+  ): Promise<Ticket> {
     // Phase 2b: return mapped ticket (state persist = 2c qua reassign command)
     const ticket = await this.ticketRepo.getById(id);
     if (!ticket) throw new NotFoundException('Không tìm thấy phiếu.');
@@ -274,18 +346,29 @@ export class CskhController {
 
   @Post('tickets/:id/status')
   @HttpCode(HttpStatus.OK)
-  async setStatus(@Param('id') id: string, @Body() body: { status: string }): Promise<Ticket> {
+  async setStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string },
+  ): Promise<Ticket> {
     if (!VALID_STATUSES.has(body.status.toLowerCase())) {
-      throw new BadRequestException({ code: 'INVALID_STATUS', message: 'Trạng thái không hợp lệ.' });
+      throw new BadRequestException({
+        code: 'INVALID_STATUS',
+        message: 'Trạng thái không hợp lệ.',
+      });
     }
     // Phase 2c: dispatch AdvanceStageCommand (real state persist)
     const STAGE_REVERSE: Record<string, string> = {
-      new: 'RECEIVED', progress: 'IN_PROGRESS', waiting: 'WAITING',
-      resolved: 'RESOLVED', closed: 'CLOSED',
+      new: 'RECEIVED',
+      progress: 'IN_PROGRESS',
+      waiting: 'WAITING',
+      resolved: 'RESOLVED',
+      closed: 'CLOSED',
     };
     const targetStage = STAGE_REVERSE[body.status.toLowerCase()];
     if (targetStage) {
-      await this.commandBus.execute(new AdvanceStageCommand(id, targetStage as any));
+      await this.commandBus.execute(
+        new AdvanceStageCommand(id, targetStage as any),
+      );
     }
     const ticket = await this.ticketRepo.getById(id);
     if (!ticket) throw new NotFoundException('Không tìm thấy phiếu.');
@@ -296,7 +379,9 @@ export class CskhController {
   @HttpCode(HttpStatus.OK)
   async resolve(@Param('id') id: string): Promise<Ticket> {
     // Phase 2c: dispatch AdvanceStageCommand(RESOLVED) + CSAT noti
-    await this.commandBus.execute(new AdvanceStageCommand(id, 'RESOLVED' as any));
+    await this.commandBus.execute(
+      new AdvanceStageCommand(id, 'RESOLVED' as any),
+    );
     const ticket = await this.ticketRepo.getById(id);
     if (!ticket) throw new NotFoundException('Không tìm thấy phiếu.');
     this.fireNoti({
@@ -322,7 +407,10 @@ export class CskhController {
 
   @Post('incidents/:id/kind')
   @HttpCode(HttpStatus.OK)
-  async setIncidentKind(@Param('id') id: string, @Body() body: { kind: string }) {
+  async setIncidentKind(
+    @Param('id') id: string,
+    @Body() body: { kind: string },
+  ) {
     return this.incidents.setKind(id, body.kind);
   }
 
@@ -402,7 +490,13 @@ export class CskhController {
   @Post('broadcasts')
   @HttpCode(HttpStatus.OK)
   async createBroadcast(
-    @Body() body: { title: string; channels: string[]; area: string; window: string },
+    @Body()
+    body: {
+      title: string;
+      channels: string[];
+      area: string;
+      window: string;
+    },
   ) {
     return this.broadcastPort.create(body);
   }
@@ -415,16 +509,35 @@ export class CskhController {
     this.fireNoti({
       templateKey: 'cskh.broadcast',
       recipients: [{ phone: '0900000000' }],
-      data: { title: bc.title, area: bc.area, window: bc.window, audience: bc.audience },
+      data: {
+        title: bc.title,
+        area: bc.area,
+        window: bc.window,
+        audience: bc.audience,
+      },
       idempotencyKey: `cskh.broadcast:${bc.id}`,
     });
-    return { ok: true, id: bc.id, status: 'sending', message: 'Đã đưa vào hàng đợi xử lý' };
+    return {
+      ok: true,
+      id: bc.id,
+      status: 'sending',
+      message: 'Đã đưa vào hàng đợi xử lý',
+    };
   }
 }
 
 // ── Helpers (ticket core) ──────────────────────────────────────────────────────
-const VALID_STATUSES = new Set(['new', 'progress', 'waiting', 'resolved', 'closed']);
+const VALID_STATUSES = new Set([
+  'new',
+  'progress',
+  'waiting',
+  'resolved',
+  'closed',
+]);
 
 function nowTime(): string {
-  return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  return new Date().toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }

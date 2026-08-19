@@ -68,7 +68,9 @@ export class TicketViewService {
     return ticket ? this.enrichTicket(ticket) : null;
   }
 
-  async getConversationTicketView(conversationId: string): Promise<TicketView | null> {
+  async getConversationTicketView(
+    conversationId: string,
+  ): Promise<TicketView | null> {
     const ticket = await this.repo.findByConversationId(conversationId);
     return ticket ? this.enrichTicket(ticket) : null;
   }
@@ -76,9 +78,11 @@ export class TicketViewService {
   private enrichTicket(ticket: Ticket): TicketView {
     const now = Date.now();
     const rd = ticket.resolveDeadline;
-    const resolveMs = rd instanceof Date ? rd.getTime() : new Date(rd).getTime();
+    const resolveMs =
+      rd instanceof Date ? rd.getTime() : new Date(rd).getTime();
     const remainingMs = resolveMs - now;
-    const isResolved = ticket.stage.value === 'RESOLVED' || ticket.stage.value === 'CLOSED';
+    const isResolved =
+      ticket.stage.value === 'RESOLVED' || ticket.stage.value === 'CLOSED';
     return {
       id: ticket.id,
       conversationId: ticket.conversationId,
@@ -88,11 +92,21 @@ export class TicketViewService {
       stage: ticket.stage.value,
       priority: ticket.priority.value,
       assignee: ticket.assignee,
-      createdAt: ticket.createdAt instanceof Date ? ticket.createdAt.getTime() : new Date(ticket.createdAt).getTime(),
+      createdAt:
+        ticket.createdAt instanceof Date
+          ? ticket.createdAt.getTime()
+          : new Date(ticket.createdAt).getTime(),
       slaDeadline: resolveMs,
       slaRemainingMs: isResolved ? 0 : remainingMs,
-      slaColor: isResolved ? 'gray' : remainingMs <= 0 ? 'red' : remainingMs < 30 * 60 * 1000 ? 'yellow' : 'green',
-      slaWarning: !isResolved && remainingMs < 30 * 60 * 1000 && remainingMs > 0,
+      slaColor: isResolved
+        ? 'gray'
+        : remainingMs <= 0
+          ? 'red'
+          : remainingMs < 30 * 60 * 1000
+            ? 'yellow'
+            : 'green',
+      slaWarning:
+        !isResolved && remainingMs < 30 * 60 * 1000 && remainingMs > 0,
       slaBreached: !isResolved && remainingMs <= 0,
       customerName: `Customer ${ticket.customerId ?? 'unknown'}`,
     };

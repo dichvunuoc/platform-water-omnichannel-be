@@ -52,7 +52,11 @@ export class JwtAuthGuard implements CanActivate {
     if (!authHeader?.startsWith('Bearer ')) {
       if (!this.authEnabled) {
         // Dev mode: inject default user
-        request.user = { sub: 'agent-mvp', roles: ['agent'], name: 'Dev Agent' };
+        request.user = {
+          sub: 'agent-mvp',
+          roles: ['agent'],
+          name: 'Dev Agent',
+        };
         return true;
       }
       throw new UnauthorizedException('Missing Authorization header');

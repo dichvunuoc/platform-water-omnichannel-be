@@ -20,7 +20,9 @@ import { MemoryCacheService } from './memory-cache.service';
         const logger = new Logger('CacheModule');
         const redisUrl = config.get<string>('REDIS_URL');
         if (redisUrl) {
-          const match = redisUrl.match(/^redis:\/\/(?:(.+)@)?([^:]+):(\d+)(?:\/(\d+))?/);
+          const match = redisUrl.match(
+            /^redis:\/\/(?:(.+)@)?([^:]+):(\d+)(?:\/(\d+))?/,
+          );
           if (match) {
             const [, userinfo, host, portStr, dbStr] = match;
             // userinfo = "password" (redis://:pass@host) hoặc "user:pass" — regex

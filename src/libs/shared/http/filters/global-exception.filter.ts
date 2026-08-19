@@ -54,7 +54,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const isString = typeof exceptionResponse === 'string';
     const respObj = isString ? null : (exceptionResponse as any);
     const message = isString
-      ? (exceptionResponse as string)
+      ? exceptionResponse
       : Array.isArray(respObj?.message)
         ? respObj.message.join(', ')
         : respObj?.message || exception.message;
@@ -117,7 +117,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       // P1-D1 (R0): error object {code, detail}
       error: {
         code: 'INTERNAL_SERVER_ERROR',
-        detail: isDevelopment ? error.stack ?? null : null,
+        detail: isDevelopment ? (error.stack ?? null) : null,
       },
       message: isDevelopment ? error.message : 'An unexpected error occurred',
     };

@@ -16,7 +16,10 @@
  */
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import type { ConfirmChannel } from 'amqplib';
-import type { IEventBus, EventBusSubscribeOptions } from '../../../core/infrastructure/events/interfaces/event-bus.interface';
+import type {
+  IEventBus,
+  EventBusSubscribeOptions,
+} from '../../../core/infrastructure/events/interfaces/event-bus.interface';
 import type { IDomainEvent } from '../../../core/domain/events';
 import { AmqpConnection, EXCHANGE_NAME } from './amqp-connection';
 
@@ -45,20 +48,15 @@ export class AmqpEventBus implements IEventBus {
     }
 
     const buffer = Buffer.from(JSON.stringify(event));
-    channel.publish(
-      EXCHANGE_NAME,
-      event.eventType,
-      buffer,
-      {
-        persistent: true,
-        contentType: 'application/json',
-        messageId: event.eventId,
-        timestamp: Date.now(),
-        headers: {
-          aggregateType: event.aggregateType,
-        },
+    channel.publish(EXCHANGE_NAME, event.eventType, buffer, {
+      persistent: true,
+      contentType: 'application/json',
+      messageId: event.eventId,
+      timestamp: Date.now(),
+      headers: {
+        aggregateType: event.aggregateType,
       },
-    );
+    });
 
     // Publisher confirms — ensures broker accepted the message.
     await channel.waitForConfirms();
@@ -88,7 +86,9 @@ export class AmqpEventBus implements IEventBus {
     } else {
       // Buffer until channel is ready.
       this.pendingSubs.push(sub);
-      this.logger.warn(`Buffered subscription for ${queueName} (channel not ready)`);
+      this.logger.warn(
+        `Buffered subscription for ${queueName} (channel not ready)`,
+      );
     }
   }
 
@@ -128,7 +128,11 @@ export class AmqpEventBus implements IEventBus {
     }
 
     // Assert the consumer queue.
-    await channel.assertQueue(sub.queueName, { durable, autoDelete, arguments: args });
+    await channel.assertQueue(sub.queueName, {
+      durable,
+      autoDelete,
+      arguments: args,
+    });
 
     // Bind to the topic exchange via routing key = eventType.
     await channel.bindQueue(sub.queueName, EXCHANGE_NAME, sub.eventType);
@@ -136,23 +140,29 @@ export class AmqpEventBus implements IEventBus {
     // Consume with manual ack.
     await channel.consume(
       sub.queueName,
-      async (msg) => {
+      // void-wrapper: amqplib consumer callback khai báo void — bọc async IIFE
+      // (no-misused-promises); try/catch bên trong vẫn bắt đủ, ack/nack như cũ.
+      (msg) => {
         if (!msg) return;
-        try {
-          const event = JSON.parse(msg.content.toString()) as IDomainEvent;
-          await sub.handler(event);
-          channel.ack(msg);
-        } catch (err) {
-          this.logger.error(
-            `Consumer error in ${sub.queueName}: ${(err as Error).message} → DLQ`,
-          );
-          // Nack without requeue → goes to DLQ.
-          channel.nack(msg, false, false);
-        }
+        void (async () => {
+          try {
+            const event = JSON.parse(msg.content.toString()) as IDomainEvent;
+            await sub.handler(event);
+            channel.ack(msg);
+          } catch (err) {
+            this.logger.error(
+              `Consumer error in ${sub.queueName}: ${(err as Error).message} → DLQ`,
+            );
+            // Nack without requeue → goes to DLQ.
+            channel.nack(msg, false, false);
+          }
+        })();
       },
       { noAck: false },
     );
 
-    this.logger.log(`Subscribed: ${sub.queueName} ← ${sub.eventType} (durable=${durable})`);
+    this.logger.log(
+      `Subscribed: ${sub.queueName} ← ${sub.eventType} (durable=${durable})`,
+    );
   }
 }

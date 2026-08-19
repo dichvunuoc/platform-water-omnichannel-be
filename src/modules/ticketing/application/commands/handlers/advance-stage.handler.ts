@@ -7,9 +7,10 @@ import { TICKET_REPOSITORY_TOKEN } from '../../../constants';
 import { AdvanceStageCommand } from '../advance-stage.command';
 
 @CommandHandler(AdvanceStageCommand)
-export class AdvanceStageHandler
-  implements ICommandHandler<AdvanceStageCommand, void>
-{
+export class AdvanceStageHandler implements ICommandHandler<
+  AdvanceStageCommand,
+  void
+> {
   private readonly logger = new Logger(AdvanceStageHandler.name);
 
   constructor(
