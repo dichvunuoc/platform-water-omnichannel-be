@@ -72,15 +72,13 @@ spec:
       # (initContainer migrate ĐÃ GỠ khỏi live 2026-08-18: patch từng làm rớt
       #  `command` → init chạy nguyên app, kẹt Init:0/1 vĩnh viễn. Khi thêm lại
       #  PHẢI đủ `command: ["npx","drizzle-kit","migrate"]` + envFrom như container chính.)
-      # PIN 1 node (mirror live): chưa có SSH key cho tino-12 → image chỉ nằm trên
-      # tino-32. MẤT HA — bỏ pin khi có registry creds hoặc key tino-12.
-      # (affinity đã gỡ cho khớp live — conflict với node pin.)
-      nodeName: tino-32
+      # (nodeName pin ĐÃ GỠ 2026-08-20: image đã lên registry-dev + pull-secret
+      #  registry-dev-pull đã gắn vào SA default của ns → cả 2 node kéo được — HA trở lại.)
       containers:
         - name: omnichannel-be
-          # Tag PIN theo deploy thật 2026-08-18 (image import node qua k3s ctr —
-          # registry push chưa có creds; đổi tag = phải import lại node + update đây).
-          image: registry-dev.dichvunuoc.vn/omnichannel-be:62d32cb
+          # Tag = commit sha đã qua CI đầy đủ + push lên registry-dev (2026-08-20;
+          # node k3s-ctr import không còn cần — node tự pull qua SA pull-secret).
+          image: registry-dev.dichvunuoc.vn/omnichannel-be:2f09425
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 4001
